@@ -1,16 +1,31 @@
 import { useState } from 'react';
-import { Globe, Mic, Volume2, VolumeX } from 'lucide-react';
+import { Globe, Mic, Volume2, VolumeX, Lock } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { speakText, stopSpeaking } from '@/utils/speechUtils';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import VoiceNavigator from './VoiceNavigator';
+import { toast } from 'sonner';
+
+const VOICE_GUIDE_PASSWORD = 'catinthebin123';
+const VOICE_GUIDE_AUTH_KEY = 'voiceGuideAuthenticated';
 
 export function AccessibilityBar() {
   const { t, language, isTtsEnabled, setIsTtsEnabled } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState(false);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -19,7 +34,6 @@ export function AccessibilityBar() {
   };
 
   const handleTranslate = () => {
-    // Store current path to return after language selection
     sessionStorage.setItem('returnPath', location.pathname);
     navigate('/language');
   };
@@ -29,6 +43,30 @@ export function AccessibilityBar() {
       stopSpeaking();
     }
     setIsTtsEnabled(!isTtsEnabled);
+  };
+
+  const handleVoiceGuideClick = () => {
+    // Check if already authenticated this session
+    if (sessionStorage.getItem(VOICE_GUIDE_AUTH_KEY) === 'true') {
+      setIsVoiceOpen(true);
+    } else {
+      setShowPasswordDialog(true);
+      setPassword('');
+      setPasswordError(false);
+    }
+  };
+
+  const handlePasswordSubmit = () => {
+    if (password === VOICE_GUIDE_PASSWORD) {
+      sessionStorage.setItem(VOICE_GUIDE_AUTH_KEY, 'true');
+      setShowPasswordDialog(false);
+      setIsVoiceOpen(true);
+      setPassword('');
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+      toast.error('Incorrect password');
+    }
   };
 
   // Don't show on scan or language selection screens
@@ -65,7 +103,7 @@ export function AccessibilityBar() {
           <Button
             variant="accessibility"
             size="accessibility"
-            onClick={() => setIsVoiceOpen(true)}
+            onClick={handleVoiceGuideClick}
             onMouseEnter={() => handleSpeak(t('access.voice'))}
             className="flex-1"
           >
@@ -74,6 +112,49 @@ export function AccessibilityBar() {
           </Button>
         </div>
       </div>
+
+      {/* Password Dialog */}
+      <Dialog open={showPasswordDialog} onOpenChange={setShowPasswordDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Lock className="w-5 h-5" />
+              Voice Guide Access
+            </DialogTitle>
+            <DialogDescription>
+              Enter the password to use Voice Guide
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Input
+              type="password"
+              placeholder="Enter password"
+              value={password}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setPasswordError(false);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handlePasswordSubmit();
+                }
+              }}
+              className={`text-lg h-14 ${passwordError ? 'border-destructive' : ''}`}
+              autoFocus
+            />
+            {passwordError && (
+              <p className="text-destructive text-sm">Incorrect password. Please try again.</p>
+            )}
+            <Button 
+              onClick={handlePasswordSubmit} 
+              className="w-full h-14 text-lg"
+              variant="warm"
+            >
+              Unlock Voice Guide
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <VoiceNavigator isOpen={isVoiceOpen} onClose={() => setIsVoiceOpen(false)} />
     </>
