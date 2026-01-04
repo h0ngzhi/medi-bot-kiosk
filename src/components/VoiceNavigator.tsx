@@ -1,9 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Mic, MicOff, X, Volume2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { AudioRecorder, encodeAudioForAPI, AudioQueue, createWavFromPCM } from '@/utils/audioUtils';
+import { AudioRecorder, encodeAudioForAPI, AudioQueue } from '@/utils/audioUtils';
+import Lottie from 'lottie-react';
+import robotAnimation from '@/assets/robot-assistant.json';
 
 interface VoiceNavigatorProps {
   isOpen: boolean;
@@ -236,75 +238,100 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-card rounded-3xl p-8 w-full max-w-md mx-4 shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-card-foreground">Voice Assistant</h2>
-          <Button variant="ghost" size="icon" onClick={handleClose}>
-            <X className="h-5 w-5" />
-          </Button>
-        </div>
-
-        {/* Status Indicator */}
-        <div className="flex flex-col items-center mb-8">
-          <div className={`relative w-32 h-32 rounded-full flex items-center justify-center transition-all duration-300 ${
+    <div className="fixed inset-0 z-50 pointer-events-none">
+      {/* Subtle backdrop - allows interaction with page behind */}
+      <div className="absolute inset-0 bg-background/30 backdrop-blur-[2px]" />
+      
+      {/* Floating Robot Animation - Bottom Right */}
+      <div className="absolute bottom-24 right-4 pointer-events-auto">
+        <div className={`relative transition-all duration-500 ${isSpeaking ? 'scale-110' : isListening ? 'scale-105' : 'scale-100'}`}>
+          {/* Glow effect behind robot */}
+          <div className={`absolute inset-0 rounded-full blur-2xl transition-all duration-300 ${
             isSpeaking 
-              ? 'bg-primary/20 animate-pulse' 
+              ? 'bg-primary/40 scale-150' 
               : isListening 
-                ? 'bg-green-500/20' 
-                : 'bg-muted'
-          }`}>
-            <div className={`absolute inset-0 rounded-full ${
-              isSpeaking || isListening ? 'animate-ping opacity-20' : ''
-            } ${isSpeaking ? 'bg-primary' : isListening ? 'bg-green-500' : ''}`} />
-            
-            {isSpeaking ? (
-              <Volume2 className="h-16 w-16 text-primary" />
-            ) : isListening ? (
-              <Mic className="h-16 w-16 text-green-500" />
-            ) : isConnected ? (
-              <Mic className="h-16 w-16 text-muted-foreground" />
-            ) : (
-              <MicOff className="h-16 w-16 text-muted-foreground" />
-            )}
+                ? 'bg-green-500/30 scale-125' 
+                : 'bg-primary/20 scale-100'
+          }`} />
+          
+          {/* Robot Animation */}
+          <div className="relative w-40 h-40">
+            <Lottie 
+              animationData={robotAnimation} 
+              loop={true}
+              className={`w-full h-full drop-shadow-2xl ${isSpeaking || isListening ? '' : 'opacity-80'}`}
+            />
           </div>
           
-          <p className="mt-4 text-lg font-medium text-card-foreground">
-            {isSpeaking 
-              ? 'Speaking...' 
+          {/* Status indicator ring */}
+          <div className={`absolute -inset-2 rounded-full border-4 transition-all duration-300 ${
+            isSpeaking 
+              ? 'border-primary animate-pulse' 
               : isListening 
-                ? 'Listening...' 
+                ? 'border-green-500 animate-pulse' 
                 : isConnected 
-                  ? 'Say something to navigate' 
-                  : 'Connecting...'}
-          </p>
+                  ? 'border-primary/30' 
+                  : 'border-muted'
+          }`} />
         </div>
+      </div>
 
-        {/* Transcript Display */}
-        {(transcript || response) && (
-          <div className="space-y-3 mb-6">
-            {transcript && (
-              <div className="bg-muted rounded-xl p-4">
-                <p className="text-sm text-muted-foreground mb-1">You said:</p>
-                <p className="text-card-foreground">{transcript}</p>
-              </div>
-            )}
-            {response && (
-              <div className="bg-primary/10 rounded-xl p-4">
-                <p className="text-sm text-primary mb-1">Assistant:</p>
-                <p className="text-card-foreground">{response}</p>
-              </div>
-            )}
+      {/* Floating Info Panel - Top area */}
+      <div className="absolute top-4 left-4 right-4 pointer-events-auto">
+        <div className="bg-card/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-border/50 max-w-md mx-auto">
+          {/* Header with close button */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <div className={`w-3 h-3 rounded-full ${
+                isSpeaking 
+                  ? 'bg-primary animate-pulse' 
+                  : isListening 
+                    ? 'bg-green-500 animate-pulse' 
+                    : isConnected 
+                      ? 'bg-primary/60' 
+                      : 'bg-muted-foreground'
+              }`} />
+              <span className="text-sm font-medium text-card-foreground">
+                {isSpeaking 
+                  ? 'Speaking...' 
+                  : isListening 
+                    ? 'Listening...' 
+                    : isConnected 
+                      ? 'Ready - speak anytime' 
+                      : 'Connecting...'}
+              </span>
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleClose}
+              className="h-8 w-8 p-0 rounded-full hover:bg-destructive/10"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
-        )}
 
-        {/* Help Text */}
-        <div className="text-center text-sm text-muted-foreground">
-          <p>Try saying:</p>
-          <p className="mt-1 text-card-foreground">"Take me to my medications"</p>
-          <p className="text-card-foreground">"Show health screenings"</p>
-          <p className="text-card-foreground">"Go to community programmes"</p>
+          {/* Transcript/Response area - compact */}
+          {(transcript || response) ? (
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {transcript && (
+                <div className="bg-muted/50 rounded-lg p-2">
+                  <p className="text-xs text-muted-foreground">You:</p>
+                  <p className="text-sm text-card-foreground">{transcript}</p>
+                </div>
+              )}
+              {response && (
+                <div className="bg-primary/10 rounded-lg p-2">
+                  <p className="text-xs text-primary">Assistant:</p>
+                  <p className="text-sm text-card-foreground">{response}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground text-center">
+              Try: "Take me to medications" or "Show health screenings"
+            </p>
+          )}
         </div>
       </div>
     </div>
