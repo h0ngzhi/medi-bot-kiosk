@@ -8,6 +8,7 @@ import ScanCard from "./pages/ScanCard";
 import LanguageSelection from "./pages/LanguageSelection";
 import Dashboard from "./pages/Dashboard";
 import HealthScreenings from "./pages/HealthScreenings";
+import Medications from "./pages/Medications";
 import Teleconsult from "./pages/Teleconsult";
 import CommunityProgrammes from "./pages/CommunityProgrammes";
 import Profile from "./pages/Profile";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/language" element={<LanguageSelection />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/health" element={<HealthScreenings />} />
+            <Route path="/medications" element={<Medications />} />
             <Route path="/teleconsult" element={<Teleconsult />} />
             <Route path="/community" element={<CommunityProgrammes />} />
             <Route path="/profile" element={<Profile />} />
