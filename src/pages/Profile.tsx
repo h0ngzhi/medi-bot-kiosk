@@ -8,10 +8,16 @@ import {
   Award,
   Gift,
   History,
-  CreditCard,
   CheckCircle2,
   Star
 } from 'lucide-react';
+
+// CHAS Card images
+import chasBlue from '@/assets/chas-blue.png';
+import chasOrange from '@/assets/chas-orange.png';
+import chasGreen from '@/assets/chas-green.png';
+import chasMerdeka from '@/assets/chas-merdeka.png';
+import chasPioneer from '@/assets/chas-pioneer.png';
 import { toast } from '@/hooks/use-toast';
 
 interface Reward {
@@ -46,12 +52,12 @@ const mockRewards: Reward[] = [
   },
 ];
 
-const chasCardColors: Record<string, string> = {
-  Blue: 'from-blue-400 to-blue-600',
-  Orange: 'from-orange-400 to-orange-600',
-  Green: 'from-green-400 to-green-600',
-  'Merdeka generation': 'from-amber-500 to-amber-700',
-  'Pioneer generation': 'from-purple-500 to-purple-700',
+const chasCardImages: Record<string, string> = {
+  Blue: chasBlue,
+  Orange: chasOrange,
+  Green: chasGreen,
+  'Merdeka generation': chasMerdeka,
+  'Pioneer generation': chasPioneer,
 };
 
 export default function Profile() {
@@ -109,20 +115,15 @@ export default function Profile() {
 
       <main className="max-w-2xl mx-auto px-6">
         {/* CHAS Card */}
-        <div 
-          className={`bg-gradient-to-br ${chasCardColors[user.chasType] || 'from-blue-400 to-blue-600'} rounded-3xl p-6 text-white shadow-medium mb-6 animate-fade-in`}
-        >
-          <div className="flex items-start justify-between mb-8">
-            <div>
-              <p className="text-white/80 text-sm mb-1">{t('profile.chas')}</p>
-              <p className="text-2xl font-bold">{user.chasType} Card</p>
-            </div>
-            <CreditCard className="w-10 h-10 text-white/50" />
-          </div>
-          
-          <div>
-            <p className="text-white/80 text-sm mb-1">Name</p>
-            <p className="text-xl font-bold">{user.name}</p>
+        <div className="relative rounded-3xl overflow-hidden shadow-medium mb-6 animate-fade-in aspect-[1.586/1]">
+          <img 
+            src={chasCardImages[user.chasType] || chasBlue}
+            alt={`${user.chasType} CHAS Card`}
+            className="w-full h-full object-cover"
+          />
+          {/* Overlay with user info */}
+          <div className="absolute bottom-4 left-4 right-4">
+            <p className="text-lg font-bold text-gray-800 drop-shadow-sm">{user.name}</p>
           </div>
         </div>
 

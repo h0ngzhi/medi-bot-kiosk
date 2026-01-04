@@ -12,6 +12,21 @@ import {
   Pill
 } from 'lucide-react';
 
+// CHAS Card images
+import chasBlue from '@/assets/chas-blue.png';
+import chasOrange from '@/assets/chas-orange.png';
+import chasGreen from '@/assets/chas-green.png';
+import chasMerdeka from '@/assets/chas-merdeka.png';
+import chasPioneer from '@/assets/chas-pioneer.png';
+
+const chasCardImages: Record<string, string> = {
+  Blue: chasBlue,
+  Orange: chasOrange,
+  Green: chasGreen,
+  'Merdeka generation': chasMerdeka,
+  'Pioneer generation': chasPioneer,
+};
+
 const menuItems = [
   {
     id: 'health',
@@ -72,7 +87,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted pb-32">
       {/* Header */}
-      <header className="bg-card shadow-soft p-6 mb-8">
+      <header className="bg-card shadow-soft p-6 mb-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="animate-fade-in">
             <p className="text-lg text-muted-foreground">{t('dashboard.welcome')}</p>
@@ -88,6 +103,22 @@ export default function Dashboard() {
           </Button>
         </div>
       </header>
+
+      {/* CHAS Card Mini Display */}
+      {user?.chasType && (
+        <div className="max-w-2xl mx-auto px-6 mb-6">
+          <div 
+            className="relative rounded-2xl overflow-hidden shadow-soft animate-fade-in cursor-pointer hover:shadow-medium transition-shadow aspect-[3/1]"
+            onClick={() => navigate('/profile')}
+          >
+            <img 
+              src={chasCardImages[user.chasType] || chasBlue}
+              alt={`${user.chasType} CHAS Card`}
+              className="w-full h-full object-cover object-top"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-6">
