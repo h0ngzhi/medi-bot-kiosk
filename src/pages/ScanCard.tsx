@@ -59,6 +59,66 @@ export default function ScanCard() {
     };
   }, []);
 
+  // Validate Singapore NRIC/FIN format
+  const validateNRIC = (nric: string): boolean => {
+    // Singapore NRIC/FIN format: [STFGM] + 7 digits + checksum letter
+    const nricRegex = /^[STFGM]\d{7}[A-Z]$/;
+    return nricRegex.test(nric.toUpperCase());
+  };
+
+  // Sanitize name input
+  const sanitizeName = (name: string): string => {
+    // Remove control characters and trim
+    let sanitized = name
+      .replace(/[\x00-\x1F\x7F-\x9F]/g, '') // Remove control chars
+      .trim();
+    
+    // Limit length to 100 characters
+    if (sanitized.length > 100) {
+      sanitized = sanitized.slice(0, 100);
+    }
+    
+    return sanitized;
+  };
+
+  // Parse and validate QR code data
+  const parseQRCode = (qrData: string): { nric: string; name: string } | null => {
+    // Length check - reject extremely long inputs
+    if (!qrData || qrData.length === 0 || qrData.length > 200) {
+      return null;
+    }
+
+    // Split on first colon only
+    const colonIndex = qrData.indexOf(':');
+    let nric: string;
+    let name: string;
+
+    if (colonIndex === -1) {
+      // No colon - treat as NRIC only
+      nric = qrData.trim().toUpperCase();
+      name = '';
+    } else {
+      nric = qrData.slice(0, colonIndex).trim().toUpperCase();
+      name = qrData.slice(colonIndex + 1).trim();
+    }
+
+    // Validate NRIC format
+    if (!validateNRIC(nric)) {
+      return null;
+    }
+
+    // Sanitize name or generate default
+    if (name) {
+      name = sanitizeName(name);
+    }
+    
+    if (!name || name.length === 0) {
+      name = `User ${nric.slice(-4)}`;
+    }
+
+    return { nric, name };
+  };
+
   const handleQRCodeScanned = async (qrData: string) => {
     // Stop the scanner
     if (scannerRef.current && isRunningRef.current) {
@@ -68,10 +128,16 @@ export default function ScanCard() {
 
     setScanState('processing');
 
-    // Parse QR code data - expecting format: "ID:name" or just use as ID
-    const parts = qrData.split(':');
-    const nric = parts[0];
-    const name = parts[1] || `User ${nric.slice(-4)}`;
+    // Parse and validate QR code data
+    const parsed = parseQRCode(qrData);
+    
+    if (!parsed) {
+      setErrorMessage('Invalid card format. Please scan a valid Singapore IC or CHAS card.');
+      setScanState('error');
+      return;
+    }
+
+    const { nric, name } = parsed;
 
     try {
       // Check if user already exists in database
