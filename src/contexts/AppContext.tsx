@@ -118,6 +118,7 @@ const translations: Record<Language, Record<string, string>> = {
     'meds.step1': 'Select Medications',
     'meds.step2': 'Delivery & Payment',
     'meds.step3': 'Confirmation',
+    'meds.statusUpdate': 'Delivery Status Updated',
     
     // Health screenings
     'health.title': 'Health Screenings',
@@ -306,6 +307,7 @@ const translations: Record<Language, Record<string, string>> = {
     'meds.step1': '选择药物',
     'meds.step2': '配送和付款',
     'meds.step3': '确认',
+    'meds.statusUpdate': '配送状态已更新',
     
     'health.title': '健康检查',
     'health.bp': '血压',
@@ -488,6 +490,7 @@ const translations: Record<Language, Record<string, string>> = {
     'meds.step1': 'Pilih Ubat',
     'meds.step2': 'Penghantaran & Pembayaran',
     'meds.step3': 'Pengesahan',
+    'meds.statusUpdate': 'Status Penghantaran Dikemaskini',
     
     'health.title': 'Pemeriksaan Kesihatan',
     'health.bp': 'Tekanan Darah',
@@ -670,6 +673,7 @@ const translations: Record<Language, Record<string, string>> = {
     'meds.step1': 'மருந்துகளைத் தேர்ந்தெடுக்கவும்',
     'meds.step2': 'டெலிவரி & கட்டணம்',
     'meds.step3': 'உறுதிப்படுத்தல்',
+    'meds.statusUpdate': 'டெலிவரி நிலை புதுப்பிக்கப்பட்டது',
     
     'health.title': 'சுகாதார பரிசோதனைகள்',
     'health.bp': 'இரத்த அழுத்தம்',
