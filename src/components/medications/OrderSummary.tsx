@@ -26,7 +26,7 @@ export const OrderSummary = ({
 }: OrderSummaryProps) => {
   const { t } = useApp();
 
-  const subtotal = medications.reduce((sum, med) => sum + (med.price * med.quantity), 0);
+  const subtotal = medications.reduce((sum, med) => sum + med.price, 0);
   const subsidyAmount = subtotal * (subsidyPercent / 100);
   const afterSubsidy = subtotal - subsidyAmount;
   const total = afterSubsidy + deliveryFee;
@@ -46,9 +46,9 @@ export const OrderSummary = ({
             <div key={index} className="flex justify-between items-center">
               <div>
                 <p className="font-medium text-foreground">{med.name}</p>
-                <p className="text-sm text-muted-foreground">x{med.quantity}</p>
+                <p className="text-sm text-muted-foreground">{t('meds.perBox')}</p>
               </div>
-              <span className="font-medium text-foreground">S${(med.price * med.quantity).toFixed(2)}</span>
+              <span className="font-medium text-foreground">S${med.price.toFixed(2)}</span>
             </div>
           ))}
         </div>
