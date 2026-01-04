@@ -27,12 +27,32 @@ export const speakText = (text: string, language: Language = 'en'): void => {
     return;
   }
 
+  // Ensure voices are loaded
+  let voices = window.speechSynthesis.getVoices();
+  
+  // If voices aren't loaded yet, wait for them
+  if (voices.length === 0) {
+    window.speechSynthesis.onvoiceschanged = () => {
+      voices = window.speechSynthesis.getVoices();
+      doSpeak(text, language, voices);
+    };
+    // Also try after a short delay
+    setTimeout(() => {
+      voices = window.speechSynthesis.getVoices();
+      if (voices.length > 0) {
+        doSpeak(text, language, voices);
+      }
+    }, 100);
+    return;
+  }
+
+  doSpeak(text, language, voices);
+};
+
+const doSpeak = (text: string, language: Language, voices: SpeechSynthesisVoice[]): void => {
   const utterance = new SpeechSynthesisUtterance(text);
   currentUtterance = utterance;
 
-  // Get available voices
-  const voices = window.speechSynthesis.getVoices();
-  
   // Find a suitable voice for the language
   const langCodes = languageVoiceCodes[language];
   let selectedVoice: SpeechSynthesisVoice | null = null;
@@ -57,7 +77,7 @@ export const speakText = (text: string, language: Language = 'en'): void => {
   }
 
   // Voice settings for elderly users - slower and clearer
-  utterance.rate = 0.85; // Slightly slower
+  utterance.rate = 0.85;
   utterance.pitch = 1.0;
   utterance.volume = 1.0;
 
