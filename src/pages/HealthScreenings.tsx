@@ -203,7 +203,7 @@ export default function HealthScreenings() {
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-heading text-foreground">{t('health.title')}</h1>
+          <h1 className="text-heading text-foreground cursor-default" onMouseEnter={() => handleSpeak(t('health.title'))}>{t('health.title')}</h1>
         </div>
       </header>
 
@@ -226,7 +226,7 @@ export default function HealthScreenings() {
                   <div className={`w-16 h-16 rounded-2xl ${option.bgColor} flex items-center justify-center flex-shrink-0`}>
                     <option.icon className={`w-8 h-8 ${option.color}`} />
                   </div>
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0" onMouseEnter={() => handleSpeak(`${t(option.titleKey)}. ${t(option.descKey)}`)}>
                     <h3 className="text-xl font-bold text-foreground">{t(option.titleKey)}</h3>
                     <p className="text-base text-muted-foreground">{t(option.descKey)}</p>
                   </div>
@@ -237,9 +237,9 @@ export default function HealthScreenings() {
             {/* Past Results Section */}
             {!loading && (bpResults.length > 0 || weightResults.length > 0) && (
               <div className="mt-8 animate-fade-in">
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-4" onMouseEnter={() => handleSpeak(t('health.pastResults'))}>
                   <History className="w-5 h-5 text-muted-foreground" />
-                  <h2 className="text-lg font-semibold text-foreground">{t('health.pastResults')}</h2>
+                  <h2 className="text-lg font-semibold text-foreground cursor-default">{t('health.pastResults')}</h2>
                 </div>
 
                 <div className="space-y-4">
@@ -322,10 +322,16 @@ export default function HealthScreenings() {
             <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center mb-8">
               <Activity className="w-16 h-16 text-primary animate-pulse" />
             </div>
-            <p className="text-heading text-foreground mb-2">
+            <p 
+              className="text-heading text-foreground mb-2 cursor-default"
+              onMouseEnter={() => handleSpeak(selectedType === 'bp' ? t('health.bp') : t('health.weight'))}
+            >
               {selectedType === 'bp' ? t('health.bp') : t('health.weight')}
             </p>
-            <p className="text-body-large text-muted-foreground">
+            <p 
+              className="text-body-large text-muted-foreground cursor-default"
+              onMouseEnter={() => handleSpeak(t('scan.scanning'))}
+            >
               {t('scan.scanning')}
             </p>
             <div className="mt-8 flex gap-2">
@@ -344,9 +350,9 @@ export default function HealthScreenings() {
                 <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
                   <CheckCircle2 className="w-10 h-10 text-success" />
                 </div>
-                <div>
-                  <p className="text-lg text-muted-foreground">{t('health.result')}</p>
-                  <p className="text-2xl font-bold text-success">{t('health.normal')}</p>
+                <div onMouseEnter={() => handleSpeak(`${t('health.result')}: ${t('health.normal')}`)}>
+                  <p className="text-lg text-muted-foreground cursor-default">{t('health.result')}</p>
+                  <p className="text-2xl font-bold text-success cursor-default">{t('health.normal')}</p>
                 </div>
               </div>
 

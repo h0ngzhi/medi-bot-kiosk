@@ -80,8 +80,18 @@ export default function Dashboard() {
       <header className="bg-card shadow-soft p-6 mb-8">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="animate-fade-in">
-            <p className="text-lg text-muted-foreground">{t('dashboard.welcome')}</p>
-            <h1 className="text-heading text-foreground">{user?.name || 'Guest'}</h1>
+            <p 
+              className="text-lg text-muted-foreground cursor-default"
+              onMouseEnter={() => handleSpeak(t('dashboard.welcome'))}
+            >
+              {t('dashboard.welcome')}
+            </p>
+            <h1 
+              className="text-heading text-foreground cursor-default"
+              onMouseEnter={() => handleSpeak(user?.name || 'Guest')}
+            >
+              {user?.name || 'Guest'}
+            </h1>
           </div>
           <Button
             variant="ghost"
@@ -97,7 +107,11 @@ export default function Dashboard() {
 
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-6">
-        <h2 className="text-heading text-foreground mb-8 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+        <h2 
+          className="text-heading text-foreground mb-8 animate-fade-in cursor-default" 
+          style={{ animationDelay: '0.1s' }}
+          onMouseEnter={() => handleSpeak(t('dashboard.title'))}
+        >
           {t('dashboard.title')}
         </h2>
 
@@ -116,7 +130,7 @@ export default function Dashboard() {
               <div className={`w-16 h-16 rounded-2xl ${item.bgColor} flex items-center justify-center flex-shrink-0`}>
                 <item.icon className={`w-8 h-8 ${item.color}`} />
               </div>
-              <div className="flex-1 min-w-0">
+              <div className="flex-1 min-w-0" onMouseEnter={() => handleSpeak(`${t(item.titleKey)}. ${t(item.descKey)}`)}>
                 <h3 className="text-xl font-bold text-foreground">{t(item.titleKey)}</h3>
                 <p className="text-base text-muted-foreground">{t(item.descKey)}</p>
               </div>

@@ -163,9 +163,9 @@ export default function Teleconsult() {
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <div>
-            <h1 className="text-heading text-foreground">{t("teleconsult.title")}</h1>
-            <p className="text-base text-muted-foreground">{t("teleconsult.subtitle")}</p>
+          <div onMouseEnter={() => handleSpeak(`${t("teleconsult.title")}. ${t("teleconsult.subtitle")}`)}>
+            <h1 className="text-heading text-foreground cursor-default">{t("teleconsult.title")}</h1>
+            <p className="text-base text-muted-foreground cursor-default">{t("teleconsult.subtitle")}</p>
           </div>
         </div>
       </header>
@@ -174,7 +174,7 @@ export default function Teleconsult() {
         {/* Step 1: Doctor type selection with pricing */}
         {state === "pricing" && (
           <div className="space-y-6 animate-fade-in">
-            <h2 className="text-xl font-bold text-foreground">{t('teleconsult.selectType')}</h2>
+            <h2 className="text-xl font-bold text-foreground cursor-default" onMouseEnter={() => handleSpeak(t('teleconsult.selectType'))}>{t('teleconsult.selectType')}</h2>
             
             <div className="space-y-4">
               {/* Polyclinic Option */}
@@ -241,7 +241,7 @@ export default function Teleconsult() {
               </div>
             </div>
 
-            <h2 className="text-xl font-bold text-foreground">{t("teleconsult.payment")}</h2>
+            <h2 className="text-xl font-bold text-foreground cursor-default" onMouseEnter={() => handleSpeak(t("teleconsult.payment"))}>{t("teleconsult.payment")}</h2>
 
             {/* Payment method tabs */}
             <div className="flex gap-2">
@@ -292,7 +292,7 @@ export default function Teleconsult() {
             <div className="w-32 h-32 rounded-full bg-secondary/10 flex items-center justify-center mb-8">
               <Loader2 className="w-16 h-16 text-secondary animate-spin" />
             </div>
-            <p className="text-heading text-foreground mb-2">{t("teleconsult.connecting")}</p>
+            <p className="text-heading text-foreground mb-2 cursor-default" onMouseEnter={() => handleSpeak(t("teleconsult.connecting"))}>{t("teleconsult.connecting")}</p>
             <div className="mt-8 flex gap-2">
               <div className="w-3 h-3 rounded-full bg-secondary animate-bounce" style={{ animationDelay: "0s" }} />
               <div className="w-3 h-3 rounded-full bg-secondary animate-bounce" style={{ animationDelay: "0.2s" }} />
@@ -309,11 +309,11 @@ export default function Teleconsult() {
                 <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center mb-6">
                   <CheckCircle2 className="w-12 h-12 text-success" />
                 </div>
-                <h2 className="text-heading text-foreground mb-2">{t('teleconsult.connected')}</h2>
-                <p className="text-muted-foreground mb-4">
+                <h2 className="text-heading text-foreground mb-2 cursor-default" onMouseEnter={() => handleSpeak(t('teleconsult.connected'))}>{t('teleconsult.connected')}</h2>
+                <p className="text-muted-foreground mb-4 cursor-default" onMouseEnter={() => handleSpeak(t('teleconsult.connected.desc'))}>
                   {t('teleconsult.connected.desc')}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground cursor-default" onMouseEnter={() => handleSpeak(doctorType === "polyclinic" ? t("teleconsult.polyclinic") : t("teleconsult.hospital"))}>
                   {doctorType === "polyclinic" ? t("teleconsult.polyclinic") : t("teleconsult.hospital")}
                 </p>
               </div>
@@ -339,8 +339,8 @@ export default function Teleconsult() {
                 <div className="w-24 h-24 rounded-full bg-destructive/20 flex items-center justify-center mb-6">
                   <XCircle className="w-12 h-12 text-destructive" />
                 </div>
-                <h2 className="text-heading text-foreground mb-2">{t('teleconsult.failed')}</h2>
-                <p className="text-muted-foreground mb-4">
+                <h2 className="text-heading text-foreground mb-2 cursor-default" onMouseEnter={() => handleSpeak(t('teleconsult.failed'))}>{t('teleconsult.failed')}</h2>
+                <p className="text-muted-foreground mb-4 cursor-default" onMouseEnter={() => handleSpeak(errorMessage || t('teleconsult.failed.desc'))}>
                   {errorMessage || t('teleconsult.failed.desc')}
                 </p>
               </div>

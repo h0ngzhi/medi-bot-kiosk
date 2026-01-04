@@ -37,8 +37,16 @@ export default function LanguageSelection() {
     <div className="min-h-screen bg-gradient-to-b from-background to-muted flex flex-col items-center justify-center p-8">
       {/* Header */}
       <div className="text-center mb-12 animate-fade-in">
-        <h1 className="text-display text-primary mb-4">{t('lang.title')}</h1>
-        <p className="text-body-large text-muted-foreground">
+        <h1 
+          className="text-display text-primary mb-4 cursor-default"
+          onMouseEnter={() => handleSpeak(t('lang.title'), 'en')}
+        >
+          {t('lang.title')}
+        </h1>
+        <p 
+          className="text-body-large text-muted-foreground cursor-default"
+          onMouseEnter={() => handleSpeak(t('lang.subtitle'), 'en')}
+        >
           {t('lang.subtitle')}
         </p>
       </div>
