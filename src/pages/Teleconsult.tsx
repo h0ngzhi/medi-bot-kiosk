@@ -47,7 +47,7 @@ export default function Teleconsult() {
       const consultationReason =
         doctorType === "polyclinic" ? "General consultation - Polyclinic" : "Specialist consultation - Hospital";
 
-      const response = await fetch("https://hongzhi.app.n8n.cloud/webhook-test/teleconsult/start", {
+      const response = await fetch("https://hongzhi.app.n8n.cloud/webhook/teleconsult/start", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -66,14 +66,12 @@ export default function Teleconsult() {
       const data = await response.json();
 
       if (data.meetingUrl && data.status === "scheduled") {
-        // Clean the URL (webhook sometimes returns "=https://" instead of "https://")
-        const cleanUrl = data.meetingUrl.replace(/^=/, '');
         // Open the meeting URL in a new tab
-        window.open(cleanUrl, '_blank', 'noopener,noreferrer');
+        window.open(data.meetingUrl, "_blank", "noopener,noreferrer");
         setState("connected");
         toast({
-          title: t("teleconsult.connected"),
-          description: t("teleconsult.connected.desc"),
+          title: "Consultation Started",
+          description: "Your video consultation has been opened in a new tab.",
         });
       } else {
         throw new Error("Invalid response from server");
@@ -83,8 +81,8 @@ export default function Teleconsult() {
       setErrorMessage(error instanceof Error ? error.message : "Failed to start consultation");
       setState("error");
       toast({
-        title: t("teleconsult.failed"),
-        description: t("teleconsult.failed.desc"),
+        title: "Connection Failed",
+        description: "Unable to start the teleconsultation. Please try again.",
         variant: "destructive",
       });
     }
@@ -240,9 +238,9 @@ export default function Teleconsult() {
                 <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center mb-6">
                   <CheckCircle2 className="w-12 h-12 text-success" />
                 </div>
-                <h2 className="text-heading text-foreground mb-2">{t("teleconsult.connected")}</h2>
+                <h2 className="text-heading text-foreground mb-2">Consultation Started</h2>
                 <p className="text-muted-foreground mb-4">
-                  {t("teleconsult.connected.desc")}
+                  Your video consultation has been opened in a new browser tab.
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {doctorType === "polyclinic" ? t("teleconsult.polyclinic") : t("teleconsult.hospital")}
@@ -251,7 +249,7 @@ export default function Teleconsult() {
             </div>
 
             <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
-              {t("teleconsult.returnDashboard")}
+              Return to Dashboard
             </Button>
           </div>
         )}
@@ -264,9 +262,9 @@ export default function Teleconsult() {
                 <div className="w-24 h-24 rounded-full bg-destructive/20 flex items-center justify-center mb-6">
                   <XCircle className="w-12 h-12 text-destructive" />
                 </div>
-                <h2 className="text-heading text-foreground mb-2">{t("teleconsult.failed")}</h2>
+                <h2 className="text-heading text-foreground mb-2">Connection Failed</h2>
                 <p className="text-muted-foreground mb-4">
-                  {errorMessage || t("teleconsult.failed.desc")}
+                  {errorMessage || "Unable to start the teleconsultation. Please try again."}
                 </p>
               </div>
             </div>
@@ -274,10 +272,10 @@ export default function Teleconsult() {
             <div className="space-y-4">
               <Button variant="warm" size="xl" onClick={handleStartConsult} className="w-full">
                 <Video className="w-6 h-6" />
-                {t("teleconsult.tryAgain")}
+                Try Again
               </Button>
               <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
-                {t("teleconsult.goBack")}
+                Go Back
               </Button>
             </div>
           </div>
