@@ -123,34 +123,58 @@ export type Database = {
       }
       medications: {
         Row: {
+          collection_clinic: string | null
           created_at: string
           delivery_date: string | null
+          delivery_method: string | null
           delivery_status: string
           dosage: string | null
           id: string
           is_current: boolean
           kiosk_user_id: string
           name: string
+          order_completed_at: string | null
+          payment_method: string | null
+          price_per_box: number | null
+          subsidy_percent: number | null
+          tablets_per_box: number | null
+          total_paid: number | null
         }
         Insert: {
+          collection_clinic?: string | null
           created_at?: string
           delivery_date?: string | null
+          delivery_method?: string | null
           delivery_status?: string
           dosage?: string | null
           id?: string
           is_current?: boolean
           kiosk_user_id: string
           name: string
+          order_completed_at?: string | null
+          payment_method?: string | null
+          price_per_box?: number | null
+          subsidy_percent?: number | null
+          tablets_per_box?: number | null
+          total_paid?: number | null
         }
         Update: {
+          collection_clinic?: string | null
           created_at?: string
           delivery_date?: string | null
+          delivery_method?: string | null
           delivery_status?: string
           dosage?: string | null
           id?: string
           is_current?: boolean
           kiosk_user_id?: string
           name?: string
+          order_completed_at?: string | null
+          payment_method?: string | null
+          price_per_box?: number | null
+          subsidy_percent?: number | null
+          tablets_per_box?: number | null
+          total_paid?: number | null
         }
         Relationships: [
           {
