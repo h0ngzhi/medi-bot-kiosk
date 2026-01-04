@@ -23,6 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
+import { speakText } from '@/utils/speechUtils';
 
 // CHAS Card images
 import chasBlue from '@/assets/chas-blue.png';
@@ -34,35 +35,79 @@ import { toast } from '@/hooks/use-toast';
 
 interface Reward {
   id: string;
-  title: string;
+  titleKey: string;
+  titleEn: string;
   points: number;
-  description: string;
+  descriptionKey: string;
+  descriptionEn: string;
   maxQuantity: number;
 }
 
 const availableRewards: Reward[] = [
   {
     id: '1',
-    title: '$5 NTUC Voucher',
+    titleKey: 'rewards.ntucVoucher',
+    titleEn: '$5 NTUC Voucher',
     points: 200,
-    description: 'Use at any NTUC FairPrice outlet',
+    descriptionKey: 'rewards.ntucDesc',
+    descriptionEn: 'Use at any NTUC FairPrice outlet',
     maxQuantity: 5,
   },
   {
     id: '2',
-    title: '$10 Guardian Voucher',
+    titleKey: 'rewards.guardianVoucher',
+    titleEn: '$10 Guardian Voucher',
     points: 400,
-    description: 'Use at any Guardian pharmacy',
+    descriptionKey: 'rewards.guardianDesc',
+    descriptionEn: 'Use at any Guardian pharmacy',
     maxQuantity: 3,
   },
   {
     id: '3',
-    title: 'Free Health Screening',
+    titleKey: 'rewards.healthScreening',
+    titleEn: 'Free Health Screening',
     points: 500,
-    description: 'One free comprehensive health check',
+    descriptionKey: 'rewards.screeningDesc',
+    descriptionEn: 'One free comprehensive health check',
     maxQuantity: 2,
   },
 ];
+
+// Reward translations
+const rewardTranslations: Record<string, Record<string, string>> = {
+  en: {
+    'rewards.ntucVoucher': '$5 NTUC Voucher',
+    'rewards.ntucDesc': 'Use at any NTUC FairPrice outlet',
+    'rewards.guardianVoucher': '$10 Guardian Voucher',
+    'rewards.guardianDesc': 'Use at any Guardian pharmacy',
+    'rewards.healthScreening': 'Free Health Screening',
+    'rewards.screeningDesc': 'One free comprehensive health check',
+  },
+  zh: {
+    'rewards.ntucVoucher': '$5 职总礼券',
+    'rewards.ntucDesc': '可在任何职总平价超市使用',
+    'rewards.guardianVoucher': '$10 Guardian礼券',
+    'rewards.guardianDesc': '可在任何Guardian药房使用',
+    'rewards.healthScreening': '免费健康检查',
+    'rewards.screeningDesc': '一次全面健康检查',
+  },
+  ms: {
+    'rewards.ntucVoucher': 'Baucar NTUC $5',
+    'rewards.ntucDesc': 'Guna di mana-mana cawangan NTUC FairPrice',
+    'rewards.guardianVoucher': 'Baucar Guardian $10',
+    'rewards.guardianDesc': 'Guna di mana-mana farmasi Guardian',
+    'rewards.healthScreening': 'Pemeriksaan Kesihatan Percuma',
+    'rewards.screeningDesc': 'Satu pemeriksaan kesihatan menyeluruh percuma',
+  },
+  ta: {
+    'rewards.ntucVoucher': '$5 NTUC வவுச்சர்',
+    'rewards.ntucDesc': 'எந்த NTUC FairPrice கடையிலும் பயன்படுத்தலாம்',
+    'rewards.guardianVoucher': '$10 Guardian வவுச்சர்',
+    'rewards.guardianDesc': 'எந்த Guardian மருந்தகத்திலும் பயன்படுத்தலாம்',
+    'rewards.healthScreening': 'இலவச சுகாதார பரிசோதனை',
+    'rewards.screeningDesc': 'ஒரு முழுமையான சுகாதார பரிசோதனை',
+  },
+};
 
 const chasCardImages: Record<string, string> = {
   Blue: chasBlue,
@@ -73,7 +118,7 @@ const chasCardImages: Record<string, string> = {
 };
 
 export default function Profile() {
-  const { user, t, setUser } = useApp();
+  const { user, t, setUser, language, isVoiceEnabled } = useApp();
   const navigate = useNavigate();
   const [showRewards, setShowRewards] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -86,6 +131,18 @@ export default function Profile() {
     street: '',
     postalCode: '',
   });
+
+  // Helper to get reward text in current language
+  const getRewardText = (key: string) => {
+    return rewardTranslations[language]?.[key] || rewardTranslations['en'][key] || key;
+  };
+
+  // Speak button text when voice is enabled
+  const handleButtonSpeak = (text: string) => {
+    if (isVoiceEnabled) {
+      speakText(text, language);
+    }
+  };
 
   const handleQuantityChange = (rewardId: string, delta: number) => {
     const reward = availableRewards.find(r => r.id === rewardId);
@@ -107,8 +164,8 @@ export default function Profile() {
   const handleRedeemClick = (reward: Reward) => {
     if (!canAfford(reward)) {
       toast({
-        title: 'Not enough points',
-        description: 'Join more programmes to earn points!',
+        title: t('profile.notEnoughPoints'),
+        description: t('profile.joinProgrammes'),
         variant: 'destructive',
       });
       return;
@@ -123,8 +180,8 @@ export default function Profile() {
     // Validate address
     if (!address.blockNo || !address.street || !address.postalCode) {
       toast({
-        title: 'Please fill in your address',
-        description: 'We need your address to deliver the reward.',
+        title: t('profile.fillAddress'),
+        description: t('profile.needAddress'),
         variant: 'destructive',
       });
       return;
@@ -149,9 +206,10 @@ export default function Profile() {
         points: newPoints,
       });
 
+      const rewardTitle = getRewardText(selectedReward.titleKey);
       toast({
-        title: 'Reward Redeemed!',
-        description: `${getQuantity(selectedReward.id)}x ${selectedReward.title} will be sent to your home.`,
+        title: t('profile.rewardRedeemed'),
+        description: `${getQuantity(selectedReward.id)}x ${rewardTitle} ${t('profile.willBeSent')}`,
       });
 
       setShowAddressDialog(false);
@@ -162,8 +220,8 @@ export default function Profile() {
     } catch (error) {
       console.error('Failed to redeem reward:', error);
       toast({
-        title: 'Redemption Failed',
-        description: 'Please try again later.',
+        title: t('profile.redemptionFailed'),
+        description: t('profile.tryAgainLater'),
         variant: 'destructive',
       });
     } finally {
@@ -189,7 +247,11 @@ export default function Profile() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => {
+              handleButtonSpeak(t('common.back'));
+              navigate('/dashboard');
+            }}
+            onFocus={() => handleButtonSpeak(t('common.back'))}
             className="w-14 h-14 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -251,8 +313,8 @@ export default function Profile() {
               ))
             ) : (
               <div className="text-center py-6 text-muted-foreground">
-                <p className="text-lg">No programme participation yet</p>
-                <p className="text-sm mt-1">Join community programmes to earn points!</p>
+                <p className="text-lg">{t('profile.noHistory')}</p>
+                <p className="text-sm mt-1">{t('profile.joinProgrammes')}</p>
               </div>
             )}
           </div>
@@ -263,7 +325,11 @@ export default function Profile() {
           <Button
             variant={showRewards ? 'default' : 'outline'}
             size="xl"
-            onClick={() => setShowRewards(!showRewards)}
+            onClick={() => {
+              handleButtonSpeak(t('profile.rewards'));
+              setShowRewards(!showRewards);
+            }}
+            onFocus={() => handleButtonSpeak(t('profile.rewards'))}
             className="w-full mb-4"
           >
             <Gift className="w-6 h-6" />
@@ -276,6 +342,9 @@ export default function Profile() {
                 const quantity = getQuantity(reward.id);
                 const totalPoints = getTotalPoints(reward);
                 const affordable = canAfford(reward);
+                const rewardTitle = getRewardText(reward.titleKey);
+                const rewardDesc = getRewardText(reward.descriptionKey);
+                const needMorePoints = totalPoints - user.points;
 
                 return (
                   <div
@@ -284,27 +353,28 @@ export default function Profile() {
                   >
                     <div className="flex items-start justify-between mb-3">
                       <div>
-                        <h3 className="text-lg font-bold text-foreground">{reward.title}</h3>
-                        <p className="text-sm text-muted-foreground">{reward.description}</p>
+                        <h3 className="text-lg font-bold text-foreground">{rewardTitle}</h3>
+                        <p className="text-sm text-muted-foreground">{rewardDesc}</p>
                       </div>
                       <div className="text-right">
                         <div className="flex items-center gap-1 text-warning">
                           <Award className="w-5 h-5" />
                           <span className="font-bold">{reward.points}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground">per voucher</p>
+                        <p className="text-xs text-muted-foreground">{t('profile.perVoucher')}</p>
                       </div>
                     </div>
 
                     {/* Quantity selector */}
                     <div className="flex items-center justify-between mb-4 p-3 bg-muted rounded-xl">
-                      <span className="text-foreground font-medium">Quantity</span>
+                      <span className="text-foreground font-medium">{t('profile.quantity')}</span>
                       <div className="flex items-center gap-3">
                         <Button
                           variant="outline"
                           size="icon"
                           className="w-10 h-10 rounded-full"
                           onClick={() => handleQuantityChange(reward.id, -1)}
+                          onFocus={() => handleButtonSpeak(t('common.back'))}
                           disabled={quantity <= 1}
                         >
                           <Minus className="w-4 h-4" />
@@ -315,6 +385,7 @@ export default function Profile() {
                           size="icon"
                           className="w-10 h-10 rounded-full"
                           onClick={() => handleQuantityChange(reward.id, 1)}
+                          onFocus={() => handleButtonSpeak(t('common.next'))}
                           disabled={quantity >= reward.maxQuantity}
                         >
                           <Plus className="w-4 h-4" />
@@ -324,21 +395,25 @@ export default function Profile() {
 
                     {/* Total and redeem button */}
                     <div className="flex items-center justify-between mb-3">
-                      <span className="text-muted-foreground">Total points needed:</span>
+                      <span className="text-muted-foreground">{t('profile.totalPoints')}:</span>
                       <span className="text-lg font-bold text-warning">{totalPoints} pts</span>
                     </div>
                     
                     <Button
                       variant={affordable ? 'warm' : 'outline'}
                       size="lg"
-                      onClick={() => handleRedeemClick(reward)}
+                      onClick={() => {
+                        handleButtonSpeak(affordable ? t('profile.redeem') : t('profile.needMorePoints').replace('{points}', String(needMorePoints)));
+                        handleRedeemClick(reward);
+                      }}
+                      onFocus={() => handleButtonSpeak(affordable ? t('profile.redeem') : t('profile.needMorePoints').replace('{points}', String(needMorePoints)))}
                       disabled={!affordable}
                       className="w-full"
                     >
                       {affordable ? (
                         t('profile.redeem')
                       ) : (
-                        `Need ${totalPoints - user.points} more points`
+                        t('profile.needMorePoints').replace('{points}', String(needMorePoints))
                       )}
                     </Button>
                   </div>
@@ -355,21 +430,21 @@ export default function Profile() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <MapPin className="w-6 h-6 text-primary" />
-              Delivery Address
+              {t('profile.deliveryAddress')}
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
             <p className="text-muted-foreground">
-              Enter your address for reward delivery:
+              {t('profile.enterAddress')}
             </p>
 
             {selectedReward && (
               <div className="bg-muted rounded-xl p-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="font-bold">{getQuantity(selectedReward.id)}x {selectedReward.title}</p>
-                    <p className="text-sm text-muted-foreground">Points to deduct: {getTotalPoints(selectedReward)}</p>
+                    <p className="font-bold">{getQuantity(selectedReward.id)}x {getRewardText(selectedReward.titleKey)}</p>
+                    <p className="text-sm text-muted-foreground">{t('profile.pointsDeduct')}: {getTotalPoints(selectedReward)}</p>
                   </div>
                 </div>
               </div>
@@ -377,21 +452,23 @@ export default function Profile() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="blockNo" className="text-base">Block/House No. *</Label>
+                <Label htmlFor="blockNo" className="text-base">{t('meds.blockNo')} *</Label>
                 <Input
                   id="blockNo"
                   value={address.blockNo}
                   onChange={(e) => setAddress(prev => ({ ...prev, blockNo: e.target.value }))}
+                  onFocus={() => handleButtonSpeak(t('meds.blockNo'))}
                   placeholder="123"
                   className="h-14 text-lg"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="unitNo" className="text-base">Unit No.</Label>
+                <Label htmlFor="unitNo" className="text-base">{t('meds.unitNo')}</Label>
                 <Input
                   id="unitNo"
                   value={address.unitNo}
                   onChange={(e) => setAddress(prev => ({ ...prev, unitNo: e.target.value }))}
+                  onFocus={() => handleButtonSpeak(t('meds.unitNo'))}
                   placeholder="#01-01"
                   className="h-14 text-lg"
                 />
@@ -399,22 +476,24 @@ export default function Profile() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="street" className="text-base">Street Name *</Label>
+              <Label htmlFor="street" className="text-base">{t('meds.street')} *</Label>
               <Input
                 id="street"
                 value={address.street}
                 onChange={(e) => setAddress(prev => ({ ...prev, street: e.target.value }))}
+                onFocus={() => handleButtonSpeak(t('meds.street'))}
                 placeholder="Bedok North Avenue 1"
                 className="h-14 text-lg"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="postalCode" className="text-base">Postal Code *</Label>
+              <Label htmlFor="postalCode" className="text-base">{t('meds.postalCode')} *</Label>
               <Input
                 id="postalCode"
                 value={address.postalCode}
                 onChange={(e) => setAddress(prev => ({ ...prev, postalCode: e.target.value }))}
+                onFocus={() => handleButtonSpeak(t('meds.postalCode'))}
                 placeholder="460123"
                 className="h-14 text-lg"
                 maxLength={6}
@@ -425,20 +504,28 @@ export default function Profile() {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => setShowAddressDialog(false)}
+                onClick={() => {
+                  handleButtonSpeak(t('common.cancel'));
+                  setShowAddressDialog(false);
+                }}
+                onFocus={() => handleButtonSpeak(t('common.cancel'))}
                 className="flex-1"
                 disabled={isProcessing}
               >
-                Cancel
+                {t('common.cancel')}
               </Button>
               <Button
                 variant="warm"
                 size="lg"
-                onClick={handleConfirmRedeem}
+                onClick={() => {
+                  handleButtonSpeak(t('profile.confirmRedeem'));
+                  handleConfirmRedeem();
+                }}
+                onFocus={() => handleButtonSpeak(t('profile.confirmRedeem'))}
                 className="flex-1"
                 disabled={isProcessing}
               >
-                {isProcessing ? 'Processing...' : 'Confirm & Redeem'}
+                {isProcessing ? t('profile.processing') : t('profile.confirmRedeem')}
               </Button>
             </div>
           </div>
