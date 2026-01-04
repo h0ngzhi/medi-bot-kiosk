@@ -33,6 +33,8 @@ interface PastMedication {
   purpose: string;
   status: 'ongoing' | 'completed';
   deliveryStatus: string;
+  deliveryMethod: 'home' | 'clinic' | null;
+  collectionClinic: string | null;
   prescribedBy: string;
   lastOrderDate: string;
 }
@@ -110,7 +112,9 @@ export default function Medications() {
         name: med.name,
         purpose: getPurpose(med.name),
         status: med.is_current ? 'ongoing' : 'completed',
-        deliveryStatus: getDeliveryStatusText(med.delivery_status),
+        deliveryStatus: getDeliveryStatusText(med.delivery_status, med.delivery_method, med.collection_clinic),
+        deliveryMethod: med.delivery_method as 'home' | 'clinic' | null,
+        collectionClinic: med.collection_clinic,
         prescribedBy: 'Polyclinic doctor',
         lastOrderDate: formatDateTime(med.order_completed_at || med.created_at),
       }));
@@ -124,6 +128,8 @@ export default function Medications() {
           purpose: t('meds.purpose.bp'),
           status: 'ongoing',
           deliveryStatus: t('meds.delivery.scheduled'),
+          deliveryMethod: 'home',
+          collectionClinic: null,
           prescribedBy: t('meds.prescriber.polyclinic'),
           lastOrderDate: '15 Dec 2025',
         },
@@ -133,6 +139,8 @@ export default function Medications() {
           purpose: t('meds.purpose.chronic'),
           status: 'ongoing',
           deliveryStatus: t('meds.delivery.ready'),
+          deliveryMethod: 'clinic',
+          collectionClinic: 'Bedok Polyclinic',
           prescribedBy: t('meds.prescriber.hospital'),
           lastOrderDate: '10 Dec 2025',
         },
@@ -142,6 +150,8 @@ export default function Medications() {
           purpose: t('meds.purpose.digestive'),
           status: 'completed',
           deliveryStatus: t('meds.delivery.delivered'),
+          deliveryMethod: 'home',
+          collectionClinic: null,
           prescribedBy: t('meds.prescriber.polyclinic'),
           lastOrderDate: '01 Nov 2025',
         },
@@ -208,7 +218,9 @@ export default function Medications() {
             if (med.id === payload.new.id) {
               return {
                 ...med,
-                deliveryStatus: getDeliveryStatusText(payload.new.delivery_status),
+                deliveryStatus: getDeliveryStatusText(payload.new.delivery_status, payload.new.delivery_method, payload.new.collection_clinic),
+                deliveryMethod: payload.new.delivery_method,
+                collectionClinic: payload.new.collection_clinic,
                 status: payload.new.is_current ? 'ongoing' : 'completed',
               };
             }
@@ -217,7 +229,7 @@ export default function Medications() {
           
           toast({
             title: t('meds.statusUpdate'),
-            description: `${payload.new.name}: ${getDeliveryStatusText(payload.new.delivery_status)}`,
+            description: `${payload.new.name}: ${getDeliveryStatusText(payload.new.delivery_status, payload.new.delivery_method, payload.new.collection_clinic)}`,
           });
         }
       )
@@ -249,7 +261,16 @@ export default function Medications() {
     return t('meds.purpose.general');
   };
 
-  const getDeliveryStatusText = (status: string): string => {
+  const getDeliveryStatusText = (status: string, deliveryMethod?: string | null, clinicName?: string | null): string => {
+    // For clinic collection
+    if (deliveryMethod === 'clinic') {
+      switch (status) {
+        case 'pending': return `Ready for collection${clinicName ? ` at ${clinicName}` : ''}`;
+        case 'delivered': return 'Collected';
+        default: return t('meds.delivery.ready');
+      }
+    }
+    // For home delivery
     switch (status) {
       case 'pending': return t('meds.delivery.scheduled');
       case 'shipped': return t('meds.delivery.shipped');
