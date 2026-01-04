@@ -17,7 +17,9 @@ import {
   Calendar,
   Stethoscope,
   ShoppingCart,
-  ArrowRight
+  ArrowRight,
+  Plus,
+  Minus
 } from 'lucide-react';
 import { MedicationCardPaymentForm } from '@/components/medications/MedicationCardPaymentForm';
 import { MedicationBillingForm } from '@/components/medications/MedicationBillingForm';
@@ -43,6 +45,7 @@ interface OrderableMedication {
   tabletsPerBox: number;
   prescribedBy: string;
   selected?: boolean;
+  quantity: number;
 }
 
 type Step = 'select' | 'delivery' | 'confirmation';
@@ -154,6 +157,7 @@ export default function Medications() {
         tabletsPerBox: 30,
         prescribedBy: t('meds.prescriber.polyclinic'),
         selected: false,
+        quantity: 1,
       },
       {
         id: 'order-2',
@@ -163,6 +167,7 @@ export default function Medications() {
         tabletsPerBox: 60,
         prescribedBy: t('meds.prescriber.hospital'),
         selected: false,
+        quantity: 1,
       },
       {
         id: 'order-3',
@@ -172,6 +177,7 @@ export default function Medications() {
         tabletsPerBox: 14,
         prescribedBy: t('meds.prescriber.polyclinic'),
         selected: false,
+        quantity: 1,
       },
     ]);
   };
@@ -275,17 +281,31 @@ export default function Medications() {
     ));
   };
 
+  const updateQuantity = (id: string, delta: number) => {
+    setOrderableMedications(prev => prev.map(med => {
+      if (med.id === id) {
+        const newQty = Math.max(1, Math.min(10, med.quantity + delta));
+        return { ...med, quantity: newQty, selected: true };
+      }
+      return med;
+    }));
+  };
+
   const selectedMeds = orderableMedications.filter(m => m.selected);
   const canProceed = selectedMeds.length > 0;
 
   const calculateSubtotal = (): number => {
-    return selectedMeds.reduce((sum, med) => sum + med.pricePerBox, 0);
+    return selectedMeds.reduce((sum, med) => sum + (med.pricePerBox * med.quantity), 0);
   };
 
   const calculateTotal = (): number => {
     const subtotal = calculateSubtotal();
     const subsidyAmount = subtotal * (subsidyPercent / 100);
     return subtotal - subsidyAmount + deliveryFee;
+  };
+
+  const getTotalBoxes = (): number => {
+    return selectedMeds.reduce((sum, med) => sum + med.quantity, 0);
   };
 
   const handlePaymentSubmit = async () => {
@@ -302,25 +322,26 @@ export default function Medications() {
     
     try {
       const now = new Date().toISOString();
-      const totalAmount = calculateTotal();
-      const perMedTotal = totalAmount / selectedMeds.length;
 
-      // Insert each selected medication as a new order
-      const medicationsToInsert = selectedMeds.map(med => ({
-        kiosk_user_id: user.id,
-        name: med.name,
-        dosage: med.name.split(' ').pop() || null,
-        price_per_box: med.pricePerBox,
-        tablets_per_box: med.tabletsPerBox,
-        payment_method: paymentOption,
-        delivery_method: deliveryOption,
-        collection_clinic: deliveryOption === 'clinic' ? selectedClinic : null,
-        delivery_status: 'pending',
-        is_current: true,
-        order_completed_at: now,
-        subsidy_percent: subsidyPercent,
-        total_paid: perMedTotal,
-      }));
+      // Insert each selected medication as a new order (one record per box)
+      const medicationsToInsert = selectedMeds.flatMap(med => {
+        const perBoxAfterSubsidy = med.pricePerBox * (1 - subsidyPercent / 100);
+        return Array.from({ length: med.quantity }, () => ({
+          kiosk_user_id: user.id,
+          name: med.name,
+          dosage: med.name.split(' ').pop() || null,
+          price_per_box: med.pricePerBox,
+          tablets_per_box: med.tabletsPerBox,
+          payment_method: paymentOption,
+          delivery_method: deliveryOption,
+          collection_clinic: deliveryOption === 'clinic' ? selectedClinic : null,
+          delivery_status: 'pending',
+          is_current: true,
+          order_completed_at: now,
+          subsidy_percent: subsidyPercent,
+          total_paid: perBoxAfterSubsidy,
+        }));
+      });
 
       const { error } = await supabase
         .from('medications')
@@ -496,30 +517,65 @@ export default function Medications() {
                 {orderableMedications.map((med) => (
                   <div
                     key={med.id}
-                    className={`bg-card rounded-2xl p-5 shadow-soft border-2 transition-all cursor-pointer ${
+                    className={`bg-card rounded-2xl p-5 shadow-soft border-2 transition-all ${
                       med.selected ? 'border-primary bg-primary/5' : 'border-border'
                     }`}
-                    onClick={() => toggleMedicationSelection(med.id)}
                   >
                     <div className="flex items-start gap-4">
                       <Checkbox 
                         checked={med.selected}
-                        className="mt-1 h-6 w-6"
+                        className="mt-1 h-6 w-6 cursor-pointer"
+                        onClick={() => toggleMedicationSelection(med.id)}
                       />
                       <div className="flex-1">
-                        <div className="flex items-start justify-between mb-2">
+                        <div 
+                          className="flex items-start justify-between mb-2 cursor-pointer"
+                          onClick={() => toggleMedicationSelection(med.id)}
+                        >
                           <div>
                             <h3 className="text-xl font-bold text-foreground">{med.name}</h3>
                             <p className="text-lg text-muted-foreground">{med.purpose}</p>
                           </div>
                           <div className="text-right">
-                            <span className="text-xl font-bold text-primary">S${med.pricePerBox.toFixed(2)}</span>
+                            <span className="text-xl font-bold text-primary">S${(med.pricePerBox * med.quantity).toFixed(2)}</span>
                             <p className="text-sm text-muted-foreground">{t('meds.perBox')} ({med.tabletsPerBox} {t('meds.tablets')})</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                          <Stethoscope className="w-4 h-4" />
-                          <span>{med.prescribedBy}</span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Stethoscope className="w-4 h-4" />
+                            <span>{med.prescribedBy}</span>
+                          </div>
+                          {/* Quantity Selector */}
+                          <div className="flex items-center gap-3 bg-muted rounded-xl p-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateQuantity(med.id, -1);
+                              }}
+                              disabled={med.quantity <= 1}
+                            >
+                              <Minus className="w-5 h-5" />
+                            </Button>
+                            <span className="text-xl font-bold text-foreground min-w-[2rem] text-center">
+                              {med.quantity}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-10 w-10 rounded-lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                updateQuantity(med.id, 1);
+                              }}
+                              disabled={med.quantity >= 10}
+                            >
+                              <Plus className="w-5 h-5" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -537,7 +593,7 @@ export default function Medications() {
               onClick={() => setStep('delivery')}
             >
               <ShoppingCart className="w-5 h-5" />
-              {t('meds.continuePayment')} ({selectedMeds.length})
+              {t('meds.continuePayment')} ({getTotalBoxes()} {getTotalBoxes() === 1 ? 'box' : 'boxes'})
               <ArrowRight className="w-5 h-5 ml-2" />
             </Button>
 
@@ -555,7 +611,7 @@ export default function Medications() {
           <>
             {/* Order Summary */}
             <OrderSummary
-              medications={selectedMeds.map(m => ({ name: m.name, quantity: 1, price: m.pricePerBox }))}
+              medications={selectedMeds.map(m => ({ name: m.name, quantity: m.quantity, price: m.pricePerBox }))}
               deliveryOption={deliveryOption || 'home'}
               deliveryFee={deliveryOption === 'home' ? 5.00 : 0}
               subsidyPercent={subsidyPercent}
@@ -668,7 +724,7 @@ export default function Medications() {
           <>
             {/* Order Summary */}
             <OrderSummary
-              medications={selectedMeds.map(m => ({ name: m.name, quantity: 1, price: m.pricePerBox }))}
+              medications={selectedMeds.map(m => ({ name: m.name, quantity: m.quantity, price: m.pricePerBox }))}
               deliveryOption={deliveryOption || 'home'}
               deliveryFee={deliveryOption === 'home' ? 5.00 : 0}
               subsidyPercent={subsidyPercent}

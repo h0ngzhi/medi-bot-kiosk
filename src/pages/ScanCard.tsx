@@ -82,41 +82,48 @@ export default function ScanCard() {
   };
 
   // Parse and validate QR code data
-  const parseQRCode = (qrData: string): { nric: string; name: string } | null => {
+  // Expected format: NRIC:NAME:CHAS_TYPE
+  // Example: S1234567A:Tan Ah Kow:Blue
+  const parseQRCode = (qrData: string): { nric: string; name: string; chasType: string } | null => {
     // Length check - reject extremely long inputs
-    if (!qrData || qrData.length === 0 || qrData.length > 200) {
+    if (!qrData || qrData.length === 0 || qrData.length > 300) {
       return null;
     }
 
-    // Split on first colon only
-    const colonIndex = qrData.indexOf(':');
-    let nric: string;
-    let name: string;
-
-    if (colonIndex === -1) {
-      // No colon - treat as NRIC only
-      nric = qrData.trim().toUpperCase();
-      name = '';
-    } else {
-      nric = qrData.slice(0, colonIndex).trim().toUpperCase();
-      name = qrData.slice(colonIndex + 1).trim();
+    // Split by colon
+    const parts = qrData.split(':');
+    
+    if (parts.length < 3) {
+      // Not enough parts - invalid format
+      return null;
     }
+
+    const nric = parts[0].trim().toUpperCase();
+    const name = parts[1].trim();
+    const chasType = parts[2].trim();
 
     // Validate NRIC format
     if (!validateNRIC(nric)) {
       return null;
     }
 
-    // Sanitize name or generate default
-    if (name) {
-      name = sanitizeName(name);
-    }
-    
-    if (!name || name.length === 0) {
-      name = `User ${nric.slice(-4)}`;
+    // Sanitize and validate name
+    const sanitizedName = sanitizeName(name);
+    if (!sanitizedName || sanitizedName.length === 0) {
+      return null;
     }
 
-    return { nric, name };
+    // Validate CHAS type
+    const validChasTypes = ['blue', 'orange', 'green', 'merdeka generation', 'pioneer generation'];
+    const normalizedChasType = chasType.toLowerCase();
+    if (!validChasTypes.includes(normalizedChasType)) {
+      return null;
+    }
+
+    // Capitalize CHAS type properly
+    const formattedChasType = chasType.charAt(0).toUpperCase() + chasType.slice(1).toLowerCase();
+
+    return { nric, name: sanitizedName, chasType: formattedChasType };
   };
 
   const handleQRCodeScanned = async (qrData: string) => {
@@ -132,12 +139,12 @@ export default function ScanCard() {
     const parsed = parseQRCode(qrData);
     
     if (!parsed) {
-      setErrorMessage('Invalid card format. Please scan a valid Singapore IC or CHAS card.');
+      setErrorMessage('Invalid card format. Expected format: NRIC:Name:CHAS Type (e.g., S1234567A:Tan Ah Kow:Blue)');
       setScanState('error');
       return;
     }
 
-    const { nric, name } = parsed;
+    const { nric, name, chasType } = parsed;
 
     try {
       // Check if user already exists in database
@@ -151,14 +158,14 @@ export default function ScanCard() {
 
       let kioskUser = existingUser;
 
-      // If not found, create new user
+      // If not found, create new user with scanned CHAS type
       if (!kioskUser) {
         const { data: newUser, error: insertError } = await supabase
           .from('kiosk_users')
           .insert({
             user_id: nric,
             name: name,
-            chas_card_type: 'blue',
+            chas_card_type: chasType.toLowerCase(),
             points: 0,
           })
           .select()
@@ -166,6 +173,18 @@ export default function ScanCard() {
 
         if (insertError) throw insertError;
         kioskUser = newUser;
+      } else {
+        // Update existing user's CHAS type if different
+        if (kioskUser.chas_card_type?.toLowerCase() !== chasType.toLowerCase()) {
+          const { error: updateError } = await supabase
+            .from('kiosk_users')
+            .update({ chas_card_type: chasType.toLowerCase() })
+            .eq('id', kioskUser.id);
+          
+          if (!updateError) {
+            kioskUser.chas_card_type = chasType.toLowerCase();
+          }
+        }
       }
 
       // Create user profile with database ID
