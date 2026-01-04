@@ -157,22 +157,27 @@ export default function ScanCard() {
       if (fetchError) throw fetchError;
 
       let kioskUser = existingUser;
+      let isNewUser = false;
 
       // If not found, create new user with scanned CHAS type
       if (!kioskUser) {
+        isNewUser = true;
         const { data: newUser, error: insertError } = await supabase
           .from('kiosk_users')
           .insert({
             user_id: nric,
             name: name,
             chas_card_type: chasType.toLowerCase(),
-            points: 0,
+            points: 50, // Starting points for new users
           })
           .select()
           .single();
 
         if (insertError) throw insertError;
         kioskUser = newUser;
+
+        // Auto-populate sample data for new users
+        await populateNewUserData(kioskUser.id);
       } else {
         // Update existing user's name and CHAS type if different
         const needsUpdate = 
@@ -204,18 +209,32 @@ export default function ScanCard() {
         return (lower.charAt(0).toUpperCase() + lower.slice(1)) as 'Blue' | 'Orange' | 'Green';
       };
 
-      // Fetch participation history from programme signups
-      const { data: signups } = await supabase
-        .from('user_programme_signups')
-        .select(`
-          programme_id,
-          signed_up_at,
-          status,
-          community_programmes (title)
-        `)
-        .eq('kiosk_user_id', kioskUser.id);
+      // Fetch all user data from related tables
+      const [signupsResult, medicationsResult, screeningsResult, screeningResultsData] = await Promise.all([
+        supabase
+          .from('user_programme_signups')
+          .select(`
+            programme_id,
+            signed_up_at,
+            status,
+            community_programmes (title)
+          `)
+          .eq('kiosk_user_id', kioskUser.id),
+        supabase
+          .from('medications')
+          .select('*')
+          .eq('kiosk_user_id', kioskUser.id),
+        supabase
+          .from('health_screenings')
+          .select('*')
+          .eq('kiosk_user_id', kioskUser.id),
+        supabase
+          .from('screening_results')
+          .select('*')
+          .eq('kiosk_user_id', kioskUser.id)
+      ]);
 
-      const participationHistory = signups?.map(s => {
+      const participationHistory = signupsResult.data?.map(s => {
         const programme = s.community_programmes as { title: string } | null;
         return programme?.title || 'Community Programme';
       }) || [];
@@ -230,6 +249,14 @@ export default function ScanCard() {
         participationHistory,
       };
 
+      console.log('User loaded:', {
+        isNewUser,
+        medications: medicationsResult.data?.length || 0,
+        screenings: screeningsResult.data?.length || 0,
+        screeningResults: screeningResultsData.data?.length || 0,
+        signups: signupsResult.data?.length || 0
+      });
+
       setUser(user);
       setScanState('success');
 
@@ -240,6 +267,117 @@ export default function ScanCard() {
       console.error('Error creating/fetching user:', error);
       setErrorMessage('Unable to process card. Please try again.');
       setScanState('error');
+    }
+  };
+
+  // Populate sample data for new users in all related tables
+  const populateNewUserData = async (kioskUserId: string) => {
+    const today = new Date();
+    const pastDate1 = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
+    const pastDate2 = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000); // 60 days ago
+    const futureDate = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000); // 14 days from now
+
+    try {
+      // 1. Add sample health screenings
+      await supabase.from('health_screenings').insert([
+        {
+          kiosk_user_id: kioskUserId,
+          title: 'Annual Health Check',
+          description: 'Comprehensive health screening',
+          scheduled_date: futureDate.toISOString().split('T')[0],
+          status: 'upcoming',
+          location: 'Bedok Polyclinic'
+        },
+        {
+          kiosk_user_id: kioskUserId,
+          title: 'Blood Pressure Check',
+          description: 'Routine BP monitoring',
+          scheduled_date: pastDate1.toISOString().split('T')[0],
+          completed_at: pastDate1.toISOString(),
+          status: 'completed',
+          location: 'Tampines Polyclinic'
+        }
+      ]);
+
+      // 2. Add sample screening results
+      await supabase.from('screening_results').insert([
+        {
+          kiosk_user_id: kioskUserId,
+          screening_type: 'blood_pressure',
+          systolic: 125,
+          diastolic: 82,
+          pulse: 72,
+          status: 'normal',
+          recorded_at: pastDate1.toISOString()
+        },
+        {
+          kiosk_user_id: kioskUserId,
+          screening_type: 'weight',
+          height: 165,
+          weight: 68,
+          bmi: 25.0,
+          status: 'normal',
+          recorded_at: pastDate1.toISOString()
+        },
+        {
+          kiosk_user_id: kioskUserId,
+          screening_type: 'blood_pressure',
+          systolic: 130,
+          diastolic: 85,
+          pulse: 75,
+          status: 'normal',
+          recorded_at: pastDate2.toISOString()
+        }
+      ]);
+
+      // 3. Add sample medications
+      await supabase.from('medications').insert([
+        {
+          kiosk_user_id: kioskUserId,
+          name: 'Amlodipine 5mg',
+          dosage: 'Take 1 tablet daily',
+          price_per_box: 12.50,
+          tablets_per_box: 30,
+          subsidy_percent: 50,
+          delivery_status: 'delivered',
+          delivery_method: 'home',
+          is_current: false,
+          order_completed_at: pastDate1.toISOString(),
+          delivery_date: pastDate1.toISOString().split('T')[0]
+        },
+        {
+          kiosk_user_id: kioskUserId,
+          name: 'Metformin 500mg',
+          dosage: 'Take 1 tablet twice daily',
+          price_per_box: 8.00,
+          tablets_per_box: 60,
+          subsidy_percent: 50,
+          delivery_status: 'pending',
+          is_current: true
+        }
+      ]);
+
+      // 4. Add sample programme signups
+      const { data: programmes } = await supabase
+        .from('community_programmes')
+        .select('id')
+        .limit(2);
+
+      if (programmes && programmes.length > 0) {
+        const signups = programmes.map((p, index) => ({
+          kiosk_user_id: kioskUserId,
+          programme_id: p.id,
+          status: index === 0 ? 'attended' : 'signed_up',
+          attended_at: index === 0 ? pastDate1.toISOString() : null
+        }));
+        
+        await supabase.from('user_programme_signups').insert(signups);
+      }
+
+      console.log('Sample data populated for new user');
+    } catch (error) {
+      console.error('Error populating sample data:', error);
+      // Don't throw - user creation succeeded, sample data is optional
     }
   };
 
