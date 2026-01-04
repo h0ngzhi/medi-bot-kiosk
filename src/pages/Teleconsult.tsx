@@ -33,7 +33,10 @@ export default function Teleconsult() {
   // Map user's chasType to our pricing tier
   const getChasType = (): CHASCardType => {
     const userChasType = user?.chasType?.toLowerCase() || 'blue';
-    const validTypes: CHASCardType[] = ['blue', 'orange', 'green', 'merdeka', 'pioneer'];
+    // Map "merdeka generation" and "pioneer generation" to shortened keys
+    if (userChasType.includes('merdeka')) return 'merdeka';
+    if (userChasType.includes('pioneer')) return 'pioneer';
+    const validTypes: CHASCardType[] = ['blue', 'orange', 'green'];
     return validTypes.includes(userChasType as CHASCardType) ? userChasType as CHASCardType : 'blue';
   };
 
