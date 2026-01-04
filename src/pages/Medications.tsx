@@ -54,12 +54,14 @@ interface OrderableMedication {
 type Step = 'select' | 'delivery' | 'confirmation';
 
 export default function Medications() {
-  const { user, t, language } = useApp();
+  const { user, t, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSpeak = (text: string) => {
-    speakText(text, language);
+    if (isTtsEnabled) {
+      speakText(text, language);
+    }
   };
   
   const [pastMedications, setPastMedications] = useState<PastMedication[]>([]);

@@ -118,7 +118,7 @@ const chasCardImages: Record<string, string> = {
 };
 
 export default function Profile() {
-  const { user, t, setUser, language, isVoiceEnabled } = useApp();
+  const { user, t, setUser, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
   const [showRewards, setShowRewards] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -137,9 +137,11 @@ export default function Profile() {
     return rewardTranslations[language]?.[key] || rewardTranslations['en'][key] || key;
   };
 
-  // Speak button text on hover (always enabled for accessibility)
+  // Speak button text on hover (controlled by TTS toggle)
   const handleButtonSpeak = (text: string) => {
-    speakText(text, language);
+    if (isTtsEnabled) {
+      speakText(text, language);
+    }
   };
 
   const handleQuantityChange = (rewardId: string, delta: number) => {

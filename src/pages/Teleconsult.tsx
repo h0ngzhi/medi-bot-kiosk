@@ -23,7 +23,7 @@ import {
 type ConsultState = "pricing" | "payment" | "connecting" | "connected" | "error";
 
 export default function Teleconsult() {
-  const { t, user, language } = useApp();
+  const { t, user, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [state, setState] = useState<ConsultState>("pricing");
@@ -32,7 +32,9 @@ export default function Teleconsult() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const handleSpeak = (text: string) => {
-    speakText(text, language);
+    if (isTtsEnabled) {
+      speakText(text, language);
+    }
   };
 
   // Map user's chasType to our pricing tier

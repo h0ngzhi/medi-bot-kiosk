@@ -18,6 +18,8 @@ interface AppContextType {
   setUser: (user: UserProfile | null) => void;
   isVoiceEnabled: boolean;
   setIsVoiceEnabled: (enabled: boolean) => void;
+  isTtsEnabled: boolean;
+  setIsTtsEnabled: (enabled: boolean) => void;
   t: (key: string) => string;
 }
 
@@ -843,6 +845,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
   const [user, setUser] = useState<UserProfile | null>(null);
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
+  const [isTtsEnabled, setIsTtsEnabled] = useState(true);
 
   const t = (key: string): string => {
     return translations[language][key] || key;
@@ -857,6 +860,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setUser,
         isVoiceEnabled,
         setIsVoiceEnabled,
+        isTtsEnabled,
+        setIsTtsEnabled,
         t,
       }}
     >
