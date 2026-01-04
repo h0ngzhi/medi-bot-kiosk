@@ -247,11 +247,8 @@ export default function Profile() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => {
-              handleButtonSpeak(t('common.back'));
-              navigate('/dashboard');
-            }}
-            onFocus={() => handleButtonSpeak(t('common.back'))}
+            onClick={() => navigate('/dashboard')}
+            onMouseEnter={() => handleButtonSpeak(t('common.back'))}
             className="w-14 h-14 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -325,11 +322,8 @@ export default function Profile() {
           <Button
             variant={showRewards ? 'default' : 'outline'}
             size="xl"
-            onClick={() => {
-              handleButtonSpeak(t('profile.rewards'));
-              setShowRewards(!showRewards);
-            }}
-            onFocus={() => handleButtonSpeak(t('profile.rewards'))}
+            onClick={() => setShowRewards(!showRewards)}
+            onMouseEnter={() => handleButtonSpeak(t('profile.rewards'))}
             className="w-full mb-4"
           >
             <Gift className="w-6 h-6" />
@@ -374,7 +368,7 @@ export default function Profile() {
                           size="icon"
                           className="w-10 h-10 rounded-full"
                           onClick={() => handleQuantityChange(reward.id, -1)}
-                          onFocus={() => handleButtonSpeak(t('common.back'))}
+                          onMouseEnter={() => handleButtonSpeak(t('common.back'))}
                           disabled={quantity <= 1}
                         >
                           <Minus className="w-4 h-4" />
@@ -385,7 +379,7 @@ export default function Profile() {
                           size="icon"
                           className="w-10 h-10 rounded-full"
                           onClick={() => handleQuantityChange(reward.id, 1)}
-                          onFocus={() => handleButtonSpeak(t('common.next'))}
+                          onMouseEnter={() => handleButtonSpeak(t('common.next'))}
                           disabled={quantity >= reward.maxQuantity}
                         >
                           <Plus className="w-4 h-4" />
@@ -402,11 +396,8 @@ export default function Profile() {
                     <Button
                       variant={affordable ? 'warm' : 'outline'}
                       size="lg"
-                      onClick={() => {
-                        handleButtonSpeak(affordable ? t('profile.redeem') : t('profile.needMorePoints').replace('{points}', String(needMorePoints)));
-                        handleRedeemClick(reward);
-                      }}
-                      onFocus={() => handleButtonSpeak(affordable ? t('profile.redeem') : t('profile.needMorePoints').replace('{points}', String(needMorePoints)))}
+                      onClick={() => handleRedeemClick(reward)}
+                      onMouseEnter={() => handleButtonSpeak(affordable ? t('profile.redeem') : t('profile.needMorePoints').replace('{points}', String(needMorePoints)))}
                       disabled={!affordable}
                       className="w-full"
                     >
@@ -504,11 +495,8 @@ export default function Profile() {
               <Button
                 variant="outline"
                 size="lg"
-                onClick={() => {
-                  handleButtonSpeak(t('common.cancel'));
-                  setShowAddressDialog(false);
-                }}
-                onFocus={() => handleButtonSpeak(t('common.cancel'))}
+                onClick={() => setShowAddressDialog(false)}
+                onMouseEnter={() => handleButtonSpeak(t('common.cancel'))}
                 className="flex-1"
                 disabled={isProcessing}
               >
@@ -517,11 +505,8 @@ export default function Profile() {
               <Button
                 variant="warm"
                 size="lg"
-                onClick={() => {
-                  handleButtonSpeak(t('profile.confirmRedeem'));
-                  handleConfirmRedeem();
-                }}
-                onFocus={() => handleButtonSpeak(t('profile.confirmRedeem'))}
+                onClick={handleConfirmRedeem}
+                onMouseEnter={() => handleButtonSpeak(isProcessing ? t('profile.processing') : t('profile.confirmRedeem'))}
                 className="flex-1"
                 disabled={isProcessing}
               >
