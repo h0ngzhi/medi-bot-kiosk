@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Globe, Mic, Volume2, VolumeX, Lock } from 'lucide-react';
+import { Globe, Mic, Volume2, VolumeX, Lock, Eye } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import VoiceNavigator from './VoiceNavigator';
+import { EyeTrackingOverlay } from './EyeTrackingOverlay';
 import { toast } from 'sonner';
 
 const VOICE_GUIDE_PASSWORD = 'catinthebin123';
@@ -23,6 +24,7 @@ export function AccessibilityBar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const [isEyeTrackingOpen, setIsEyeTrackingOpen] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
@@ -46,7 +48,6 @@ export function AccessibilityBar() {
   };
 
   const handleVoiceGuideClick = () => {
-    // Check if already authenticated this session
     if (sessionStorage.getItem(VOICE_GUIDE_AUTH_KEY) === 'true') {
       setIsVoiceOpen(true);
     } else {
@@ -77,7 +78,7 @@ export function AccessibilityBar() {
   return (
     <>
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border p-4 shadow-medium z-50">
-        <div className="max-w-2xl mx-auto flex gap-3">
+        <div className="max-w-2xl mx-auto flex gap-2">
           <Button
             variant="accessibility"
             size="accessibility"
@@ -85,8 +86,8 @@ export function AccessibilityBar() {
             onMouseEnter={() => handleSpeak(t('access.translate'))}
             className="flex-1"
           >
-            <Globe className="w-6 h-6" />
-            <span>{t('access.translate')}</span>
+            <Globe className="w-5 h-5" />
+            <span className="text-sm">{t('access.translate')}</span>
           </Button>
           
           <Button
@@ -96,8 +97,8 @@ export function AccessibilityBar() {
             onMouseEnter={() => handleSpeak(isTtsEnabled ? t('access.voiceOn') : t('access.voiceOff'))}
             className={`flex-1 ${!isTtsEnabled ? 'opacity-60' : ''}`}
           >
-            {isTtsEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
-            <span>{isTtsEnabled ? t('access.voiceOn') : t('access.voiceOff')}</span>
+            {isTtsEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            <span className="text-sm">{isTtsEnabled ? t('access.voiceOn') : t('access.voiceOff')}</span>
           </Button>
           
           <Button
@@ -107,8 +108,19 @@ export function AccessibilityBar() {
             onMouseEnter={() => handleSpeak(t('access.voice'))}
             className="flex-1"
           >
-            <Mic className="w-6 h-6" />
-            <span>{t('access.voice')}</span>
+            <Mic className="w-5 h-5" />
+            <span className="text-sm">{t('access.voice')}</span>
+          </Button>
+          
+          <Button
+            variant="accessibility"
+            size="accessibility"
+            onClick={() => setIsEyeTrackingOpen(true)}
+            onMouseEnter={() => handleSpeak('Eye Control')}
+            className="flex-1"
+          >
+            <Eye className="w-5 h-5" />
+            <span className="text-sm">Eye Control</span>
           </Button>
         </div>
       </div>
@@ -157,6 +169,7 @@ export function AccessibilityBar() {
       </Dialog>
 
       <VoiceNavigator isOpen={isVoiceOpen} onClose={() => setIsVoiceOpen(false)} />
+      <EyeTrackingOverlay isOpen={isEyeTrackingOpen} onClose={() => setIsEyeTrackingOpen(false)} />
     </>
   );
 }
