@@ -64,17 +64,18 @@ export default function Medications() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
 
-  // CHAS subsidy percentages
-  const subsidyMap: Record<string, number> = {
-    'Blue': 50,
-    'Orange': 65,
-    'Green': 75,
-    'Merdeka Generation': 80,
-    'Pioneer Generation': 85,
+  // CHAS subsidy percentages - keys match the chasType from user profile
+  const getSubsidyPercent = (type: string): number => {
+    const lower = type?.toLowerCase() || 'blue';
+    if (lower.includes('pioneer')) return 85;
+    if (lower.includes('merdeka')) return 80;
+    if (lower === 'green') return 75;
+    if (lower === 'orange') return 65;
+    return 50; // Blue default
   };
 
   const chasType = user?.chasType || 'Blue';
-  const subsidyPercent = subsidyMap[chasType] || 0;
+  const subsidyPercent = getSubsidyPercent(chasType);
   const deliveryFee = deliveryOption === 'home' ? 5.00 : 0;
 
   const formatDateTime = (dateString: string): string => {
