@@ -72,8 +72,8 @@ export default function Teleconsult() {
         window.open(cleanUrl, '_blank', 'noopener,noreferrer');
         setState("connected");
         toast({
-          title: "Consultation Started",
-          description: "Your video consultation has been opened in a new tab.",
+          title: t("teleconsult.connected"),
+          description: t("teleconsult.connected.desc"),
         });
       } else {
         throw new Error("Invalid response from server");
@@ -83,8 +83,8 @@ export default function Teleconsult() {
       setErrorMessage(error instanceof Error ? error.message : "Failed to start consultation");
       setState("error");
       toast({
-        title: "Connection Failed",
-        description: "Unable to start the teleconsultation. Please try again.",
+        title: t("teleconsult.failed"),
+        description: t("teleconsult.failed.desc"),
         variant: "destructive",
       });
     }
@@ -240,9 +240,9 @@ export default function Teleconsult() {
                 <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center mb-6">
                   <CheckCircle2 className="w-12 h-12 text-success" />
                 </div>
-                <h2 className="text-heading text-foreground mb-2">Consultation Started</h2>
+                <h2 className="text-heading text-foreground mb-2">{t("teleconsult.connected")}</h2>
                 <p className="text-muted-foreground mb-4">
-                  Your video consultation has been opened in a new browser tab.
+                  {t("teleconsult.connected.desc")}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {doctorType === "polyclinic" ? t("teleconsult.polyclinic") : t("teleconsult.hospital")}
@@ -251,7 +251,7 @@ export default function Teleconsult() {
             </div>
 
             <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
-              Return to Dashboard
+              {t("teleconsult.returnDashboard")}
             </Button>
           </div>
         )}
@@ -264,9 +264,9 @@ export default function Teleconsult() {
                 <div className="w-24 h-24 rounded-full bg-destructive/20 flex items-center justify-center mb-6">
                   <XCircle className="w-12 h-12 text-destructive" />
                 </div>
-                <h2 className="text-heading text-foreground mb-2">Connection Failed</h2>
+                <h2 className="text-heading text-foreground mb-2">{t("teleconsult.failed")}</h2>
                 <p className="text-muted-foreground mb-4">
-                  {errorMessage || "Unable to start the teleconsultation. Please try again."}
+                  {errorMessage || t("teleconsult.failed.desc")}
                 </p>
               </div>
             </div>
@@ -274,10 +274,10 @@ export default function Teleconsult() {
             <div className="space-y-4">
               <Button variant="warm" size="xl" onClick={handleStartConsult} className="w-full">
                 <Video className="w-6 h-6" />
-                Try Again
+                {t("teleconsult.tryAgain")}
               </Button>
               <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
-                Go Back
+                {t("teleconsult.goBack")}
               </Button>
             </div>
           </div>
