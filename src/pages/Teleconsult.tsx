@@ -100,10 +100,16 @@ export default function Teleconsult() {
       const data = await response.json();
 
       if (data.meetingUrl && data.status === "scheduled") {
-        if (!isValidMeetingUrl(data.meetingUrl)) {
+        // Sanitize URL - remove leading '=' or other invalid characters
+        let sanitizedUrl = data.meetingUrl.trim();
+        if (sanitizedUrl.startsWith('=')) {
+          sanitizedUrl = sanitizedUrl.substring(1);
+        }
+        
+        if (!isValidMeetingUrl(sanitizedUrl)) {
           throw new Error("Invalid or untrusted meeting URL received");
         }
-        window.open(data.meetingUrl, "_blank", "noopener,noreferrer");
+        window.open(sanitizedUrl, "_blank", "noopener,noreferrer");
         setState("connected");
         toast({
           title: "Consultation Started",
