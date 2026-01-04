@@ -6,7 +6,7 @@ interface UserProfile {
   id: string;
   name: string;
   nric: string;
-  chasType: 'Blue' | 'Orange' | 'Green';
+  chasType: 'Blue' | 'Orange' | 'Green' | 'Merdeka generation' | 'Pioneer generation';
   points: number;
   participationHistory: string[];
 }

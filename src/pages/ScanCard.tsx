@@ -187,14 +187,38 @@ export default function ScanCard() {
         }
       }
 
+      // Format CHAS type properly for display
+      const formatChasType = (type: string): 'Blue' | 'Orange' | 'Green' | 'Merdeka generation' | 'Pioneer generation' => {
+        const lower = type?.toLowerCase() || 'blue';
+        if (lower === 'merdeka generation') return 'Merdeka generation';
+        if (lower === 'pioneer generation') return 'Pioneer generation';
+        return (lower.charAt(0).toUpperCase() + lower.slice(1)) as 'Blue' | 'Orange' | 'Green';
+      };
+
+      // Fetch participation history from programme signups
+      const { data: signups } = await supabase
+        .from('user_programme_signups')
+        .select(`
+          programme_id,
+          signed_up_at,
+          status,
+          community_programmes (title)
+        `)
+        .eq('kiosk_user_id', kioskUser.id);
+
+      const participationHistory = signups?.map(s => {
+        const programme = s.community_programmes as { title: string } | null;
+        return programme?.title || 'Community Programme';
+      }) || [];
+
       // Create user profile with database ID
       const user = {
         id: kioskUser.id, // UUID from database
         name: kioskUser.name,
         nric: kioskUser.user_id,
-        chasType: (kioskUser.chas_card_type?.charAt(0).toUpperCase() + kioskUser.chas_card_type?.slice(1)) as 'Blue' | 'Orange' | 'Green',
+        chasType: formatChasType(kioskUser.chas_card_type || 'blue'),
         points: kioskUser.points,
-        participationHistory: [],
+        participationHistory,
       };
 
       setUser(user);
