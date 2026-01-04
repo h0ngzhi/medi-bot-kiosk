@@ -78,8 +78,7 @@ export default function HealthScreenings() {
           .from('screening_results')
           .select('*')
           .eq('kiosk_user_id', user.id)
-          .order('recorded_at', { ascending: false })
-          .limit(10);
+          .order('recorded_at', { ascending: false });
 
         if (error) throw error;
         setPastResults(data || []);
@@ -125,8 +124,7 @@ export default function HealthScreenings() {
         .from('screening_results')
         .select('*')
         .eq('kiosk_user_id', user.id)
-        .order('recorded_at', { ascending: false })
-        .limit(10);
+        .order('recorded_at', { ascending: false });
 
       if (data) setPastResults(data);
     } catch (error) {
@@ -139,18 +137,26 @@ export default function HealthScreenings() {
     setSelectedType(type);
     setState('measuring');
 
-    // Simulate measurement
+    // Simulate measurement with random realistic values
     setTimeout(async () => {
       const mockResult: ScreeningResult = type === 'bp' 
         ? {
             type: 'bp',
-            values: { systolic: 120, diastolic: 80, pulse: 72 },
+            values: { 
+              systolic: Math.floor(Math.random() * (140 - 100) + 100), // 100-140
+              diastolic: Math.floor(Math.random() * (90 - 60) + 60), // 60-90
+              pulse: Math.floor(Math.random() * (90 - 60) + 60), // 60-90 bpm
+            },
             status: 'normal',
             date: new Date().toLocaleDateString(),
           }
         : {
             type: 'weight',
-            values: { height: 158, weight: 62, bmi: 24.8 },
+            values: { 
+              height: Math.floor(Math.random() * (180 - 150) + 150), // 150-180 cm
+              weight: Math.floor(Math.random() * (80 - 50) + 50), // 50-80 kg
+              bmi: parseFloat((Math.random() * (28 - 18) + 18).toFixed(1)), // 18-28
+            },
             status: 'normal',
             date: new Date().toLocaleDateString(),
           };
@@ -175,8 +181,8 @@ export default function HealthScreenings() {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const latestBp = pastResults.find(r => r.screening_type === 'bp');
-  const latestWeight = pastResults.find(r => r.screening_type === 'weight');
+  const bpResults = pastResults.filter(r => r.screening_type === 'bp');
+  const weightResults = pastResults.filter(r => r.screening_type === 'weight');
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted pb-32">
@@ -222,7 +228,7 @@ export default function HealthScreenings() {
             </div>
 
             {/* Past Results Section */}
-            {!loading && (latestBp || latestWeight) && (
+            {!loading && (bpResults.length > 0 || weightResults.length > 0) && (
               <div className="mt-8 animate-fade-in">
                 <div className="flex items-center gap-2 mb-4">
                   <History className="w-5 h-5 text-muted-foreground" />
@@ -230,60 +236,70 @@ export default function HealthScreenings() {
                 </div>
 
                 <div className="space-y-4">
-                  {latestBp && (
+                  {/* Blood Pressure Results */}
+                  {bpResults.length > 0 && (
                     <div className="bg-card rounded-2xl shadow-soft p-5">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-destructive/10 flex items-center justify-center">
                           <Heart className="w-5 h-5 text-destructive" />
                         </div>
-                        <div>
-                          <p className="font-semibold text-foreground">{t('health.bp')}</p>
-                          <p className="text-sm text-muted-foreground">{formatDate(latestBp.recorded_at)}</p>
-                        </div>
+                        <p className="font-semibold text-foreground">{t('health.bp')}</p>
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-muted rounded-xl p-3 text-center">
-                          <p className="text-xs text-muted-foreground">Systolic</p>
-                          <p className="text-xl font-bold text-foreground">{latestBp.systolic}</p>
-                        </div>
-                        <div className="bg-muted rounded-xl p-3 text-center">
-                          <p className="text-xs text-muted-foreground">Diastolic</p>
-                          <p className="text-xl font-bold text-foreground">{latestBp.diastolic}</p>
-                        </div>
-                        <div className="bg-muted rounded-xl p-3 text-center">
-                          <p className="text-xs text-muted-foreground">Pulse</p>
-                          <p className="text-xl font-bold text-foreground">{latestBp.pulse}</p>
-                        </div>
+                      <div className="max-h-48 overflow-y-auto space-y-3 pr-1">
+                        {bpResults.map((bp) => (
+                          <div key={bp.id} className="bg-muted rounded-xl p-3">
+                            <p className="text-xs text-muted-foreground mb-2">{formatDate(bp.recorded_at)}</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="text-center">
+                                <p className="text-xs text-muted-foreground">Systolic</p>
+                                <p className="text-lg font-bold text-foreground">{bp.systolic}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-muted-foreground">Diastolic</p>
+                                <p className="text-lg font-bold text-foreground">{bp.diastolic}</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-muted-foreground">Pulse</p>
+                                <p className="text-lg font-bold text-foreground">{bp.pulse}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
 
-                  {latestWeight && (
+                  {/* Weight Results */}
+                  {weightResults.length > 0 && (
                     <div className="bg-card rounded-2xl shadow-soft p-5">
                       <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                           <Ruler className="w-5 h-5 text-primary" />
                         </div>
-                        <div>
-                          <p className="font-semibold text-foreground">{t('health.weight')}</p>
-                          <p className="text-sm text-muted-foreground">{formatDate(latestWeight.recorded_at)}</p>
-                        </div>
+                        <p className="font-semibold text-foreground">{t('health.weight')}</p>
                       </div>
-                      <div className="grid grid-cols-3 gap-3">
-                        <div className="bg-muted rounded-xl p-3 text-center">
-                          <p className="text-xs text-muted-foreground">Height</p>
-                          <p className="text-xl font-bold text-foreground">{latestWeight.height}</p>
-                          <p className="text-xs text-muted-foreground">cm</p>
-                        </div>
-                        <div className="bg-muted rounded-xl p-3 text-center">
-                          <p className="text-xs text-muted-foreground">Weight</p>
-                          <p className="text-xl font-bold text-foreground">{latestWeight.weight}</p>
-                          <p className="text-xs text-muted-foreground">kg</p>
-                        </div>
-                        <div className="bg-muted rounded-xl p-3 text-center">
-                          <p className="text-xs text-muted-foreground">BMI</p>
-                          <p className="text-xl font-bold text-foreground">{latestWeight.bmi}</p>
-                        </div>
+                      <div className="max-h-48 overflow-y-auto space-y-3 pr-1">
+                        {weightResults.map((weight) => (
+                          <div key={weight.id} className="bg-muted rounded-xl p-3">
+                            <p className="text-xs text-muted-foreground mb-2">{formatDate(weight.recorded_at)}</p>
+                            <div className="grid grid-cols-3 gap-2">
+                              <div className="text-center">
+                                <p className="text-xs text-muted-foreground">Height</p>
+                                <p className="text-lg font-bold text-foreground">{weight.height}</p>
+                                <p className="text-xs text-muted-foreground">cm</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-muted-foreground">Weight</p>
+                                <p className="text-lg font-bold text-foreground">{weight.weight}</p>
+                                <p className="text-xs text-muted-foreground">kg</p>
+                              </div>
+                              <div className="text-center">
+                                <p className="text-xs text-muted-foreground">BMI</p>
+                                <p className="text-lg font-bold text-foreground">{weight.bmi}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     </div>
                   )}
