@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
+import { useToast } from '@/hooks/use-toast';
 import { 
   ArrowLeft, 
   Building2, 
@@ -12,17 +13,20 @@ import {
   AlertTriangle,
   Video,
   Loader2,
-  CheckCircle2
+  CheckCircle2,
+  XCircle
 } from 'lucide-react';
 
-type ConsultState = 'select' | 'payment' | 'connecting' | 'connected';
+type ConsultState = 'select' | 'payment' | 'connecting' | 'connected' | 'error';
 
 export default function Teleconsult() {
-  const { t } = useApp();
+  const { t, user } = useApp();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [state, setState] = useState<ConsultState>('select');
   const [doctorType, setDoctorType] = useState<'polyclinic' | 'hospital' | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash' | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleSelectDoctor = (type: 'polyclinic' | 'hospital') => {
     setDoctorType(type);
@@ -33,14 +37,56 @@ export default function Teleconsult() {
     setPaymentMethod(method);
   };
 
-  const handleStartConsult = () => {
+  const handleStartConsult = async () => {
     if (!paymentMethod) return;
     
     setState('connecting');
-    
-    setTimeout(() => {
-      setState('connected');
-    }, 3000);
+    setErrorMessage('');
+
+    try {
+      const consultationReason = doctorType === 'polyclinic' 
+        ? 'General consultation - Polyclinic' 
+        : 'Specialist consultation - Hospital';
+
+      const response = await fetch('https://hongzhi.app.n8n.cloud/webhook-test/teleconsult/start', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          kiosk_user_id: user?.id || 'unknown',
+          user_name: user?.name || 'Guest User',
+          consultation_reason: consultationReason,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Request failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      if (data.meetingUrl && data.status === 'scheduled') {
+        // Open the meeting URL in a new tab
+        window.open(data.meetingUrl, '_blank', 'noopener,noreferrer');
+        setState('connected');
+        toast({
+          title: 'Consultation Started',
+          description: 'Your video consultation has been opened in a new tab.',
+        });
+      } else {
+        throw new Error('Invalid response from server');
+      }
+    } catch (error) {
+      console.error('Teleconsult error:', error);
+      setErrorMessage(error instanceof Error ? error.message : 'Failed to start consultation');
+      setState('error');
+      toast({
+        title: 'Connection Failed',
+        description: 'Unable to start the teleconsultation. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleBack = () => {
@@ -196,32 +242,69 @@ export default function Teleconsult() {
           </div>
         )}
 
-        {/* Connected state - simulated video call */}
+        {/* Connected state - consultation started */}
         {state === 'connected' && (
           <div className="animate-fade-in">
-            <div className="aspect-video bg-card rounded-3xl shadow-medium overflow-hidden mb-6 relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-24 h-24 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
-                    <Video className="w-12 h-12 text-primary" />
-                  </div>
-                  <p className="text-heading text-foreground">Dr. Lim Wei Ming</p>
-                  <p className="text-muted-foreground">{doctorType === 'polyclinic' ? t('teleconsult.polyclinic') : t('teleconsult.hospital')}</p>
+            <div className="bg-card rounded-3xl shadow-medium overflow-hidden mb-6 p-8">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center mb-6">
+                  <CheckCircle2 className="w-12 h-12 text-success" />
                 </div>
+                <h2 className="text-heading text-foreground mb-2">Consultation Started</h2>
+                <p className="text-muted-foreground mb-4">
+                  Your video consultation has been opened in a new browser tab.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {doctorType === 'polyclinic' ? t('teleconsult.polyclinic') : t('teleconsult.hospital')}
+                </p>
               </div>
-              
-              {/* Self view */}
-              <div className="absolute bottom-4 right-4 w-24 h-32 bg-muted rounded-xl shadow-medium" />
             </div>
 
             <Button
-              variant="destructive"
+              variant="outline"
               size="xl"
               onClick={handleBack}
               className="w-full"
             >
-              End Call
+              Return to Dashboard
             </Button>
+          </div>
+        )}
+
+        {/* Error state */}
+        {state === 'error' && (
+          <div className="animate-fade-in">
+            <div className="bg-card rounded-3xl shadow-medium overflow-hidden mb-6 p-8">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-24 h-24 rounded-full bg-destructive/20 flex items-center justify-center mb-6">
+                  <XCircle className="w-12 h-12 text-destructive" />
+                </div>
+                <h2 className="text-heading text-foreground mb-2">Connection Failed</h2>
+                <p className="text-muted-foreground mb-4">
+                  {errorMessage || 'Unable to start the teleconsultation. Please try again.'}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Button
+                variant="warm"
+                size="xl"
+                onClick={handleStartConsult}
+                className="w-full"
+              >
+                <Video className="w-6 h-6" />
+                Try Again
+              </Button>
+              <Button
+                variant="outline"
+                size="xl"
+                onClick={handleBack}
+                className="w-full"
+              >
+                Go Back
+              </Button>
+            </div>
           </div>
         )}
       </main>
