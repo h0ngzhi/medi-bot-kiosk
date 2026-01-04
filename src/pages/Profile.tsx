@@ -137,11 +137,9 @@ export default function Profile() {
     return rewardTranslations[language]?.[key] || rewardTranslations['en'][key] || key;
   };
 
-  // Speak button text when voice is enabled
+  // Speak button text on hover (always enabled for accessibility)
   const handleButtonSpeak = (text: string) => {
-    if (isVoiceEnabled) {
-      speakText(text, language);
-    }
+    speakText(text, language);
   };
 
   const handleQuantityChange = (rewardId: string, delta: number) => {
