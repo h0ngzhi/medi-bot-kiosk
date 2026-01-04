@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
+import { speakText } from '@/utils/speechUtils';
 import { 
   Heart, 
   Video, 
@@ -61,8 +62,12 @@ const menuItems = [
 ];
 
 export default function Dashboard() {
-  const { user, t, setUser } = useApp();
+  const { user, t, setUser, language } = useApp();
   const navigate = useNavigate();
+
+  const handleSpeak = (text: string) => {
+    speakText(text, language);
+  };
 
   const handleLogout = () => {
     setUser(null);
@@ -82,6 +87,7 @@ export default function Dashboard() {
             variant="ghost"
             size="icon"
             onClick={handleLogout}
+            onMouseEnter={() => handleSpeak(t('common.logout'))}
             className="w-14 h-14 rounded-full"
           >
             <LogOut className="w-6 h-6 text-muted-foreground" />
@@ -103,6 +109,7 @@ export default function Dashboard() {
               variant="menu"
               size="menu"
               onClick={() => navigate(item.path)}
+              onMouseEnter={() => handleSpeak(t(item.titleKey))}
               className="w-full animate-slide-up"
               style={{ animationDelay: `${(index + 2) * 0.1}s` }}
             >
