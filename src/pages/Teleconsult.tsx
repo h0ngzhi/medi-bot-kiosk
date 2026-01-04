@@ -4,6 +4,9 @@ import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { AccessibilityBar } from "@/components/AccessibilityBar";
 import { useToast } from "@/hooks/use-toast";
+import { PricingDisplay, getPrice, type CHASCardType } from "@/components/teleconsult/PricingDisplay";
+import { CardPaymentForm } from "@/components/teleconsult/CardPaymentForm";
+import { CashBillingForm } from "@/components/teleconsult/CashBillingForm";
 import {
   ArrowLeft,
   Building2,
@@ -11,25 +14,38 @@ import {
   CreditCard,
   Banknote,
   AlertTriangle,
-  Video,
   Loader2,
   CheckCircle2,
   XCircle,
 } from "lucide-react";
 
-type ConsultState = "select" | "payment" | "connecting" | "connected" | "error";
+type ConsultState = "pricing" | "payment" | "connecting" | "connected" | "error";
 
 export default function Teleconsult() {
   const { t, user } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [state, setState] = useState<ConsultState>("select");
+  const [state, setState] = useState<ConsultState>("pricing");
   const [doctorType, setDoctorType] = useState<"polyclinic" | "hospital" | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<"card" | "cash" | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
+  // Map user's chasType to our pricing tier
+  const getChasType = (): CHASCardType => {
+    const userChasType = user?.chasType?.toLowerCase() || 'blue';
+    const validTypes: CHASCardType[] = ['blue', 'orange', 'green', 'merdeka', 'pioneer'];
+    return validTypes.includes(userChasType as CHASCardType) ? userChasType as CHASCardType : 'blue';
+  };
+
+  const chasType = getChasType();
+  const currentPrice = doctorType ? getPrice(chasType, doctorType) : 0;
+
   const handleSelectDoctor = (type: "polyclinic" | "hospital") => {
     setDoctorType(type);
+  };
+
+  const handleProceedToPayment = () => {
+    if (!doctorType) return;
     setState("payment");
   };
 
@@ -41,29 +57,13 @@ export default function Teleconsult() {
   const isValidMeetingUrl = (url: string): boolean => {
     try {
       const parsed = new URL(url);
-      
-      // Must be HTTPS
-      if (parsed.protocol !== 'https:') {
-        return false;
-      }
-      
-      // Whitelist of allowed video conferencing domains
+      if (parsed.protocol !== 'https:') return false;
       const allowedDomains = [
-        'zoom.us',
-        'meet.google.com',
-        'teams.microsoft.com',
-        'whereby.com',
-        'webex.com',
-        'gotomeeting.com',
-        'jitsi.org',
-        'meet.jit.si',
-        'daily.co',
-        'around.co',
+        'zoom.us', 'meet.google.com', 'teams.microsoft.com', 'whereby.com',
+        'webex.com', 'gotomeeting.com', 'jitsi.org', 'meet.jit.si', 'daily.co', 'around.co',
       ];
-      
       return allowedDomains.some(domain => 
-        parsed.hostname === domain || 
-        parsed.hostname.endsWith(`.${domain}`)
+        parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
       );
     } catch {
       return false;
@@ -71,7 +71,7 @@ export default function Teleconsult() {
   };
 
   const handleStartConsult = async () => {
-    if (!paymentMethod) return;
+    if (!paymentMethod || !doctorType) return;
 
     setState("connecting");
     setErrorMessage("");
@@ -82,13 +82,14 @@ export default function Teleconsult() {
 
       const response = await fetch("https://hongzhi.app.n8n.cloud/webhook/teleconsult/start", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           kiosk_user_id: user?.id || "unknown",
           user_name: user?.name || "Guest User",
           consultation_reason: consultationReason,
+          payment_method: paymentMethod,
+          amount: currentPrice,
+          chas_type: chasType,
         }),
       });
 
@@ -98,13 +99,10 @@ export default function Teleconsult() {
 
       const data = await response.json();
 
-      // Validate the meeting URL before opening
       if (data.meetingUrl && data.status === "scheduled") {
         if (!isValidMeetingUrl(data.meetingUrl)) {
           throw new Error("Invalid or untrusted meeting URL received");
         }
-        
-        // Open the validated meeting URL in a new tab
         window.open(data.meetingUrl, "_blank", "noopener,noreferrer");
         setState("connected");
         toast({
@@ -127,14 +125,13 @@ export default function Teleconsult() {
   };
 
   const handleBack = () => {
-    if (state === "select") {
+    if (state === "pricing") {
       navigate("/dashboard");
     } else if (state === "payment") {
-      setState("select");
-      setDoctorType(null);
+      setState("pricing");
       setPaymentMethod(null);
     } else {
-      setState("select");
+      setState("pricing");
       setDoctorType(null);
       setPaymentMethod(null);
     }
@@ -156,27 +153,31 @@ export default function Teleconsult() {
       </header>
 
       <main className="max-w-2xl mx-auto px-6">
-        {/* Doctor selection */}
-        {state === "select" && (
+        {/* Step 1: Doctor type selection with pricing */}
+        {state === "pricing" && (
           <div className="space-y-6 animate-fade-in">
+            <h2 className="text-xl font-bold text-foreground">Select Consultation Type</h2>
+            
             <div className="space-y-4">
-              <Button variant="menu" size="menu" onClick={() => handleSelectDoctor("polyclinic")} className="w-full">
-                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-8 h-8 text-primary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-bold text-foreground">{t("teleconsult.polyclinic")}</h3>
-                </div>
-              </Button>
+              {/* Polyclinic Option */}
+              <button
+                onClick={() => handleSelectDoctor("polyclinic")}
+                className={`w-full text-left transition-all ${
+                  doctorType === 'polyclinic' ? 'ring-2 ring-primary ring-offset-2' : ''
+                }`}
+              >
+                <PricingDisplay chasType={chasType} doctorType="polyclinic" />
+              </button>
 
-              <Button variant="menu" size="menu" onClick={() => handleSelectDoctor("hospital")} className="w-full">
-                <div className="w-16 h-16 rounded-2xl bg-secondary/10 flex items-center justify-center flex-shrink-0">
-                  <Hospital className="w-8 h-8 text-secondary" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-xl font-bold text-foreground">{t("teleconsult.hospital")}</h3>
-                </div>
-              </Button>
+              {/* Hospital Option */}
+              <button
+                onClick={() => handleSelectDoctor("hospital")}
+                className={`w-full text-left transition-all ${
+                  doctorType === 'hospital' ? 'ring-2 ring-primary ring-offset-2' : ''
+                }`}
+              >
+                <PricingDisplay chasType={chasType} doctorType="hospital" />
+              </button>
             </div>
 
             {/* Warning notice */}
@@ -184,72 +185,81 @@ export default function Teleconsult() {
               <AlertTriangle className="w-8 h-8 text-warning flex-shrink-0" />
               <p className="text-base text-foreground">{t("teleconsult.serious")}</p>
             </div>
-          </div>
-        )}
 
-        {/* Payment selection */}
-        {state === "payment" && (
-          <div className="space-y-6 animate-fade-in">
-            <h2 className="text-heading text-foreground">{t("teleconsult.payment")}</h2>
-
-            <div className="space-y-4">
-              <Button
-                variant={paymentMethod === "card" ? "default" : "menu"}
-                size="menu"
-                onClick={() => handleSelectPayment("card")}
-                className="w-full"
-              >
-                <div
-                  className={`w-16 h-16 rounded-2xl ${paymentMethod === "card" ? "bg-primary-foreground/20" : "bg-primary/10"} flex items-center justify-center flex-shrink-0`}
-                >
-                  <CreditCard
-                    className={`w-8 h-8 ${paymentMethod === "card" ? "text-primary-foreground" : "text-primary"}`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className={`text-xl font-bold ${paymentMethod === "card" ? "text-primary-foreground" : "text-foreground"}`}
-                  >
-                    {t("teleconsult.card")}
-                  </h3>
-                </div>
-                {paymentMethod === "card" && <CheckCircle2 className="w-8 h-8 text-primary-foreground" />}
-              </Button>
-
-              <Button
-                variant={paymentMethod === "cash" ? "default" : "menu"}
-                size="menu"
-                onClick={() => handleSelectPayment("cash")}
-                className="w-full"
-              >
-                <div
-                  className={`w-16 h-16 rounded-2xl ${paymentMethod === "cash" ? "bg-primary-foreground/20" : "bg-success/10"} flex items-center justify-center flex-shrink-0`}
-                >
-                  <Banknote
-                    className={`w-8 h-8 ${paymentMethod === "cash" ? "text-primary-foreground" : "text-success"}`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3
-                    className={`text-xl font-bold ${paymentMethod === "cash" ? "text-primary-foreground" : "text-foreground"}`}
-                  >
-                    {t("teleconsult.cash")}
-                  </h3>
-                </div>
-                {paymentMethod === "cash" && <CheckCircle2 className="w-8 h-8 text-primary-foreground" />}
-              </Button>
-            </div>
-
+            {/* Continue Button */}
             <Button
               variant="warm"
               size="xl"
-              onClick={handleStartConsult}
-              disabled={!paymentMethod}
-              className="w-full mt-8"
+              onClick={handleProceedToPayment}
+              disabled={!doctorType}
+              className="w-full"
             >
-              <Video className="w-6 h-6" />
-              {t("teleconsult.start")}
+              Continue to Payment
             </Button>
+          </div>
+        )}
+
+        {/* Step 2: Payment method selection */}
+        {state === "payment" && (
+          <div className="space-y-6 animate-fade-in">
+            <div className="bg-card rounded-2xl p-4 shadow-soft">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {doctorType === 'polyclinic' ? (
+                    <Building2 className="w-6 h-6 text-primary" />
+                  ) : (
+                    <Hospital className="w-6 h-6 text-secondary" />
+                  )}
+                  <span className="font-medium">
+                    {doctorType === 'polyclinic' ? 'Polyclinic Doctor' : 'Hospital Specialist'}
+                  </span>
+                </div>
+                <span className="text-xl font-bold">
+                  {currentPrice === 0 ? 'FREE' : `S$${currentPrice.toFixed(2)}`}
+                </span>
+              </div>
+            </div>
+
+            <h2 className="text-xl font-bold text-foreground">{t("teleconsult.payment")}</h2>
+
+            {/* Payment method tabs */}
+            <div className="flex gap-2">
+              <Button
+                variant={paymentMethod === "card" ? "default" : "outline"}
+                onClick={() => handleSelectPayment("card")}
+                className="flex-1"
+              >
+                <CreditCard className="w-5 h-5 mr-2" />
+                Pay by Card
+              </Button>
+              <Button
+                variant={paymentMethod === "cash" ? "default" : "outline"}
+                onClick={() => handleSelectPayment("cash")}
+                className="flex-1"
+              >
+                <Banknote className="w-5 h-5 mr-2" />
+                Bill to Home
+              </Button>
+            </div>
+
+            {/* Payment Forms */}
+            {paymentMethod === "card" && (
+              <CardPaymentForm
+                amount={currentPrice}
+                onSubmit={handleStartConsult}
+                isProcessing={false}
+                userName={user?.name || "Guest User"}
+              />
+            )}
+
+            {paymentMethod === "cash" && (
+              <CashBillingForm
+                amount={currentPrice}
+                onSubmit={handleStartConsult}
+                isProcessing={false}
+                userName={user?.name || "Guest User"}
+              />
+            )}
           </div>
         )}
 
@@ -268,7 +278,7 @@ export default function Teleconsult() {
           </div>
         )}
 
-        {/* Connected state - consultation started */}
+        {/* Connected state */}
         {state === "connected" && (
           <div className="animate-fade-in">
             <div className="bg-card rounded-3xl shadow-medium overflow-hidden mb-6 p-8">
@@ -308,8 +318,7 @@ export default function Teleconsult() {
             </div>
 
             <div className="space-y-4">
-              <Button variant="warm" size="xl" onClick={handleStartConsult} className="w-full">
-                <Video className="w-6 h-6" />
+              <Button variant="warm" size="xl" onClick={() => setState("payment")} className="w-full">
                 Try Again
               </Button>
               <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
