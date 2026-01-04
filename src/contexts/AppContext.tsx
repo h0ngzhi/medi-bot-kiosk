@@ -57,6 +57,9 @@ const translations: Record<Language, Record<string, string>> = {
     'health.result': 'Your Result',
     'health.normal': 'Normal',
     'health.date': 'Measured on',
+    'health.pastResults': 'Past Results',
+    'health.saved': 'Result saved successfully',
+    'health.saveFailed': 'Failed to save result',
     
     // Teleconsult
     'teleconsult.title': 'Teleconsultation',
@@ -140,6 +143,9 @@ const translations: Record<Language, Record<string, string>> = {
     'health.result': '您的结果',
     'health.normal': '正常',
     'health.date': '测量日期',
+    'health.pastResults': '过往结果',
+    'health.saved': '结果保存成功',
+    'health.saveFailed': '保存结果失败',
     
     'teleconsult.title': '远程医疗',
     'teleconsult.subtitle': '在家与医生交谈',
@@ -218,6 +224,9 @@ const translations: Record<Language, Record<string, string>> = {
     'health.result': 'Keputusan Anda',
     'health.normal': 'Normal',
     'health.date': 'Diukur pada',
+    'health.pastResults': 'Keputusan Lepas',
+    'health.saved': 'Keputusan berjaya disimpan',
+    'health.saveFailed': 'Gagal menyimpan keputusan',
     
     'teleconsult.title': 'Telekonsultasi',
     'teleconsult.subtitle': 'Berbual dengan doktor dari rumah',
@@ -296,6 +305,9 @@ const translations: Record<Language, Record<string, string>> = {
     'health.result': 'உங்கள் முடிவு',
     'health.normal': 'சாதாரண',
     'health.date': 'அளவிடப்பட்ட தேதி',
+    'health.pastResults': 'கடந்த முடிவுகள்',
+    'health.saved': 'முடிவு வெற்றிகரமாக சேமிக்கப்பட்டது',
+    'health.saveFailed': 'முடிவை சேமிக்க முடியவில்லை',
     
     'teleconsult.title': 'தொலை ஆலோசனை',
     'teleconsult.subtitle': 'வீட்டிலிருந்தே மருத்துவரிடம் பேசுங்கள்',
