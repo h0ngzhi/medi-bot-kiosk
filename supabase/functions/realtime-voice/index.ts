@@ -51,6 +51,19 @@ serve(async (req) => {
       const data = JSON.parse(event.data);
       console.log("OpenAI message type:", data.type);
 
+      // Log more details for debugging
+      if (data.type === "error") {
+        console.error("OpenAI error:", JSON.stringify(data.error));
+      }
+      
+      if (data.type === "response.done") {
+        console.log("Response done:", JSON.stringify(data.response?.output || []));
+      }
+
+      if (data.type === "conversation.item.input_audio_transcription.completed") {
+        console.log("Transcription:", data.transcript);
+      }
+
       // When session is created, send session update with tools
       if (data.type === "session.created" && !sessionCreated) {
         sessionCreated = true;
@@ -73,7 +86,8 @@ serve(async (req) => {
             
             When users want to go somewhere, use the navigate_to tool.
             Keep your responses brief and clear, suitable for elderly users.
-            Speak in a warm, friendly tone.`,
+            Speak in a warm, friendly tone.
+            Always respond with audio - speak your response out loud.`,
             voice: "alloy",
             input_audio_format: "pcm16",
             output_audio_format: "pcm16",
@@ -90,7 +104,7 @@ serve(async (req) => {
               {
                 type: "function",
                 name: "navigate_to",
-                description: "Navigate to a specific page in the health kiosk app",
+                description: "Navigate to a specific page in the health kiosk app. Call this whenever the user asks to go to a page.",
                 parameters: {
                   type: "object",
                   properties: {
@@ -113,7 +127,7 @@ serve(async (req) => {
             ],
             tool_choice: "auto",
             temperature: 0.8,
-            max_response_output_tokens: 150,
+            max_response_output_tokens: "inf",
           },
         };
 
