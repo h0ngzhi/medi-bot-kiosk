@@ -25,15 +25,23 @@ import { ClinicSelector } from '@/components/medications/ClinicSelector';
 import { OrderSummary } from '@/components/medications/OrderSummary';
 import { Checkbox } from '@/components/ui/checkbox';
 
-interface Medication {
+interface PastMedication {
   id: string;
   name: string;
   purpose: string;
-  status: 'ongoing' | 'completed' | 'upcoming';
+  status: 'ongoing' | 'completed';
   deliveryStatus: string;
   prescribedBy: string;
-  price: number;
-  quantity: number;
+  lastOrderDate: string;
+}
+
+interface OrderableMedication {
+  id: string;
+  name: string;
+  purpose: string;
+  pricePerBox: number;
+  tabletsPerBox: number;
+  prescribedBy: string;
   selected?: boolean;
 }
 
@@ -44,7 +52,8 @@ export default function Medications() {
   const navigate = useNavigate();
   const { toast } = useToast();
   
-  const [medications, setMedications] = useState<Medication[]>([]);
+  const [pastMedications, setPastMedications] = useState<PastMedication[]>([]);
+  const [orderableMedications, setOrderableMedications] = useState<OrderableMedication[]>([]);
   const [step, setStep] = useState<Step>('select');
   const [deliveryOption, setDeliveryOption] = useState<'home' | 'clinic' | null>(null);
   const [paymentOption, setPaymentOption] = useState<'card' | 'bill' | null>(null);
@@ -81,21 +90,36 @@ export default function Medications() {
       }
 
       if (data && data.length > 0) {
-        const mappedMedications: Medication[] = data.map(med => ({
+        const mappedPast: PastMedication[] = data.map(med => ({
           id: med.id,
           name: med.name,
           purpose: getPurpose(med.name),
           status: med.is_current ? 'ongoing' : 'completed',
           deliveryStatus: getDeliveryStatusText(med.delivery_status),
           prescribedBy: 'Polyclinic doctor',
-          price: getPrice(med.name),
-          quantity: 1,
-          selected: med.is_current,
+          lastOrderDate: new Date(med.created_at).toLocaleDateString(),
         }));
-        setMedications(mappedMedications);
+        setPastMedications(mappedPast);
+        
+        // Create orderable medications from past ones
+        const uniqueMeds = new Map<string, OrderableMedication>();
+        data.forEach(med => {
+          if (!uniqueMeds.has(med.name)) {
+            uniqueMeds.set(med.name, {
+              id: `order-${med.id}`,
+              name: med.name,
+              purpose: getPurpose(med.name),
+              pricePerBox: getPrice(med.name),
+              tabletsPerBox: getTablets(med.name),
+              prescribedBy: 'Polyclinic doctor',
+              selected: false,
+            });
+          }
+        });
+        setOrderableMedications(Array.from(uniqueMeds.values()));
       } else {
         // Show demo medications for demonstration
-        setMedications([
+        setPastMedications([
           {
             id: '1',
             name: 'Amlodipine 5mg',
@@ -103,9 +127,7 @@ export default function Medications() {
             status: 'ongoing',
             deliveryStatus: t('meds.delivery.scheduled'),
             prescribedBy: t('meds.prescriber.polyclinic'),
-            price: 12.50,
-            quantity: 30,
-            selected: true,
+            lastOrderDate: '15 Dec 2025',
           },
           {
             id: '2',
@@ -114,9 +136,7 @@ export default function Medications() {
             status: 'ongoing',
             deliveryStatus: t('meds.delivery.ready'),
             prescribedBy: t('meds.prescriber.hospital'),
-            price: 18.00,
-            quantity: 60,
-            selected: true,
+            lastOrderDate: '10 Dec 2025',
           },
           {
             id: '3',
@@ -125,8 +145,36 @@ export default function Medications() {
             status: 'completed',
             deliveryStatus: t('meds.delivery.delivered'),
             prescribedBy: t('meds.prescriber.polyclinic'),
-            price: 8.50,
-            quantity: 14,
+            lastOrderDate: '01 Nov 2025',
+          },
+        ]);
+        
+        setOrderableMedications([
+          {
+            id: 'order-1',
+            name: 'Amlodipine 5mg',
+            purpose: t('meds.purpose.bp'),
+            pricePerBox: 12.50,
+            tabletsPerBox: 30,
+            prescribedBy: t('meds.prescriber.polyclinic'),
+            selected: false,
+          },
+          {
+            id: 'order-2',
+            name: 'Metformin 500mg',
+            purpose: t('meds.purpose.chronic'),
+            pricePerBox: 18.00,
+            tabletsPerBox: 60,
+            prescribedBy: t('meds.prescriber.hospital'),
+            selected: false,
+          },
+          {
+            id: 'order-3',
+            name: 'Omeprazole 20mg',
+            purpose: t('meds.purpose.digestive'),
+            pricePerBox: 8.50,
+            tabletsPerBox: 14,
+            prescribedBy: t('meds.prescriber.polyclinic'),
             selected: false,
           },
         ]);
@@ -137,21 +185,24 @@ export default function Medications() {
   }, [user?.id, t]);
 
   const getPrice = (name: string): number => {
-    const prices: Record<string, number> = {
-      'Amlodipine': 12.50,
-      'Metformin': 18.00,
-      'Omeprazole': 8.50,
-    };
-    return prices[name] || 10.00;
+    if (name.includes('Amlodipine')) return 12.50;
+    if (name.includes('Metformin')) return 18.00;
+    if (name.includes('Omeprazole')) return 8.50;
+    return 10.00;
+  };
+
+  const getTablets = (name: string): number => {
+    if (name.includes('Amlodipine')) return 30;
+    if (name.includes('Metformin')) return 60;
+    if (name.includes('Omeprazole')) return 14;
+    return 30;
   };
 
   const getPurpose = (name: string): string => {
-    const purposes: Record<string, string> = {
-      'Amlodipine': t('meds.purpose.bp'),
-      'Metformin': t('meds.purpose.chronic'),
-      'Omeprazole': t('meds.purpose.digestive'),
-    };
-    return purposes[name] || t('meds.purpose.general');
+    if (name.includes('Amlodipine')) return t('meds.purpose.bp');
+    if (name.includes('Metformin')) return t('meds.purpose.chronic');
+    if (name.includes('Omeprazole')) return t('meds.purpose.digestive');
+    return t('meds.purpose.general');
   };
 
   const getDeliveryStatusText = (status: string): string => {
@@ -182,12 +233,12 @@ export default function Medications() {
   };
 
   const toggleMedicationSelection = (id: string) => {
-    setMedications(prev => prev.map(med => 
+    setOrderableMedications(prev => prev.map(med => 
       med.id === id ? { ...med, selected: !med.selected } : med
     ));
   };
 
-  const selectedMeds = medications.filter(m => m.selected);
+  const selectedMeds = orderableMedications.filter(m => m.selected);
   const canProceed = selectedMeds.length > 0;
 
   const handlePaymentSubmit = async () => {
@@ -306,10 +357,46 @@ export default function Medications() {
         {/* Step 1: Select Medications */}
         {step === 'select' && (
           <>
+            {/* Past Medications - Reference Only */}
             <section>
-              <h2 className="text-xl font-bold text-foreground mb-4">{t('meds.yourMeds')}</h2>
+              <h2 className="text-xl font-bold text-foreground mb-2">{t('meds.pastMeds')}</h2>
+              <p className="text-muted-foreground mb-4">{t('meds.pastMedsDesc')}</p>
+              <div className="space-y-3">
+                {pastMedications.map((med) => (
+                  <div
+                    key={med.id}
+                    className="bg-card rounded-2xl p-4 shadow-soft border border-border"
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-foreground">{med.name}</h3>
+                        <p className="text-muted-foreground">{med.purpose}</p>
+                        <div className="flex items-center gap-3 mt-2 text-sm">
+                          <div className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-full">
+                            {getStatusIcon(med.status)}
+                            <span className="font-medium text-foreground">
+                              {getStatusText(med.status)}
+                            </span>
+                          </div>
+                          <span className="text-muted-foreground">{med.deliveryStatus}</span>
+                        </div>
+                      </div>
+                      <div className="text-right text-sm text-muted-foreground">
+                        <p>{t('meds.lastOrder')}</p>
+                        <p className="font-medium text-foreground">{med.lastOrderDate}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Order Medications */}
+            <section>
+              <h2 className="text-xl font-bold text-foreground mb-2">{t('meds.orderMeds')}</h2>
+              <p className="text-muted-foreground mb-4">{t('meds.orderMedsDesc')}</p>
               <div className="space-y-4">
-                {medications.map((med) => (
+                {orderableMedications.map((med) => (
                   <div
                     key={med.id}
                     className={`bg-card rounded-2xl p-5 shadow-soft border-2 transition-all cursor-pointer ${
@@ -323,30 +410,19 @@ export default function Medications() {
                         className="mt-1 h-6 w-6"
                       />
                       <div className="flex-1">
-                        {/* Medication Name & Purpose */}
-                        <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-start justify-between mb-2">
                           <div>
                             <h3 className="text-xl font-bold text-foreground">{med.name}</h3>
                             <p className="text-lg text-muted-foreground">{med.purpose}</p>
                           </div>
                           <div className="text-right">
-                            <span className="text-xl font-bold text-primary">S${med.price.toFixed(2)}</span>
-                            <p className="text-sm text-muted-foreground">x{med.quantity} tablets</p>
+                            <span className="text-xl font-bold text-primary">S${med.pricePerBox.toFixed(2)}</span>
+                            <p className="text-sm text-muted-foreground">{t('meds.perBox')} ({med.tabletsPerBox} {t('meds.tablets')})</p>
                           </div>
                         </div>
-
-                        {/* Details */}
-                        <div className="flex items-center gap-4 text-sm">
-                          <div className="flex items-center gap-2 bg-muted px-3 py-1.5 rounded-full">
-                            {getStatusIcon(med.status)}
-                            <span className="font-medium text-foreground">
-                              {getStatusText(med.status)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1 text-muted-foreground">
-                            <Stethoscope className="w-4 h-4" />
-                            <span>{med.prescribedBy}</span>
-                          </div>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Stethoscope className="w-4 h-4" />
+                          <span>{med.prescribedBy}</span>
                         </div>
                       </div>
                     </div>
@@ -382,7 +458,7 @@ export default function Medications() {
           <>
             {/* Order Summary */}
             <OrderSummary
-              medications={selectedMeds.map(m => ({ name: m.name, quantity: m.quantity, price: m.price }))}
+              medications={selectedMeds.map(m => ({ name: m.name, quantity: 1, price: m.pricePerBox }))}
               deliveryOption={deliveryOption || 'home'}
               deliveryFee={deliveryOption === 'home' ? 5.00 : 0}
               subsidyPercent={subsidyPercent}
@@ -495,7 +571,7 @@ export default function Medications() {
           <>
             {/* Order Summary */}
             <OrderSummary
-              medications={selectedMeds.map(m => ({ name: m.name, quantity: m.quantity, price: m.price }))}
+              medications={selectedMeds.map(m => ({ name: m.name, quantity: 1, price: m.pricePerBox }))}
               deliveryOption={deliveryOption || 'home'}
               deliveryFee={deliveryOption === 'home' ? 5.00 : 0}
               subsidyPercent={subsidyPercent}
@@ -528,7 +604,7 @@ export default function Medications() {
   );
 
   function calculateTotal(): number {
-    const subtotal = selectedMeds.reduce((sum, med) => sum + (med.price * med.quantity), 0);
+    const subtotal = selectedMeds.reduce((sum, med) => sum + med.pricePerBox, 0);
     const subsidyAmount = subtotal * (subsidyPercent / 100);
     const afterSubsidy = subtotal - subsidyAmount;
     return afterSubsidy + deliveryFee;
