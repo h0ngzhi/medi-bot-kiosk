@@ -37,7 +37,7 @@ serve(async (req) => {
     console.log("Client WebSocket connected");
 
     // Connect to OpenAI Realtime API
-    openaiSocket = new WebSocket("wss://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17", [
+    openaiSocket = new WebSocket('wss://api.openai.com/v1/realtime?model=gpt-4o-mini-realtime-preview-2024-12-17"', [
       "realtime",
       `openai-insecure-api-key.${OPENAI_API_KEY}`,
       "openai-beta.realtime-v1",
@@ -50,19 +50,6 @@ serve(async (req) => {
     openaiSocket.onmessage = (event) => {
       const data = JSON.parse(event.data);
       console.log("OpenAI message type:", data.type);
-
-      // Log more details for debugging
-      if (data.type === "error") {
-        console.error("OpenAI error:", JSON.stringify(data.error));
-      }
-      
-      if (data.type === "response.done") {
-        console.log("Response done:", JSON.stringify(data.response?.output || []));
-      }
-
-      if (data.type === "conversation.item.input_audio_transcription.completed") {
-        console.log("Transcription:", data.transcript);
-      }
 
       // When session is created, send session update with tools
       if (data.type === "session.created" && !sessionCreated) {
@@ -86,8 +73,7 @@ serve(async (req) => {
             
             When users want to go somewhere, use the navigate_to tool.
             Keep your responses brief and clear, suitable for elderly users.
-            Speak in a warm, friendly tone.
-            Always respond with audio - speak your response out loud.`,
+            Speak in a warm, friendly tone.`,
             voice: "alloy",
             input_audio_format: "pcm16",
             output_audio_format: "pcm16",
@@ -104,7 +90,7 @@ serve(async (req) => {
               {
                 type: "function",
                 name: "navigate_to",
-                description: "Navigate to a specific page in the health kiosk app. Call this whenever the user asks to go to a page.",
+                description: "Navigate to a specific page in the health kiosk app",
                 parameters: {
                   type: "object",
                   properties: {
@@ -127,7 +113,7 @@ serve(async (req) => {
             ],
             tool_choice: "auto",
             temperature: 0.8,
-            max_response_output_tokens: "inf",
+            max_response_output_tokens: 150,
           },
         };
 
