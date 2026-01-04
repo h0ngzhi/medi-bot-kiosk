@@ -239,8 +239,8 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* Subtle backdrop - allows interaction with page behind */}
-      <div className="absolute inset-0 bg-background/30 backdrop-blur-[2px]" />
+      {/* Subtle backdrop - no blur, allows interaction with page behind */}
+      <div className="absolute inset-0 bg-background/10" />
       
       {/* Floating Robot Animation - Bottom Right */}
       <div className="absolute bottom-24 right-4 pointer-events-auto">
