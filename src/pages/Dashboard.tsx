@@ -8,7 +8,8 @@ import {
   Users, 
   User, 
   ChevronRight,
-  LogOut
+  LogOut,
+  Pill
 } from 'lucide-react';
 
 const menuItems = [
@@ -20,6 +21,15 @@ const menuItems = [
     path: '/health',
     color: 'text-primary',
     bgColor: 'bg-primary/10',
+  },
+  {
+    id: 'medications',
+    icon: Pill,
+    titleKey: 'dashboard.medications',
+    descKey: 'dashboard.medications.desc',
+    path: '/medications',
+    color: 'text-info',
+    bgColor: 'bg-info/10',
   },
   {
     id: 'teleconsult',
