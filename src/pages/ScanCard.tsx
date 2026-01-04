@@ -1,129 +1,172 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, CheckCircle2, Loader2 } from 'lucide-react';
+import { CheckCircle2, Loader2, Camera, XCircle } from 'lucide-react';
+import { Html5Qrcode } from 'html5-qrcode';
 import { useApp } from '@/contexts/AppContext';
 
-type ScanState = 'idle' | 'scanning' | 'success' | 'loading';
+type ScanState = 'scanning' | 'processing' | 'success' | 'error';
 
 export default function ScanCard() {
-  const [scanState, setScanState] = useState<ScanState>('idle');
+  const [scanState, setScanState] = useState<ScanState>('scanning');
+  const [errorMessage, setErrorMessage] = useState('');
+  const scannerRef = useRef<Html5Qrcode | null>(null);
   const navigate = useNavigate();
   const { setUser, t } = useApp();
 
-  // Simulate card scan on click
-  const handleScan = () => {
-    if (scanState !== 'idle') return;
-    
-    setScanState('scanning');
-    
-    // Simulate scanning delay
+  useEffect(() => {
+    let mounted = true;
+
+    const startScanner = async () => {
+      try {
+        const scanner = new Html5Qrcode('qr-reader');
+        scannerRef.current = scanner;
+
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+          },
+          (decodedText) => {
+            if (!mounted) return;
+            handleQRCodeScanned(decodedText);
+          },
+          () => {
+            // QR code not detected - ignore
+          }
+        );
+      } catch (err) {
+        console.error('Camera error:', err);
+        if (mounted) {
+          setErrorMessage('Unable to access camera. Please allow camera permissions.');
+          setScanState('error');
+        }
+      }
+    };
+
+    startScanner();
+
+    return () => {
+      mounted = false;
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(console.error);
+      }
+    };
+  }, []);
+
+  const handleQRCodeScanned = async (qrData: string) => {
+    // Stop the scanner
+    if (scannerRef.current) {
+      await scannerRef.current.stop().catch(console.error);
+    }
+
+    setScanState('processing');
+
+    // Parse QR code data - expecting format: "ID:name" or just use as ID
+    const parts = qrData.split(':');
+    const id = parts[0];
+    const name = parts[1] || `User ${id.slice(-4)}`;
+
+    // Simulate database lookup/creation
     setTimeout(() => {
+      // Create user profile (in real app, this would check/create in database)
+      const user = {
+        id,
+        name,
+        nric: id,
+        chasType: 'Blue' as const,
+        points: 0, // New users start with 0 points
+        participationHistory: [],
+      };
+
+      setUser(user);
       setScanState('success');
-      
-      // Simulate loading profile
+
       setTimeout(() => {
-        setScanState('loading');
-        
-        // Create mock user profile
-        const mockUser = {
-          id: 'user-001',
-          name: 'Mdm. Tan Mei Ling',
-          nric: 'S1234567A',
-          chasType: 'Blue' as const,
-          points: 450,
-          participationHistory: [
-            'Health Talk: Diabetes Prevention',
-            'Digital Wellness Workshop',
-            'Morning Exercise Class',
-          ],
-        };
-        
-        setUser(mockUser);
-        
-        setTimeout(() => {
-          navigate('/language');
-        }, 1000);
+        navigate('/language');
       }, 1500);
-    }, 2000);
+    }, 1000);
+  };
+
+  const handleRetry = () => {
+    setErrorMessage('');
+    setScanState('scanning');
+    window.location.reload();
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted flex flex-col items-center justify-center p-8">
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted flex flex-col items-center justify-center p-6">
       {/* Header */}
-      <div className="text-center mb-12 animate-fade-in">
+      <div className="text-center mb-8 animate-fade-in">
         <h1 className="text-display text-primary mb-4">{t('scan.title')}</h1>
         <p className="text-body-large text-muted-foreground max-w-md mx-auto">
           {t('scan.subtitle')}
         </p>
       </div>
 
-      {/* Scanner Card */}
-      <button
-        onClick={handleScan}
-        disabled={scanState !== 'idle'}
-        className="relative w-full max-w-md aspect-[1.6/1] bg-card rounded-3xl shadow-medium overflow-hidden transition-all duration-500 hover:shadow-glow hover:-translate-y-2 focus:outline-none focus:ring-4 focus:ring-primary/30 animate-fade-in"
+      {/* Scanner Container */}
+      <div 
+        className="relative w-full max-w-md aspect-square bg-card rounded-3xl shadow-medium overflow-hidden animate-fade-in"
         style={{ animationDelay: '0.2s' }}
       >
-        {/* Card background pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary to-secondary" />
-          <div className="absolute top-4 left-4 w-16 h-10 rounded-lg bg-primary/30" />
-          <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-secondary/30" />
-        </div>
-
-        {/* Scan line animation */}
         {scanState === 'scanning' && (
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-line" />
+          <>
+            {/* QR Scanner Video */}
+            <div id="qr-reader" className="w-full h-full" />
+            
+            {/* Overlay with corners */}
+            <div className="absolute inset-0 pointer-events-none">
+              {/* Scanning indicator */}
+              <div className="absolute top-4 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-background/80 px-4 py-2 rounded-full">
+                <Camera className="w-5 h-5 text-primary animate-pulse" />
+                <span className="text-sm font-medium text-foreground">{t('scan.scanning')}</span>
+              </div>
+              
+              {/* Corner markers */}
+              <div className="absolute top-8 left-8 w-16 h-16 border-t-4 border-l-4 border-primary rounded-tl-2xl" />
+              <div className="absolute top-8 right-8 w-16 h-16 border-t-4 border-r-4 border-primary rounded-tr-2xl" />
+              <div className="absolute bottom-8 left-8 w-16 h-16 border-b-4 border-l-4 border-primary rounded-bl-2xl" />
+              <div className="absolute bottom-8 right-8 w-16 h-16 border-b-4 border-r-4 border-primary rounded-br-2xl" />
+            </div>
+          </>
+        )}
+
+        {scanState === 'processing' && (
+          <div className="h-full flex flex-col items-center justify-center gap-6 p-8">
+            <Loader2 className="w-20 h-20 text-primary animate-spin" />
+            <p className="text-heading text-foreground">{t('scan.loading')}</p>
           </div>
         )}
 
-        {/* Content */}
-        <div className="relative z-10 h-full flex flex-col items-center justify-center gap-6 p-8">
-          {scanState === 'idle' && (
-            <>
-              <div className="w-24 h-24 rounded-full bg-accent flex items-center justify-center animate-float">
-                <CreditCard className="w-12 h-12 text-primary" />
-              </div>
-              <p className="text-heading text-foreground">{t('scan.instruction')}</p>
-            </>
-          )}
+        {scanState === 'success' && (
+          <div className="h-full flex flex-col items-center justify-center gap-6 p-8">
+            <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center">
+              <CheckCircle2 className="w-16 h-16 text-success animate-check" />
+            </div>
+            <p className="text-heading text-success">{t('scan.success')}</p>
+          </div>
+        )}
 
-          {scanState === 'scanning' && (
-            <>
-              <Loader2 className="w-16 h-16 text-primary animate-spin" />
-              <p className="text-heading text-foreground">{t('scan.scanning')}</p>
-            </>
-          )}
+        {scanState === 'error' && (
+          <div className="h-full flex flex-col items-center justify-center gap-6 p-8">
+            <div className="w-24 h-24 rounded-full bg-destructive/20 flex items-center justify-center">
+              <XCircle className="w-16 h-16 text-destructive" />
+            </div>
+            <p className="text-heading text-destructive text-center">{errorMessage}</p>
+            <button
+              onClick={handleRetry}
+              className="px-8 py-4 bg-primary text-primary-foreground rounded-full text-lg font-medium hover:bg-primary/90 transition-colors"
+            >
+              Try Again
+            </button>
+          </div>
+        )}
+      </div>
 
-          {scanState === 'success' && (
-            <>
-              <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center">
-                <CheckCircle2 className="w-16 h-16 text-success animate-check" />
-              </div>
-              <p className="text-heading text-success">{t('scan.success')}</p>
-            </>
-          )}
-
-          {scanState === 'loading' && (
-            <>
-              <Loader2 className="w-16 h-16 text-primary animate-spin" />
-              <p className="text-heading text-foreground">{t('scan.loading')}</p>
-            </>
-          )}
-        </div>
-
-        {/* Decorative corners */}
-        <div className="absolute top-0 left-0 w-12 h-12 border-t-4 border-l-4 border-primary/30 rounded-tl-3xl" />
-        <div className="absolute top-0 right-0 w-12 h-12 border-t-4 border-r-4 border-primary/30 rounded-tr-3xl" />
-        <div className="absolute bottom-0 left-0 w-12 h-12 border-b-4 border-l-4 border-primary/30 rounded-bl-3xl" />
-        <div className="absolute bottom-0 right-0 w-12 h-12 border-b-4 border-r-4 border-primary/30 rounded-br-3xl" />
-      </button>
-
-      {/* Tap hint */}
-      {scanState === 'idle' && (
-        <p className="mt-8 text-lg text-muted-foreground animate-pulse-slow">
-          Tap to simulate scan
+      {/* Instructions */}
+      {scanState === 'scanning' && (
+        <p className="mt-8 text-lg text-muted-foreground text-center max-w-sm">
+          Position the QR code on your IC or CHAS card within the frame
         </p>
       )}
     </div>
