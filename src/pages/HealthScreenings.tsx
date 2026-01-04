@@ -58,7 +58,7 @@ const screeningOptions = [
 ];
 
 export default function HealthScreenings() {
-  const { t, user, language } = useApp();
+  const { t, user, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
   const [state, setState] = useState<ScreeningState>('select');
   const [selectedType, setSelectedType] = useState<ScreeningType>(null);
@@ -67,7 +67,9 @@ export default function HealthScreenings() {
   const [loading, setLoading] = useState(true);
 
   const handleSpeak = (text: string) => {
-    speakText(text, language);
+    if (isTtsEnabled) {
+      speakText(text, language);
+    }
   };
 
   // Fetch past results on mount

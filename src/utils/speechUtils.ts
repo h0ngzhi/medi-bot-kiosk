@@ -4,11 +4,12 @@
 type Language = 'en' | 'zh' | 'ms' | 'ta';
 
 // Language codes for Web Speech API
+// Tamil has limited browser support - we try multiple variants and use Hindi as last resort
 const languageVoiceCodes: Record<Language, string[]> = {
   en: ['en-SG', 'en-GB', 'en-US', 'en'],
   zh: ['zh-CN', 'zh-SG', 'zh-TW', 'zh'],
   ms: ['ms-MY', 'ms', 'id-ID'], // Malay or Indonesian as fallback
-  ta: ['ta-IN', 'ta-SG', 'ta'],
+  ta: ['ta-IN', 'ta-SG', 'ta-LK', 'ta', 'hi-IN'], // Tamil with Hindi fallback for better support
 };
 
 let currentUtterance: SpeechSynthesisUtterance | null = null;

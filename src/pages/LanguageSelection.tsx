@@ -13,11 +13,13 @@ const languages: { code: Language; name: string; nativeName: string }[] = [
 ];
 
 export default function LanguageSelection() {
-  const { setLanguage, t } = useApp();
+  const { setLanguage, t, isTtsEnabled } = useApp();
   const navigate = useNavigate();
 
   const handleSpeak = (text: string, lang: Language) => {
-    speakText(text, lang);
+    if (isTtsEnabled) {
+      speakText(text, lang);
+    }
   };
 
   const handleLanguageSelect = (lang: Language) => {

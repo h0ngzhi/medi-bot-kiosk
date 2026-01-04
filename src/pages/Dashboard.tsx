@@ -62,11 +62,13 @@ const menuItems = [
 ];
 
 export default function Dashboard() {
-  const { user, t, setUser, language } = useApp();
+  const { user, t, setUser, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
 
   const handleSpeak = (text: string) => {
-    speakText(text, language);
+    if (isTtsEnabled) {
+      speakText(text, language);
+    }
   };
 
   const handleLogout = () => {

@@ -88,14 +88,16 @@ const mockProgrammes: Programme[] = [
 ];
 
 export default function CommunityProgrammes() {
-  const { t, language } = useApp();
+  const { t, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
   const [programmes, setProgrammes] = useState(mockProgrammes);
   const [showReviews, setShowReviews] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
   const handleSpeak = (text: string) => {
-    speakText(text, language);
+    if (isTtsEnabled) {
+      speakText(text, language);
+    }
   };
 
   const handleSignUp = (id: string) => {
