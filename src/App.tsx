@@ -14,6 +14,7 @@ import Teleconsult from "./pages/Teleconsult";
 import CommunityProgrammes from "./pages/CommunityProgrammes";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import { HealthChatBot } from "@/components/HealthChatBot";
 
 
 const queryClient = new QueryClient();
@@ -37,6 +38,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <HealthChatBot />
             
           </BrowserRouter>
         </TooltipProvider>
