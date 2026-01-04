@@ -1,6 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Building2, Hospital } from "lucide-react";
+import { useApp } from "@/contexts/AppContext";
 
 export type CHASCardType = 'blue' | 'orange' | 'green' | 'merdeka' | 'pioneer';
 
@@ -31,6 +32,7 @@ export const getPrice = (chasType: CHASCardType, doctorType: 'polyclinic' | 'hos
 };
 
 export const PricingDisplay = ({ chasType, doctorType }: PricingDisplayProps) => {
+  const { t } = useApp();
   const price = getPrice(chasType, doctorType);
   const cardInfo = CARD_COLORS[chasType];
   const Icon = doctorType === 'polyclinic' ? Building2 : Hospital;
@@ -45,7 +47,7 @@ export const PricingDisplay = ({ chasType, doctorType }: PricingDisplayProps) =>
             </div>
             <div>
               <h3 className="font-bold text-lg text-foreground">
-                {doctorType === 'polyclinic' ? 'Polyclinic Doctor' : 'Hospital Specialist'}
+                {doctorType === 'polyclinic' ? t('teleconsult.polyclinicDoctor') : t('teleconsult.hospitalSpecialist')}
               </h3>
               <Badge variant="outline" className={`${cardInfo.text} border-current`}>
                 {cardInfo.label}
@@ -55,10 +57,10 @@ export const PricingDisplay = ({ chasType, doctorType }: PricingDisplayProps) =>
         </div>
         
         <div className="bg-background/80 rounded-2xl p-4 text-center">
-          <p className="text-sm text-muted-foreground mb-1">Consultation Fee</p>
+          <p className="text-sm text-muted-foreground mb-1">{t('teleconsult.consultFee')}</p>
           <div className="flex items-baseline justify-center gap-1">
             {price === 0 ? (
-              <span className="text-4xl font-bold text-success">FREE</span>
+              <span className="text-4xl font-bold text-success">{t('teleconsult.free')}</span>
             ) : (
               <>
                 <span className="text-2xl font-semibold text-muted-foreground">S$</span>
@@ -67,7 +69,7 @@ export const PricingDisplay = ({ chasType, doctorType }: PricingDisplayProps) =>
             )}
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Subsidised rate for {cardInfo.label} cardholders
+            {t('teleconsult.subsidisedRate').replace('{cardType}', cardInfo.label)}
           </p>
         </div>
       </CardContent>

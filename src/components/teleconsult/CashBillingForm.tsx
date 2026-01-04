@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Banknote, Home, Video, Loader2, MapPin, Building, Mail } from "lucide-react";
+import { Banknote, Video, Loader2, MapPin, Mail } from "lucide-react";
+import { useApp } from "@/contexts/AppContext";
 
 interface CashBillingFormProps {
   amount: number;
@@ -13,6 +14,8 @@ interface CashBillingFormProps {
 }
 
 export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: CashBillingFormProps) => {
+  const { t } = useApp();
+  
   // Prefilled demo address data
   const [addressData, setAddressData] = useState({
     name: userName,
@@ -27,7 +30,7 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Banknote className="w-5 h-5 text-success" />
-          Bill to Home (Cash Payment)
+          {t('teleconsult.billCash')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -36,9 +39,9 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
           <div className="flex items-start gap-3">
             <Mail className="w-5 h-5 text-success mt-0.5" />
             <div>
-              <p className="font-medium text-foreground">Payment Bill Delivery</p>
+              <p className="font-medium text-foreground">{t('teleconsult.billDelivery')}</p>
               <p className="text-sm text-muted-foreground">
-                A payment bill will be sent to your address. Pay in cash when it arrives within 3-5 working days.
+                {t('teleconsult.billInfo')}
               </p>
             </div>
           </div>
@@ -47,7 +50,7 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
         {/* Address Form */}
         <div className="space-y-3">
           <div>
-            <Label htmlFor="name" className="text-sm">Full Name</Label>
+            <Label htmlFor="name" className="text-sm">{t('teleconsult.fullName')}</Label>
             <Input
               id="name"
               value={addressData.name}
@@ -57,7 +60,7 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="block" className="text-sm">Block/House No.</Label>
+              <Label htmlFor="block" className="text-sm">{t('teleconsult.blockNo')}</Label>
               <Input
                 id="block"
                 value={addressData.block}
@@ -65,7 +68,7 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
               />
             </div>
             <div>
-              <Label htmlFor="unit" className="text-sm">Unit No.</Label>
+              <Label htmlFor="unit" className="text-sm">{t('teleconsult.unitNo')}</Label>
               <Input
                 id="unit"
                 placeholder="#00-000"
@@ -76,7 +79,7 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
           </div>
           
           <div>
-            <Label htmlFor="street" className="text-sm">Street Name</Label>
+            <Label htmlFor="street" className="text-sm">{t('teleconsult.street')}</Label>
             <Input
               id="street"
               value={addressData.street}
@@ -85,7 +88,7 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
           </div>
           
           <div>
-            <Label htmlFor="postalCode" className="text-sm">Postal Code</Label>
+            <Label htmlFor="postalCode" className="text-sm">{t('teleconsult.postalCode')}</Label>
             <Input
               id="postalCode"
               value={addressData.postalCode}
@@ -116,7 +119,7 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
 
         {/* Amount Display */}
         <div className="bg-warning/10 rounded-lg p-3 flex justify-between items-center border border-warning/20">
-          <span className="text-sm text-muted-foreground">Amount Due (Pay Later)</span>
+          <span className="text-sm text-muted-foreground">{t('teleconsult.amountDue')}</span>
           <span className="text-xl font-bold text-foreground">S${amount.toFixed(2)}</span>
         </div>
 
@@ -131,18 +134,18 @@ export const CashBillingForm = ({ amount, onSubmit, isProcessing, userName }: Ca
           {isProcessing ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Confirming...
+              {t('teleconsult.confirming')}
             </>
           ) : (
             <>
               <Video className="w-5 h-5" />
-              Confirm & Start Consultation
+              {t('teleconsult.confirmStart')}
             </>
           )}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground">
-          By proceeding, you agree to pay the bill when it arrives at your address.
+          {t('teleconsult.agreePayBill')}
         </p>
       </CardContent>
     </Card>
