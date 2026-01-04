@@ -9,8 +9,20 @@ import {
   Gift,
   History,
   CheckCircle2,
-  Star
+  Star,
+  Plus,
+  Minus,
+  MapPin
 } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { supabase } from '@/integrations/supabase/client';
 
 // CHAS Card images
 import chasBlue from '@/assets/chas-blue.png';
@@ -25,30 +37,30 @@ interface Reward {
   title: string;
   points: number;
   description: string;
-  isRedeemed: boolean;
+  maxQuantity: number;
 }
 
-const mockRewards: Reward[] = [
+const availableRewards: Reward[] = [
   {
     id: '1',
     title: '$5 NTUC Voucher',
     points: 200,
     description: 'Use at any NTUC FairPrice outlet',
-    isRedeemed: false,
+    maxQuantity: 5,
   },
   {
     id: '2',
     title: '$10 Guardian Voucher',
     points: 400,
     description: 'Use at any Guardian pharmacy',
-    isRedeemed: false,
+    maxQuantity: 3,
   },
   {
     id: '3',
     title: 'Free Health Screening',
     points: 500,
     description: 'One free comprehensive health check',
-    isRedeemed: false,
+    maxQuantity: 2,
   },
 ];
 
@@ -61,13 +73,39 @@ const chasCardImages: Record<string, string> = {
 };
 
 export default function Profile() {
-  const { user, t } = useApp();
+  const { user, t, setUser } = useApp();
   const navigate = useNavigate();
-  const [rewards, setRewards] = useState(mockRewards);
   const [showRewards, setShowRewards] = useState(false);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const [showAddressDialog, setShowAddressDialog] = useState(false);
+  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [address, setAddress] = useState({
+    blockNo: '',
+    unitNo: '',
+    street: '',
+    postalCode: '',
+  });
 
-  const handleRedeem = (id: string, points: number) => {
-    if (!user || user.points < points) {
+  const handleQuantityChange = (rewardId: string, delta: number) => {
+    const reward = availableRewards.find(r => r.id === rewardId);
+    if (!reward) return;
+    
+    setQuantities(prev => {
+      const current = prev[rewardId] || 1;
+      const newQty = Math.max(1, Math.min(reward.maxQuantity, current + delta));
+      return { ...prev, [rewardId]: newQty };
+    });
+  };
+
+  const getQuantity = (rewardId: string) => quantities[rewardId] || 1;
+
+  const getTotalPoints = (reward: Reward) => reward.points * getQuantity(reward.id);
+
+  const canAfford = (reward: Reward) => user && user.points >= getTotalPoints(reward);
+
+  const handleRedeemClick = (reward: Reward) => {
+    if (!canAfford(reward)) {
       toast({
         title: 'Not enough points',
         description: 'Join more programmes to earn points!',
@@ -75,15 +113,62 @@ export default function Profile() {
       });
       return;
     }
+    setSelectedReward(reward);
+    setShowAddressDialog(true);
+  };
 
-    setRewards(prev =>
-      prev.map(r => (r.id === id ? { ...r, isRedeemed: true } : r))
-    );
+  const handleConfirmRedeem = async () => {
+    if (!selectedReward || !user) return;
+    
+    // Validate address
+    if (!address.blockNo || !address.street || !address.postalCode) {
+      toast({
+        title: 'Please fill in your address',
+        description: 'We need your address to deliver the reward.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
-    toast({
-      title: 'Reward Redeemed!',
-      description: 'Your voucher will be sent to your home.',
-    });
+    setIsProcessing(true);
+    const totalPointsToDeduct = getTotalPoints(selectedReward);
+    const newPoints = user.points - totalPointsToDeduct;
+
+    try {
+      // Update points in database
+      const { error } = await supabase
+        .from('kiosk_users')
+        .update({ points: newPoints })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      // Update local user state
+      setUser({
+        ...user,
+        points: newPoints,
+      });
+
+      toast({
+        title: 'Reward Redeemed!',
+        description: `${getQuantity(selectedReward.id)}x ${selectedReward.title} will be sent to your home.`,
+      });
+
+      setShowAddressDialog(false);
+      setSelectedReward(null);
+      setAddress({ blockNo: '', unitNo: '', street: '', postalCode: '' });
+      // Reset quantity for this reward
+      setQuantities(prev => ({ ...prev, [selectedReward.id]: 1 }));
+    } catch (error) {
+      console.error('Failed to redeem reward:', error);
+      toast({
+        title: 'Redemption Failed',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   useEffect(() => {
@@ -187,50 +272,178 @@ export default function Profile() {
 
           {showRewards && (
             <div className="space-y-4 animate-fade-in">
-              {rewards.map((reward) => (
-                <div
-                  key={reward.id}
-                  className={`bg-card rounded-2xl shadow-soft p-5 border-2 ${
-                    reward.isRedeemed ? 'border-success/50 opacity-60' : 'border-transparent'
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-foreground">{reward.title}</h3>
-                      <p className="text-sm text-muted-foreground">{reward.description}</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-1 text-warning">
-                        <Award className="w-5 h-5" />
-                        <span className="font-bold">{reward.points}</span>
+              {availableRewards.map((reward) => {
+                const quantity = getQuantity(reward.id);
+                const totalPoints = getTotalPoints(reward);
+                const affordable = canAfford(reward);
+
+                return (
+                  <div
+                    key={reward.id}
+                    className="bg-card rounded-2xl shadow-soft p-5 border-2 border-transparent"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="text-lg font-bold text-foreground">{reward.title}</h3>
+                        <p className="text-sm text-muted-foreground">{reward.description}</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center gap-1 text-warning">
+                          <Award className="w-5 h-5" />
+                          <span className="font-bold">{reward.points}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground">per voucher</p>
                       </div>
                     </div>
+
+                    {/* Quantity selector */}
+                    <div className="flex items-center justify-between mb-4 p-3 bg-muted rounded-xl">
+                      <span className="text-foreground font-medium">Quantity</span>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="w-10 h-10 rounded-full"
+                          onClick={() => handleQuantityChange(reward.id, -1)}
+                          disabled={quantity <= 1}
+                        >
+                          <Minus className="w-4 h-4" />
+                        </Button>
+                        <span className="text-xl font-bold w-8 text-center">{quantity}</span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="w-10 h-10 rounded-full"
+                          onClick={() => handleQuantityChange(reward.id, 1)}
+                          disabled={quantity >= reward.maxQuantity}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Total and redeem button */}
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-muted-foreground">Total points needed:</span>
+                      <span className="text-lg font-bold text-warning">{totalPoints} pts</span>
+                    </div>
+                    
+                    <Button
+                      variant={affordable ? 'warm' : 'outline'}
+                      size="lg"
+                      onClick={() => handleRedeemClick(reward)}
+                      disabled={!affordable}
+                      className="w-full"
+                    >
+                      {affordable ? (
+                        t('profile.redeem')
+                      ) : (
+                        `Need ${totalPoints - user.points} more points`
+                      )}
+                    </Button>
                   </div>
-                  
-                  <Button
-                    variant={reward.isRedeemed ? 'success' : user.points >= reward.points ? 'warm' : 'outline'}
-                    size="lg"
-                    onClick={() => !reward.isRedeemed && handleRedeem(reward.id, reward.points)}
-                    disabled={reward.isRedeemed || user.points < reward.points}
-                    className="w-full"
-                  >
-                    {reward.isRedeemed ? (
-                      <>
-                        <CheckCircle2 className="w-5 h-5" />
-                        Redeemed
-                      </>
-                    ) : user.points >= reward.points ? (
-                      t('profile.redeem')
-                    ) : (
-                      `Need ${reward.points - user.points} more points`
-                    )}
-                  </Button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </main>
+
+      {/* Address Dialog */}
+      <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
+        <DialogContent className="max-w-md mx-4">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <MapPin className="w-6 h-6 text-primary" />
+              Delivery Address
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <p className="text-muted-foreground">
+              Enter your address for reward delivery:
+            </p>
+
+            {selectedReward && (
+              <div className="bg-muted rounded-xl p-4">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="font-bold">{getQuantity(selectedReward.id)}x {selectedReward.title}</p>
+                    <p className="text-sm text-muted-foreground">Points to deduct: {getTotalPoints(selectedReward)}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="blockNo" className="text-base">Block/House No. *</Label>
+                <Input
+                  id="blockNo"
+                  value={address.blockNo}
+                  onChange={(e) => setAddress(prev => ({ ...prev, blockNo: e.target.value }))}
+                  placeholder="123"
+                  className="h-14 text-lg"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="unitNo" className="text-base">Unit No.</Label>
+                <Input
+                  id="unitNo"
+                  value={address.unitNo}
+                  onChange={(e) => setAddress(prev => ({ ...prev, unitNo: e.target.value }))}
+                  placeholder="#01-01"
+                  className="h-14 text-lg"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="street" className="text-base">Street Name *</Label>
+              <Input
+                id="street"
+                value={address.street}
+                onChange={(e) => setAddress(prev => ({ ...prev, street: e.target.value }))}
+                placeholder="Bedok North Avenue 1"
+                className="h-14 text-lg"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="postalCode" className="text-base">Postal Code *</Label>
+              <Input
+                id="postalCode"
+                value={address.postalCode}
+                onChange={(e) => setAddress(prev => ({ ...prev, postalCode: e.target.value }))}
+                placeholder="460123"
+                className="h-14 text-lg"
+                maxLength={6}
+              />
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setShowAddressDialog(false)}
+                className="flex-1"
+                disabled={isProcessing}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="warm"
+                size="lg"
+                onClick={handleConfirmRedeem}
+                className="flex-1"
+                disabled={isProcessing}
+              >
+                {isProcessing ? 'Processing...' : 'Confirm & Redeem'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <AccessibilityBar />
     </div>
