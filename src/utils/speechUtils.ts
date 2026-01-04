@@ -1,7 +1,7 @@
 // Free browser-based Text-to-Speech using Web Speech API
 // Supports multiple languages including English, Chinese, Malay, Tamil
 
-type Language = 'en' | 'zh' | 'ms' | 'ta';
+export type Language = 'en' | 'zh' | 'ms' | 'ta';
 
 // Language codes for Web Speech API
 // Tamil has limited browser support - we try multiple variants and use Hindi as last resort
