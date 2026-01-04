@@ -162,6 +162,51 @@ export type Database = {
           },
         ]
       }
+      screening_results: {
+        Row: {
+          bmi: number | null
+          created_at: string
+          diastolic: number | null
+          height: number | null
+          id: string
+          kiosk_user_id: string
+          pulse: number | null
+          recorded_at: string
+          screening_type: string
+          status: string
+          systolic: number | null
+          weight: number | null
+        }
+        Insert: {
+          bmi?: number | null
+          created_at?: string
+          diastolic?: number | null
+          height?: number | null
+          id?: string
+          kiosk_user_id: string
+          pulse?: number | null
+          recorded_at?: string
+          screening_type: string
+          status?: string
+          systolic?: number | null
+          weight?: number | null
+        }
+        Update: {
+          bmi?: number | null
+          created_at?: string
+          diastolic?: number | null
+          height?: number | null
+          id?: string
+          kiosk_user_id?: string
+          pulse?: number | null
+          recorded_at?: string
+          screening_type?: string
+          status?: string
+          systolic?: number | null
+          weight?: number | null
+        }
+        Relationships: []
+      }
       user_programme_signups: {
         Row: {
           attended_at: string | null
