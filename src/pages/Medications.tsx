@@ -471,7 +471,7 @@ export default function Medications() {
             <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
               <Pill className="w-8 h-8 text-primary" />
             </div>
-            <h1 className="text-heading text-foreground">{t('meds.title')}</h1>
+            <h1 className="text-heading text-foreground cursor-default" onMouseEnter={() => handleSpeak(t('meds.title'))}>{t('meds.title')}</h1>
           </div>
 
           {/* Step Indicator */}
@@ -498,9 +498,9 @@ export default function Medications() {
             ))}
           </div>
           <div className="flex justify-between mt-2 text-sm text-muted-foreground">
-            <span>{t('meds.step1')}</span>
-            <span>{t('meds.step2')}</span>
-            <span>{t('meds.step3')}</span>
+            <span className="cursor-default" onMouseEnter={() => handleSpeak(t('meds.step1'))}>{t('meds.step1')}</span>
+            <span className="cursor-default" onMouseEnter={() => handleSpeak(t('meds.step2'))}>{t('meds.step2')}</span>
+            <span className="cursor-default" onMouseEnter={() => handleSpeak(t('meds.step3'))}>{t('meds.step3')}</span>
           </div>
         </div>
       </header>
@@ -511,8 +511,8 @@ export default function Medications() {
           <>
             {/* Past Medications - Reference Only */}
             <section>
-              <h2 className="text-xl font-bold text-foreground mb-2">{t('meds.pastMeds')}</h2>
-              <p className="text-muted-foreground mb-4">{t('meds.pastMedsDesc')}</p>
+              <h2 className="text-xl font-bold text-foreground mb-2 cursor-default" onMouseEnter={() => handleSpeak(t('meds.pastMeds'))}>{t('meds.pastMeds')}</h2>
+              <p className="text-muted-foreground mb-4 cursor-default" onMouseEnter={() => handleSpeak(t('meds.pastMedsDesc'))}>{t('meds.pastMedsDesc')}</p>
               <div className="space-y-3">
                 {pastMedications.map((med) => (
                   <div
@@ -520,9 +520,9 @@ export default function Medications() {
                     className="bg-card rounded-2xl p-4 shadow-soft border border-border"
                   >
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h3 className="text-lg font-bold text-foreground">{med.name}</h3>
-                        <p className="text-muted-foreground">{med.purpose}</p>
+                      <div className="flex-1" onMouseEnter={() => handleSpeak(`${med.name}. ${med.purpose}. ${getStatusText(med.status)}. ${med.deliveryStatus}`)}>
+                        <h3 className="text-lg font-bold text-foreground cursor-default">{med.name}</h3>
+                        <p className="text-muted-foreground cursor-default">{med.purpose}</p>
                         <div className="flex items-center gap-3 mt-2 text-sm">
                           <div className="flex items-center gap-1.5 bg-muted px-2.5 py-1 rounded-full">
                             {getStatusIcon(med.status)}
@@ -545,8 +545,8 @@ export default function Medications() {
 
             {/* Order Medications */}
             <section>
-              <h2 className="text-xl font-bold text-foreground mb-2">{t('meds.orderMeds')}</h2>
-              <p className="text-muted-foreground mb-4">{t('meds.orderMedsDesc')}</p>
+              <h2 className="text-xl font-bold text-foreground mb-2 cursor-default" onMouseEnter={() => handleSpeak(t('meds.orderMeds'))}>{t('meds.orderMeds')}</h2>
+              <p className="text-muted-foreground mb-4 cursor-default" onMouseEnter={() => handleSpeak(t('meds.orderMedsDesc'))}>{t('meds.orderMedsDesc')}</p>
               <div className="space-y-4">
                 {orderableMedications.map((med) => (
                   <div
@@ -565,6 +565,7 @@ export default function Medications() {
                         <div 
                           className="flex items-start justify-between mb-2 cursor-pointer"
                           onClick={() => toggleMedicationSelection(med.id)}
+                          onMouseEnter={() => handleSpeak(`${med.name}. ${med.purpose}. S$${(med.pricePerBox * med.quantity).toFixed(2)}`)}
                         >
                           <div>
                             <h3 className="text-xl font-bold text-foreground">{med.name}</h3>
@@ -634,7 +635,7 @@ export default function Medications() {
 
             {/* Disclaimer */}
             <div className="bg-muted/50 rounded-xl p-4 border border-border">
-              <p className="text-base text-muted-foreground text-center leading-relaxed">
+              <p className="text-base text-muted-foreground text-center leading-relaxed cursor-default" onMouseEnter={() => handleSpeak(t('meds.disclaimer'))}>
                 {t('meds.disclaimer')}
               </p>
             </div>
@@ -655,8 +656,8 @@ export default function Medications() {
 
             {/* Delivery Options */}
             <section className="bg-card rounded-2xl p-5 shadow-soft border border-border">
-              <h2 className="text-xl font-bold text-foreground mb-2">{t('meds.deliveryTitle')}</h2>
-              <p className="text-lg text-muted-foreground mb-4">{t('meds.deliveryInfo')}</p>
+              <h2 className="text-xl font-bold text-foreground mb-2 cursor-default" onMouseEnter={() => handleSpeak(t('meds.deliveryTitle'))}>{t('meds.deliveryTitle')}</h2>
+              <p className="text-lg text-muted-foreground mb-4 cursor-default" onMouseEnter={() => handleSpeak(t('meds.deliveryInfo'))}>{t('meds.deliveryInfo')}</p>
               
               <div className="space-y-3">
                 <Button
@@ -712,7 +713,7 @@ export default function Medications() {
             {/* Payment Options */}
             {deliveryOption && (deliveryOption === 'home' || selectedClinic) && (
               <section className="bg-card rounded-2xl p-5 shadow-soft border border-border">
-                <h2 className="text-xl font-bold text-foreground mb-4">{t('meds.paymentTitle')}</h2>
+                <h2 className="text-xl font-bold text-foreground mb-4 cursor-default" onMouseEnter={() => handleSpeak(t('meds.paymentTitle'))}>{t('meds.paymentTitle')}</h2>
                 
                 <div className="space-y-3">
                   <Button

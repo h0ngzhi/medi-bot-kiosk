@@ -123,7 +123,7 @@ export default function CommunityProgrammes() {
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-heading text-foreground">{t('community.title')}</h1>
+          <h1 className="text-heading text-foreground cursor-default" onMouseEnter={() => handleSpeak(t('community.title'))}>{t('community.title')}</h1>
         </div>
       </header>
 
@@ -159,27 +159,30 @@ export default function CommunityProgrammes() {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-foreground mb-2">{programme.title}</h3>
-                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                <div onMouseEnter={() => handleSpeak(`${programme.title}. ${programme.date} ${programme.time}. ${programme.location}`)}>
+                  <h3 className="text-xl font-bold text-foreground mb-2 cursor-default">{programme.title}</h3>
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1 cursor-default">
                     <Calendar className="w-5 h-5" />
                     <span>{programme.date} • {programme.time}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2 text-muted-foreground cursor-default">
                     <MapPin className="w-5 h-5" />
                     <span>{programme.location}</span>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="flex items-center gap-1 text-warning mb-1">
+                <div className="text-right" onMouseEnter={() => handleSpeak(`${programme.points} ${t('community.points')}`)}>
+                  <div className="flex items-center gap-1 text-warning mb-1 cursor-default">
                     <Award className="w-5 h-5" />
                     <span className="font-bold">{programme.points}</span>
                   </div>
-                  <span className="text-sm text-muted-foreground">{t('community.points')}</span>
+                  <span className="text-sm text-muted-foreground cursor-default">{t('community.points')}</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-muted-foreground mb-4">
+              <div 
+                className="flex items-center gap-2 text-muted-foreground mb-4 cursor-default"
+                onMouseEnter={() => handleSpeak(`${programme.participants} participants${programme.rating ? `. Rating: ${programme.rating}` : ''}`)}
+              >
                 <Users className="w-5 h-5" />
                 <span>{programme.participants} participants</span>
                 {programme.rating && (

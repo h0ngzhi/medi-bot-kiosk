@@ -251,7 +251,7 @@ export default function Profile() {
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-heading text-foreground">{t('profile.title')}</h1>
+          <h1 className="text-heading text-foreground cursor-default" onMouseEnter={() => handleButtonSpeak(t('profile.title'))}>{t('profile.title')}</h1>
         </div>
       </header>
 
@@ -276,9 +276,9 @@ export default function Profile() {
               <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center">
                 <Award className="w-8 h-8 text-warning" />
               </div>
-              <div>
-                <p className="text-muted-foreground">{t('profile.points')}</p>
-                <p className="text-4xl font-bold text-foreground">{user.points}</p>
+              <div onMouseEnter={() => handleButtonSpeak(`${t('profile.points')}: ${user.points}`)}>
+                <p className="text-muted-foreground cursor-default">{t('profile.points')}</p>
+                <p className="text-4xl font-bold text-foreground cursor-default">{user.points}</p>
               </div>
             </div>
             <div className="flex">
@@ -291,23 +291,27 @@ export default function Profile() {
 
         {/* Participation history */}
         <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="flex items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 mb-4" onMouseEnter={() => handleButtonSpeak(t('profile.history'))}>
             <History className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-bold text-foreground">{t('profile.history')}</h2>
+            <h2 className="text-xl font-bold text-foreground cursor-default">{t('profile.history')}</h2>
           </div>
           <div className="space-y-3">
             {user.participationHistory.length > 0 ? (
               user.participationHistory.map((item, index) => (
                 <div
                   key={index}
-                  className="flex items-center gap-3 p-3 bg-muted rounded-xl"
+                  className="flex items-center gap-3 p-3 bg-muted rounded-xl cursor-default"
+                  onMouseEnter={() => handleButtonSpeak(item)}
                 >
                   <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
                   <span className="text-foreground">{item}</span>
                 </div>
               ))
             ) : (
-              <div className="text-center py-6 text-muted-foreground">
+              <div 
+                className="text-center py-6 text-muted-foreground cursor-default"
+                onMouseEnter={() => handleButtonSpeak(`${t('profile.noHistory')}. ${t('profile.joinProgrammes')}`)}
+              >
                 <p className="text-lg">{t('profile.noHistory')}</p>
                 <p className="text-sm mt-1">{t('profile.joinProgrammes')}</p>
               </div>
