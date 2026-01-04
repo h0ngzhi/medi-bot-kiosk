@@ -37,6 +37,39 @@ export default function Teleconsult() {
     setPaymentMethod(method);
   };
 
+  // Validate meeting URL is from a trusted video conferencing provider
+  const isValidMeetingUrl = (url: string): boolean => {
+    try {
+      const parsed = new URL(url);
+      
+      // Must be HTTPS
+      if (parsed.protocol !== 'https:') {
+        return false;
+      }
+      
+      // Whitelist of allowed video conferencing domains
+      const allowedDomains = [
+        'zoom.us',
+        'meet.google.com',
+        'teams.microsoft.com',
+        'whereby.com',
+        'webex.com',
+        'gotomeeting.com',
+        'jitsi.org',
+        'meet.jit.si',
+        'daily.co',
+        'around.co',
+      ];
+      
+      return allowedDomains.some(domain => 
+        parsed.hostname === domain || 
+        parsed.hostname.endsWith(`.${domain}`)
+      );
+    } catch {
+      return false;
+    }
+  };
+
   const handleStartConsult = async () => {
     if (!paymentMethod) return;
 
@@ -65,8 +98,13 @@ export default function Teleconsult() {
 
       const data = await response.json();
 
+      // Validate the meeting URL before opening
       if (data.meetingUrl && data.status === "scheduled") {
-        // Open the meeting URL in a new tab
+        if (!isValidMeetingUrl(data.meetingUrl)) {
+          throw new Error("Invalid or untrusted meeting URL received");
+        }
+        
+        // Open the validated meeting URL in a new tab
         window.open(data.meetingUrl, "_blank", "noopener,noreferrer");
         setState("connected");
         toast({
