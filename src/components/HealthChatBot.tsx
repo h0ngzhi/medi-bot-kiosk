@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Send, Loader2 } from "lucide-react";
+import { MessageCircle, X, Send, Loader2, Mic, MicOff, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useApp } from "@/contexts/AppContext";
 import { toast } from "@/hooks/use-toast";
+import { speakText, stopSpeaking, type Language } from "@/utils/speechUtils";
+import Lottie from "lottie-react";
+import healthAssistantAnimation from "@/assets/health-assistant.json";
 
 type Message = {
   role: "user" | "assistant";
@@ -16,28 +19,47 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/health-chat`
 const translations = {
   en: {
     title: "Health Assistant",
-    placeholder: "Type your message...",
+    placeholder: "Type or speak your message...",
     greeting: "Hello! I'm here to help you use this health kiosk. How can I assist you today?",
     error: "Sorry, something went wrong. Please try again.",
+    listening: "Listening...",
+    micError: "Could not access microphone. Please allow microphone access.",
+    speechNotSupported: "Voice input is not supported in this browser.",
   },
   zh: {
     title: "健康助手",
-    placeholder: "输入您的消息...",
+    placeholder: "输入或说出您的消息...",
     greeting: "您好！我在这里帮助您使用这个健康服务站。今天我能为您做些什么？",
     error: "抱歉，出现了问题。请再试一次。",
+    listening: "正在听...",
+    micError: "无法访问麦克风。请允许麦克风访问。",
+    speechNotSupported: "此浏览器不支持语音输入。",
   },
   ms: {
     title: "Pembantu Kesihatan",
-    placeholder: "Taip mesej anda...",
+    placeholder: "Taip atau sebut mesej anda...",
     greeting: "Hai! Saya di sini untuk membantu anda menggunakan kiosk kesihatan ini. Bagaimana saya boleh membantu anda hari ini?",
     error: "Maaf, sesuatu telah berlaku. Sila cuba lagi.",
+    listening: "Mendengar...",
+    micError: "Tidak dapat mengakses mikrofon. Sila benarkan akses mikrofon.",
+    speechNotSupported: "Input suara tidak disokong dalam pelayar ini.",
   },
   ta: {
     title: "சுகாதார உதவியாளர்",
-    placeholder: "உங்கள் செய்தியை தட்டச்சு செய்க...",
+    placeholder: "உங்கள் செய்தியை தட்டச்சு செய்க அல்லது பேசுங்கள்...",
     greeting: "வணக்கம்! இந்த சுகாதார கியோஸ்க்கைப் பயன்படுத்த உங்களுக்கு உதவ நான் இங்கே இருக்கிறேன். இன்று நான் உங்களுக்கு எவ்வாறு உதவ முடியும்?",
     error: "மன்னிக்கவும், ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.",
+    listening: "கேட்கிறது...",
+    micError: "மைக்ரோஃபோனை அணுக முடியவில்லை. மைக்ரோஃபோன் அணுகலை அனுமதிக்கவும்.",
+    speechNotSupported: "இந்த உலாவியில் குரல் உள்ளீடு ஆதரிக்கப்படவில்லை.",
   },
+};
+
+const languageToSpeechCode: Record<Language, string> = {
+  en: "en-US",
+  zh: "zh-CN",
+  ms: "ms-MY",
+  ta: "ta-IN",
 };
 
 export function HealthChatBot() {
@@ -50,8 +72,11 @@ export function HealthChatBot() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionType | null>(null);
 
   // Update greeting when language changes
   useEffect(() => {
@@ -73,6 +98,90 @@ export function HealthChatBot() {
       inputRef.current.focus();
     }
   }, [isOpen]);
+
+  // Cleanup speech recognition on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      stopSpeaking();
+    };
+  }, []);
+
+  const startListening = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    if (!SpeechRecognition) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: t.speechNotSupported,
+      });
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = languageToSpeechCode[language];
+    recognition.continuous = false;
+    recognition.interimResults = true;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event) => {
+      const transcript = Array.from(event.results)
+        .map(result => result[0].transcript)
+        .join("");
+      setInput(transcript);
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+      if (event.error === "not-allowed") {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: t.micError,
+        });
+      }
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }, [language, t.micError, t.speechNotSupported]);
+
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      setIsListening(false);
+    }
+  }, []);
+
+  const handleSpeak = useCallback((text: string, index: number) => {
+    if (speakingIndex === index) {
+      stopSpeaking();
+      setSpeakingIndex(null);
+    } else {
+      stopSpeaking();
+      setSpeakingIndex(index);
+      speakText(text, language);
+      
+      // Reset speaking state when speech ends
+      const checkSpeaking = setInterval(() => {
+        if (!window.speechSynthesis.speaking) {
+          setSpeakingIndex(null);
+          clearInterval(checkSpeaking);
+        }
+      }, 100);
+    }
+  }, [language, speakingIndex]);
 
   const streamChat = useCallback(async (userMessages: Message[]) => {
     const resp = await fetch(CHAT_URL, {
@@ -170,21 +279,32 @@ export function HealthChatBot() {
   return (
     <>
       {/* Chat Toggle Button */}
-      <Button
-        onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50"
-        size="icon"
-        aria-label="Open health assistant chat"
-      >
-        <MessageCircle className="h-8 w-8" />
-      </Button>
+      {!isOpen && (
+        <Button
+          onClick={() => setIsOpen(true)}
+          className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50"
+          size="icon"
+          aria-label="Open health assistant chat"
+        >
+          <MessageCircle className="h-8 w-8" />
+        </Button>
+      )}
 
       {/* Chat Window */}
       {isOpen && (
         <div className="fixed bottom-6 right-6 w-[400px] max-w-[calc(100vw-48px)] h-[600px] max-h-[calc(100vh-100px)] bg-background border border-border rounded-2xl shadow-2xl flex flex-col z-50">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-border bg-primary text-primary-foreground rounded-t-2xl">
-            <h2 className="text-xl font-semibold">{t.title}</h2>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center overflow-hidden">
+                <Lottie 
+                  animationData={healthAssistantAnimation} 
+                  loop={true}
+                  className="w-12 h-12"
+                />
+              </div>
+              <h2 className="text-xl font-semibold">{t.title}</h2>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -204,19 +324,49 @@ export function HealthChatBot() {
                   key={index}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                 >
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-lg leading-relaxed ${
-                      message.role === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-foreground"
-                    }`}
-                  >
-                    {message.content}
+                  {message.role === "assistant" && (
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mr-2 flex-shrink-0 overflow-hidden">
+                      <Lottie 
+                        animationData={healthAssistantAnimation} 
+                        loop={true}
+                        className="w-10 h-10"
+                      />
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-1 max-w-[75%]">
+                    <div
+                      className={`rounded-2xl px-4 py-3 text-lg leading-relaxed ${
+                        message.role === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-foreground"
+                      }`}
+                    >
+                      {message.content}
+                    </div>
+                    {message.role === "assistant" && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleSpeak(message.content, index)}
+                        className={`self-start h-8 px-2 ${speakingIndex === index ? "text-primary" : "text-muted-foreground"}`}
+                        aria-label="Listen to message"
+                      >
+                        <Volume2 className={`h-4 w-4 mr-1 ${speakingIndex === index ? "animate-pulse" : ""}`} />
+                        <span className="text-sm">{speakingIndex === index ? "Playing..." : "Listen"}</span>
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
               {isLoading && messages[messages.length - 1]?.role === "user" && (
                 <div className="flex justify-start">
+                  <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center mr-2 flex-shrink-0 overflow-hidden">
+                    <Lottie 
+                      animationData={healthAssistantAnimation} 
+                      loop={true}
+                      className="w-10 h-10"
+                    />
+                  </div>
                   <div className="bg-muted rounded-2xl px-4 py-3">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
@@ -227,7 +377,26 @@ export function HealthChatBot() {
 
           {/* Input */}
           <div className="p-4 border-t border-border">
+            {isListening && (
+              <div className="text-center text-primary text-sm mb-2 animate-pulse">
+                {t.listening}
+              </div>
+            )}
             <div className="flex gap-2">
+              <Button
+                onClick={isListening ? stopListening : startListening}
+                variant={isListening ? "destructive" : "outline"}
+                className="h-14 w-14 flex-shrink-0"
+                size="icon"
+                disabled={isLoading}
+                aria-label={isListening ? "Stop listening" : "Start voice input"}
+              >
+                {isListening ? (
+                  <MicOff className="h-6 w-6" />
+                ) : (
+                  <Mic className="h-6 w-6" />
+                )}
+              </Button>
               <Input
                 ref={inputRef}
                 value={input}
@@ -257,4 +426,33 @@ export function HealthChatBot() {
       )}
     </>
   );
+}
+
+// Add type declarations for Web Speech API
+interface SpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionErrorEvent extends Event {
+  error: string;
+}
+
+interface SpeechRecognitionType {
+  new (): SpeechRecognitionType;
+  lang: string;
+  continuous: boolean;
+  interimResults: boolean;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+}
+
+declare global {
+  interface Window {
+    SpeechRecognition: SpeechRecognitionType;
+    webkitSpeechRecognition: SpeechRecognitionType;
+  }
 }
