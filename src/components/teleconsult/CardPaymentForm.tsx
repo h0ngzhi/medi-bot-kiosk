@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { CreditCard, Lock, Video, Loader2 } from "lucide-react";
+import { CreditCard, Lock, Loader2 } from "lucide-react";
+import { useApp } from "@/contexts/AppContext";
 
 interface CardPaymentFormProps {
   amount: number;
@@ -13,6 +14,8 @@ interface CardPaymentFormProps {
 }
 
 export const CardPaymentForm = ({ amount, onSubmit, isProcessing, userName }: CardPaymentFormProps) => {
+  const { t } = useApp();
+  
   // Prefilled demo card data
   const [cardData, setCardData] = useState({
     cardNumber: '4242 4242 4242 4242',
@@ -45,7 +48,7 @@ export const CardPaymentForm = ({ amount, onSubmit, isProcessing, userName }: Ca
       <CardHeader className="pb-4">
         <CardTitle className="flex items-center gap-2 text-lg">
           <CreditCard className="w-5 h-5 text-primary" />
-          Card Payment
+          {t('teleconsult.cardPayment')}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -73,7 +76,7 @@ export const CardPaymentForm = ({ amount, onSubmit, isProcessing, userName }: Ca
         {/* Form Fields */}
         <div className="space-y-3">
           <div>
-            <Label htmlFor="cardNumber" className="text-sm">Card Number</Label>
+            <Label htmlFor="cardNumber" className="text-sm">{t('teleconsult.cardNumber')}</Label>
             <Input
               id="cardNumber"
               value={cardData.cardNumber}
@@ -84,7 +87,7 @@ export const CardPaymentForm = ({ amount, onSubmit, isProcessing, userName }: Ca
           </div>
           
           <div>
-            <Label htmlFor="cardName" className="text-sm">Cardholder Name</Label>
+            <Label htmlFor="cardName" className="text-sm">{t('teleconsult.cardHolder')}</Label>
             <Input
               id="cardName"
               value={cardData.cardName}
@@ -94,7 +97,7 @@ export const CardPaymentForm = ({ amount, onSubmit, isProcessing, userName }: Ca
           
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="expiry" className="text-sm">Expiry Date</Label>
+              <Label htmlFor="expiry" className="text-sm">{t('teleconsult.expiry')}</Label>
               <Input
                 id="expiry"
                 placeholder="MM/YY"
@@ -118,7 +121,7 @@ export const CardPaymentForm = ({ amount, onSubmit, isProcessing, userName }: Ca
 
         {/* Amount Display */}
         <div className="bg-muted/50 rounded-lg p-3 flex justify-between items-center">
-          <span className="text-sm text-muted-foreground">Total Amount</span>
+          <span className="text-sm text-muted-foreground">{t('teleconsult.totalAmount')}</span>
           <span className="text-xl font-bold text-foreground">S${amount.toFixed(2)}</span>
         </div>
 
@@ -133,19 +136,19 @@ export const CardPaymentForm = ({ amount, onSubmit, isProcessing, userName }: Ca
           {isProcessing ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Processing Payment...
+              {t('teleconsult.processing')}
             </>
           ) : (
             <>
               <Lock className="w-5 h-5" />
-              Pay S${amount.toFixed(2)} & Start Consultation
+              {t('teleconsult.payStart')} - S${amount.toFixed(2)}
             </>
           )}
         </Button>
 
         <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-1">
           <Lock className="w-3 h-3" />
-          Your payment is secured with SSL encryption
+          {t('teleconsult.securePayment')}
         </p>
       </CardContent>
     </Card>

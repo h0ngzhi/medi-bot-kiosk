@@ -162,7 +162,7 @@ export default function Teleconsult() {
         {/* Step 1: Doctor type selection with pricing */}
         {state === "pricing" && (
           <div className="space-y-6 animate-fade-in">
-            <h2 className="text-xl font-bold text-foreground">Select Consultation Type</h2>
+            <h2 className="text-xl font-bold text-foreground">{t('teleconsult.selectType')}</h2>
             
             <div className="space-y-4">
               {/* Polyclinic Option */}
@@ -200,7 +200,7 @@ export default function Teleconsult() {
               disabled={!doctorType}
               className="w-full"
             >
-              Continue to Payment
+              {t('teleconsult.continuePayment')}
             </Button>
           </div>
         )}
@@ -217,11 +217,11 @@ export default function Teleconsult() {
                     <Hospital className="w-6 h-6 text-secondary" />
                   )}
                   <span className="font-medium">
-                    {doctorType === 'polyclinic' ? 'Polyclinic Doctor' : 'Hospital Specialist'}
+                    {doctorType === 'polyclinic' ? t('teleconsult.polyclinicDoctor') : t('teleconsult.hospitalSpecialist')}
                   </span>
                 </div>
                 <span className="text-xl font-bold">
-                  {currentPrice === 0 ? 'FREE' : `S$${currentPrice.toFixed(2)}`}
+                  {currentPrice === 0 ? t('teleconsult.free') : `S$${currentPrice.toFixed(2)}`}
                 </span>
               </div>
             </div>
@@ -236,7 +236,7 @@ export default function Teleconsult() {
                 className="flex-1"
               >
                 <CreditCard className="w-5 h-5 mr-2" />
-                Pay by Card
+                {t('teleconsult.payByCard')}
               </Button>
               <Button
                 variant={paymentMethod === "cash" ? "default" : "outline"}
@@ -244,7 +244,7 @@ export default function Teleconsult() {
                 className="flex-1"
               >
                 <Banknote className="w-5 h-5 mr-2" />
-                Bill to Home
+                {t('teleconsult.billHome')}
               </Button>
             </div>
 
@@ -292,9 +292,9 @@ export default function Teleconsult() {
                 <div className="w-24 h-24 rounded-full bg-success/20 flex items-center justify-center mb-6">
                   <CheckCircle2 className="w-12 h-12 text-success" />
                 </div>
-                <h2 className="text-heading text-foreground mb-2">Consultation Started</h2>
+                <h2 className="text-heading text-foreground mb-2">{t('teleconsult.connected')}</h2>
                 <p className="text-muted-foreground mb-4">
-                  Your video consultation has been opened in a new browser tab.
+                  {t('teleconsult.connected.desc')}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {doctorType === "polyclinic" ? t("teleconsult.polyclinic") : t("teleconsult.hospital")}
@@ -303,7 +303,7 @@ export default function Teleconsult() {
             </div>
 
             <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
-              Return to Dashboard
+              {t('teleconsult.returnDashboard')}
             </Button>
           </div>
         )}
@@ -316,19 +316,19 @@ export default function Teleconsult() {
                 <div className="w-24 h-24 rounded-full bg-destructive/20 flex items-center justify-center mb-6">
                   <XCircle className="w-12 h-12 text-destructive" />
                 </div>
-                <h2 className="text-heading text-foreground mb-2">Connection Failed</h2>
+                <h2 className="text-heading text-foreground mb-2">{t('teleconsult.failed')}</h2>
                 <p className="text-muted-foreground mb-4">
-                  {errorMessage || "Unable to start the teleconsultation. Please try again."}
+                  {errorMessage || t('teleconsult.failed.desc')}
                 </p>
               </div>
             </div>
 
             <div className="space-y-4">
               <Button variant="warm" size="xl" onClick={() => setState("payment")} className="w-full">
-                Try Again
+                {t('teleconsult.tryAgain')}
               </Button>
               <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
-                Go Back
+                {t('teleconsult.goBack')}
               </Button>
             </div>
           </div>
