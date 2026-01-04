@@ -14,7 +14,196 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      community_programmes: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_date: string | null
+          id: string
+          is_active: boolean
+          location: string | null
+          points_reward: number
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          points_reward?: number
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_date?: string | null
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          points_reward?: number
+          title?: string
+        }
+        Relationships: []
+      }
+      health_screenings: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          kiosk_user_id: string
+          location: string | null
+          scheduled_date: string | null
+          status: string
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          kiosk_user_id: string
+          location?: string | null
+          scheduled_date?: string | null
+          status?: string
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          kiosk_user_id?: string
+          location?: string | null
+          scheduled_date?: string | null
+          status?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_screenings_kiosk_user_id_fkey"
+            columns: ["kiosk_user_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kiosk_users: {
+        Row: {
+          chas_card_type: string | null
+          created_at: string
+          id: string
+          name: string
+          points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          chas_card_type?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          chas_card_type?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      medications: {
+        Row: {
+          created_at: string
+          delivery_date: string | null
+          delivery_status: string
+          dosage: string | null
+          id: string
+          is_current: boolean
+          kiosk_user_id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          delivery_date?: string | null
+          delivery_status?: string
+          dosage?: string | null
+          id?: string
+          is_current?: boolean
+          kiosk_user_id: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          delivery_date?: string | null
+          delivery_status?: string
+          dosage?: string | null
+          id?: string
+          is_current?: boolean
+          kiosk_user_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "medications_kiosk_user_id_fkey"
+            columns: ["kiosk_user_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_programme_signups: {
+        Row: {
+          attended_at: string | null
+          id: string
+          kiosk_user_id: string
+          programme_id: string
+          signed_up_at: string
+          status: string
+        }
+        Insert: {
+          attended_at?: string | null
+          id?: string
+          kiosk_user_id: string
+          programme_id: string
+          signed_up_at?: string
+          status?: string
+        }
+        Update: {
+          attended_at?: string | null
+          id?: string
+          kiosk_user_id?: string
+          programme_id?: string
+          signed_up_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_programme_signups_kiosk_user_id_fkey"
+            columns: ["kiosk_user_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_programme_signups_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "community_programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
