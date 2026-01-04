@@ -66,8 +66,10 @@ export default function Teleconsult() {
       const data = await response.json();
 
       if (data.meetingUrl && data.status === "scheduled") {
+        // Clean the URL (webhook sometimes returns "=https://" instead of "https://")
+        const cleanUrl = data.meetingUrl.replace(/^=/, '');
         // Open the meeting URL in a new tab
-        window.location.href = data.meetingUrl;
+        window.open(cleanUrl, '_blank', 'noopener,noreferrer');
         setState("connected");
         toast({
           title: "Consultation Started",
