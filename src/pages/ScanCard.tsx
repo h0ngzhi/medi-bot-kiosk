@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle2, Loader2, Camera, XCircle } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useApp } from '@/contexts/AppContext';
+import { supabase } from '@/integrations/supabase/client';
 
 type ScanState = 'scanning' | 'processing' | 'success' | 'error';
 
@@ -69,18 +70,45 @@ export default function ScanCard() {
 
     // Parse QR code data - expecting format: "ID:name" or just use as ID
     const parts = qrData.split(':');
-    const id = parts[0];
-    const name = parts[1] || `User ${id.slice(-4)}`;
+    const nric = parts[0];
+    const name = parts[1] || `User ${nric.slice(-4)}`;
 
-    // Simulate database lookup/creation
-    setTimeout(() => {
-      // Create user profile (in real app, this would check/create in database)
+    try {
+      // Check if user already exists in database
+      let { data: existingUser, error: fetchError } = await supabase
+        .from('kiosk_users')
+        .select('*')
+        .eq('user_id', nric)
+        .maybeSingle();
+
+      if (fetchError) throw fetchError;
+
+      let kioskUser = existingUser;
+
+      // If not found, create new user
+      if (!kioskUser) {
+        const { data: newUser, error: insertError } = await supabase
+          .from('kiosk_users')
+          .insert({
+            user_id: nric,
+            name: name,
+            chas_card_type: 'blue',
+            points: 0,
+          })
+          .select()
+          .single();
+
+        if (insertError) throw insertError;
+        kioskUser = newUser;
+      }
+
+      // Create user profile with database ID
       const user = {
-        id,
-        name,
-        nric: id,
-        chasType: 'Blue' as const,
-        points: 0, // New users start with 0 points
+        id: kioskUser.id, // UUID from database
+        name: kioskUser.name,
+        nric: kioskUser.user_id,
+        chasType: (kioskUser.chas_card_type?.charAt(0).toUpperCase() + kioskUser.chas_card_type?.slice(1)) as 'Blue' | 'Orange' | 'Green',
+        points: kioskUser.points,
         participationHistory: [],
       };
 
@@ -90,7 +118,11 @@ export default function ScanCard() {
       setTimeout(() => {
         navigate('/language');
       }, 1500);
-    }, 1000);
+    } catch (error) {
+      console.error('Error creating/fetching user:', error);
+      setErrorMessage('Unable to process card. Please try again.');
+      setScanState('error');
+    }
   };
 
   const handleRetry = () => {
