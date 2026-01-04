@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Lock } from 'lucide-react';
 
-const PROTOTYPE_PASSWORD = 'kiosk2025';
+const PROTOTYPE_PASSWORD = 'proidteam3healthhustlers123';
 const AUTH_KEY = 'prototype_authenticated';
 
 interface PrototypeGateProps {
