@@ -5,6 +5,7 @@ import { AccessibilityBar } from '@/components/AccessibilityBar';
 import { supabase } from '@/integrations/supabase/client';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { speakText } from '@/utils/speechUtils';
 import { 
   ArrowLeft, 
   Pill, 
@@ -53,9 +54,13 @@ interface OrderableMedication {
 type Step = 'select' | 'delivery' | 'confirmation';
 
 export default function Medications() {
-  const { user, t } = useApp();
+  const { user, t, language } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const handleSpeak = (text: string) => {
+    speakText(text, language);
+  };
   
   const [pastMedications, setPastMedications] = useState<PastMedication[]>([]);
   const [orderableMedications, setOrderableMedications] = useState<OrderableMedication[]>([]);
@@ -431,7 +436,13 @@ export default function Medications() {
               </p>
             </div>
 
-            <Button variant="warm" size="xl" className="w-full" onClick={() => navigate('/dashboard')}>
+            <Button 
+              variant="warm" 
+              size="xl" 
+              className="w-full" 
+              onClick={() => navigate('/dashboard')}
+              onMouseEnter={() => handleSpeak(t('teleconsult.returnDashboard'))}
+            >
               {t('teleconsult.returnDashboard')}
             </Button>
           </div>
@@ -450,6 +461,7 @@ export default function Medications() {
           <Button
             variant="ghost"
             onClick={step === 'select' ? () => navigate('/dashboard') : handleBack}
+            onMouseEnter={() => handleSpeak(t('common.back'))}
             className="mb-4 -ml-2 text-lg h-14"
           >
             <ArrowLeft className="w-6 h-6 mr-2" />
@@ -613,6 +625,7 @@ export default function Medications() {
               className="w-full"
               disabled={!canProceed}
               onClick={() => setStep('delivery')}
+              onMouseEnter={() => handleSpeak(t('meds.continuePayment'))}
             >
               <ShoppingCart className="w-5 h-5" />
               {t('meds.continuePayment')} ({getTotalBoxes()} {getTotalBoxes() === 1 ? 'box' : 'boxes'})
@@ -653,6 +666,7 @@ export default function Medications() {
                     setDeliveryOption('home');
                     setSelectedClinic(null);
                   }}
+                  onMouseEnter={() => handleSpeak(t('meds.delivery.home'))}
                 >
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                     deliveryOption === 'home' ? 'bg-primary-foreground/20' : 'bg-primary/10'
@@ -670,6 +684,7 @@ export default function Medications() {
                   variant={deliveryOption === 'clinic' ? 'default' : 'outline'}
                   className="w-full h-16 text-lg justify-start gap-4"
                   onClick={() => setDeliveryOption('clinic')}
+                  onMouseEnter={() => handleSpeak(t('meds.delivery.clinic'))}
                 >
                   <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                     deliveryOption === 'clinic' ? 'bg-primary-foreground/20' : 'bg-secondary/10'
@@ -707,6 +722,7 @@ export default function Medications() {
                       setPaymentOption('card');
                       setStep('confirmation');
                     }}
+                    onMouseEnter={() => handleSpeak(t('meds.payment.card'))}
                   >
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                       paymentOption === 'card' ? 'bg-primary-foreground/20' : 'bg-primary/10'
@@ -722,6 +738,7 @@ export default function Medications() {
                       setPaymentOption('bill');
                       setStep('confirmation');
                     }}
+                    onMouseEnter={() => handleSpeak(t('meds.payment.bill'))}
                   >
                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
                       paymentOption === 'bill' ? 'bg-primary-foreground/20' : 'bg-warning/10'

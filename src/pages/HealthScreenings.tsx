@@ -4,6 +4,7 @@ import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
 import { supabase } from '@/integrations/supabase/client';
+import { speakText } from '@/utils/speechUtils';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, 
@@ -57,13 +58,17 @@ const screeningOptions = [
 ];
 
 export default function HealthScreenings() {
-  const { t, user } = useApp();
+  const { t, user, language } = useApp();
   const navigate = useNavigate();
   const [state, setState] = useState<ScreeningState>('select');
   const [selectedType, setSelectedType] = useState<ScreeningType>(null);
   const [result, setResult] = useState<ScreeningResult | null>(null);
   const [pastResults, setPastResults] = useState<PastResult[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleSpeak = (text: string) => {
+    speakText(text, language);
+  };
 
   // Fetch past results on mount
   useEffect(() => {
@@ -143,9 +148,9 @@ export default function HealthScreenings() {
         ? {
             type: 'bp',
             values: { 
-              systolic: Math.floor(Math.random() * (140 - 100) + 100), // 100-140
-              diastolic: Math.floor(Math.random() * (90 - 60) + 60), // 60-90
-              pulse: Math.floor(Math.random() * (90 - 60) + 60), // 60-90 bpm
+              systolic: Math.floor(Math.random() * (140 - 100) + 100),
+              diastolic: Math.floor(Math.random() * (90 - 60) + 60),
+              pulse: Math.floor(Math.random() * (90 - 60) + 60),
             },
             status: 'normal',
             date: new Date().toLocaleDateString(),
@@ -153,9 +158,9 @@ export default function HealthScreenings() {
         : {
             type: 'weight',
             values: { 
-              height: Math.floor(Math.random() * (180 - 150) + 150), // 150-180 cm
-              weight: Math.floor(Math.random() * (80 - 50) + 50), // 50-80 kg
-              bmi: parseFloat((Math.random() * (28 - 18) + 18).toFixed(1)), // 18-28
+              height: Math.floor(Math.random() * (180 - 150) + 150),
+              weight: Math.floor(Math.random() * (80 - 50) + 50),
+              bmi: parseFloat((Math.random() * (28 - 18) + 18).toFixed(1)),
             },
             status: 'normal',
             date: new Date().toLocaleDateString(),
@@ -193,6 +198,7 @@ export default function HealthScreenings() {
             variant="ghost"
             size="icon"
             onClick={handleBack}
+            onMouseEnter={() => handleSpeak(t('common.back'))}
             className="w-14 h-14 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -213,6 +219,7 @@ export default function HealthScreenings() {
                   variant="menu"
                   size="menu"
                   onClick={() => handleSelectScreening(option.id)}
+                  onMouseEnter={() => handleSpeak(t(option.titleKey))}
                   className="w-full animate-slide-up"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
@@ -390,6 +397,7 @@ export default function HealthScreenings() {
               variant="default"
               size="xl"
               onClick={handleBack}
+              onMouseEnter={() => handleSpeak(t('common.done'))}
               className="w-full"
             >
               {t('common.done')}

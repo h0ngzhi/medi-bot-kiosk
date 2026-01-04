@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
+import { speakText } from '@/utils/speechUtils';
 import { 
   ArrowLeft, 
   Calendar,
@@ -87,11 +88,15 @@ const mockProgrammes: Programme[] = [
 ];
 
 export default function CommunityProgrammes() {
-  const { t } = useApp();
+  const { t, language } = useApp();
   const navigate = useNavigate();
   const [programmes, setProgrammes] = useState(mockProgrammes);
   const [showReviews, setShowReviews] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+
+  const handleSpeak = (text: string) => {
+    speakText(text, language);
+  };
 
   const handleSignUp = (id: string) => {
     setProgrammes(prev => 
@@ -113,6 +118,7 @@ export default function CommunityProgrammes() {
             variant="ghost"
             size="icon"
             onClick={() => navigate('/dashboard')}
+            onMouseEnter={() => handleSpeak(t('common.back'))}
             className="w-14 h-14 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -128,6 +134,7 @@ export default function CommunityProgrammes() {
             variant={activeTab === 'upcoming' ? 'default' : 'outline'}
             size="lg"
             onClick={() => setActiveTab('upcoming')}
+            onMouseEnter={() => handleSpeak(t('community.upcoming'))}
             className="flex-1"
           >
             {t('community.upcoming')}
@@ -136,6 +143,7 @@ export default function CommunityProgrammes() {
             variant={activeTab === 'past' ? 'default' : 'outline'}
             size="lg"
             onClick={() => setActiveTab('past')}
+            onMouseEnter={() => handleSpeak(t('community.past'))}
             className="flex-1"
           >
             {t('community.past')}
@@ -188,6 +196,7 @@ export default function CommunityProgrammes() {
                   variant={programme.isSignedUp ? 'success' : 'default'}
                   size="lg"
                   onClick={() => !programme.isSignedUp && handleSignUp(programme.id)}
+                  onMouseEnter={() => handleSpeak(programme.isSignedUp ? t('community.signed') : t('community.signup'))}
                   disabled={programme.isSignedUp}
                   className="w-full"
                 >
@@ -208,6 +217,7 @@ export default function CommunityProgrammes() {
                     variant="outline"
                     size="lg"
                     onClick={() => setShowReviews(showReviews === programme.id ? null : programme.id)}
+                    onMouseEnter={() => handleSpeak(t('community.reviews'))}
                     className="w-full"
                   >
                     <MessageSquare className="w-5 h-5" />

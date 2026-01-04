@@ -4,6 +4,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { AccessibilityBar } from "@/components/AccessibilityBar";
 import { useToast } from "@/hooks/use-toast";
+import { speakText } from "@/utils/speechUtils";
 import { PricingDisplay, getPrice, type CHASCardType } from "@/components/teleconsult/PricingDisplay";
 import { CardPaymentForm } from "@/components/teleconsult/CardPaymentForm";
 import { CashBillingForm } from "@/components/teleconsult/CashBillingForm";
@@ -22,7 +23,7 @@ import {
 type ConsultState = "pricing" | "payment" | "connecting" | "connected" | "error";
 
 export default function Teleconsult() {
-  const { t, user } = useApp();
+  const { t, user, language } = useApp();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [state, setState] = useState<ConsultState>("pricing");
@@ -30,10 +31,13 @@ export default function Teleconsult() {
   const [paymentMethod, setPaymentMethod] = useState<"card" | "cash" | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
 
+  const handleSpeak = (text: string) => {
+    speakText(text, language);
+  };
+
   // Map user's chasType to our pricing tier
   const getChasType = (): CHASCardType => {
     const userChasType = user?.chasType?.toLowerCase() || 'blue';
-    // Map "merdeka generation" and "pioneer generation" to shortened keys
     if (userChasType.includes('merdeka')) return 'merdeka';
     if (userChasType.includes('pioneer')) return 'pioneer';
     const validTypes: CHASCardType[] = ['blue', 'orange', 'green'];
@@ -103,7 +107,6 @@ export default function Teleconsult() {
       const data = await response.json();
 
       if (data.meetingUrl && data.status === "scheduled") {
-        // Sanitize URL - remove leading '=' or other invalid characters
         let sanitizedUrl = data.meetingUrl.trim();
         if (sanitizedUrl.startsWith('=')) {
           sanitizedUrl = sanitizedUrl.substring(1);
@@ -151,7 +154,13 @@ export default function Teleconsult() {
       {/* Header */}
       <header className="bg-card shadow-soft p-6 mb-8">
         <div className="max-w-2xl mx-auto flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={handleBack} className="w-14 h-14 rounded-full">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={handleBack} 
+            onMouseEnter={() => handleSpeak(t('common.back'))}
+            className="w-14 h-14 rounded-full"
+          >
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <div>
@@ -171,6 +180,7 @@ export default function Teleconsult() {
               {/* Polyclinic Option */}
               <button
                 onClick={() => handleSelectDoctor("polyclinic")}
+                onMouseEnter={() => handleSpeak(t('teleconsult.polyclinic'))}
                 className={`w-full text-left transition-all ${
                   doctorType === 'polyclinic' ? 'ring-2 ring-primary ring-offset-2' : ''
                 }`}
@@ -181,6 +191,7 @@ export default function Teleconsult() {
               {/* Hospital Option */}
               <button
                 onClick={() => handleSelectDoctor("hospital")}
+                onMouseEnter={() => handleSpeak(t('teleconsult.hospital'))}
                 className={`w-full text-left transition-all ${
                   doctorType === 'hospital' ? 'ring-2 ring-primary ring-offset-2' : ''
                 }`}
@@ -200,6 +211,7 @@ export default function Teleconsult() {
               variant="warm"
               size="xl"
               onClick={handleProceedToPayment}
+              onMouseEnter={() => handleSpeak(t('teleconsult.continuePayment'))}
               disabled={!doctorType}
               className="w-full"
             >
@@ -236,6 +248,7 @@ export default function Teleconsult() {
               <Button
                 variant={paymentMethod === "card" ? "default" : "outline"}
                 onClick={() => handleSelectPayment("card")}
+                onMouseEnter={() => handleSpeak(t('teleconsult.payByCard'))}
                 className="flex-1"
               >
                 <CreditCard className="w-5 h-5 mr-2" />
@@ -244,6 +257,7 @@ export default function Teleconsult() {
               <Button
                 variant={paymentMethod === "cash" ? "default" : "outline"}
                 onClick={() => handleSelectPayment("cash")}
+                onMouseEnter={() => handleSpeak(t('teleconsult.billHome'))}
                 className="flex-1"
               >
                 <Banknote className="w-5 h-5 mr-2" />
@@ -305,7 +319,13 @@ export default function Teleconsult() {
               </div>
             </div>
 
-            <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
+            <Button 
+              variant="outline" 
+              size="xl" 
+              onClick={handleBack} 
+              onMouseEnter={() => handleSpeak(t('teleconsult.returnDashboard'))}
+              className="w-full"
+            >
               {t('teleconsult.returnDashboard')}
             </Button>
           </div>
@@ -327,10 +347,22 @@ export default function Teleconsult() {
             </div>
 
             <div className="space-y-4">
-              <Button variant="warm" size="xl" onClick={() => setState("payment")} className="w-full">
+              <Button 
+                variant="warm" 
+                size="xl" 
+                onClick={() => setState("payment")} 
+                onMouseEnter={() => handleSpeak(t('teleconsult.tryAgain'))}
+                className="w-full"
+              >
                 {t('teleconsult.tryAgain')}
               </Button>
-              <Button variant="outline" size="xl" onClick={handleBack} className="w-full">
+              <Button 
+                variant="outline" 
+                size="xl" 
+                onClick={handleBack} 
+                onMouseEnter={() => handleSpeak(t('teleconsult.goBack'))}
+                className="w-full"
+              >
                 {t('teleconsult.goBack')}
               </Button>
             </div>

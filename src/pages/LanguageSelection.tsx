@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
+import { speakText } from '@/utils/speechUtils';
 
 type Language = 'en' | 'zh' | 'ms' | 'ta';
 
@@ -14,6 +15,10 @@ const languages: { code: Language; name: string; nativeName: string }[] = [
 export default function LanguageSelection() {
   const { setLanguage, t } = useApp();
   const navigate = useNavigate();
+
+  const handleSpeak = (text: string, lang: Language) => {
+    speakText(text, lang);
+  };
 
   const handleLanguageSelect = (lang: Language) => {
     setLanguage(lang);
@@ -46,6 +51,7 @@ export default function LanguageSelection() {
             variant="language"
             size="language"
             onClick={() => handleLanguageSelect(lang.code)}
+            onMouseEnter={() => handleSpeak(lang.nativeName, lang.code)}
             className="animate-fade-in"
             style={{ animationDelay: `${index * 0.1}s` }}
           >

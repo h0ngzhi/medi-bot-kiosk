@@ -3,13 +3,18 @@ import { Globe, Mic } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { speakText } from '@/utils/speechUtils';
 import VoiceNavigator from './VoiceNavigator';
 
 export function AccessibilityBar() {
-  const { t } = useApp();
+  const { t, language } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+
+  const handleSpeak = (text: string) => {
+    speakText(text, language);
+  };
 
   const handleTranslate = () => {
     // Store current path to return after language selection
@@ -30,6 +35,7 @@ export function AccessibilityBar() {
             variant="accessibility"
             size="accessibility"
             onClick={handleTranslate}
+            onMouseEnter={() => handleSpeak(t('access.translate'))}
             className="flex-1"
           >
             <Globe className="w-6 h-6" />
@@ -40,6 +46,7 @@ export function AccessibilityBar() {
             variant="accessibility"
             size="accessibility"
             onClick={() => setIsVoiceOpen(true)}
+            onMouseEnter={() => handleSpeak(t('access.voice'))}
             className="flex-1"
           >
             <Mic className="w-6 h-6" />
