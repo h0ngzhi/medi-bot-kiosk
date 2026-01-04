@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
+import { PrototypeGate } from "@/components/PrototypeGate";
 import ScanCard from "./pages/ScanCard";
 import LanguageSelection from "./pages/LanguageSelection";
 import Dashboard from "./pages/Dashboard";
@@ -18,28 +19,30 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AppProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ScanCard />} />
-            <Route path="/language" element={<LanguageSelection />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/health" element={<HealthScreenings />} />
-            <Route path="/medications" element={<Medications />} />
-            <Route path="/teleconsult" element={<Teleconsult />} />
-            <Route path="/community" element={<CommunityProgrammes />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          
-        </BrowserRouter>
-      </TooltipProvider>
-    </AppProvider>
-  </QueryClientProvider>
+  <PrototypeGate>
+    <QueryClientProvider client={queryClient}>
+      <AppProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<ScanCard />} />
+              <Route path="/language" element={<LanguageSelection />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/health" element={<HealthScreenings />} />
+              <Route path="/medications" element={<Medications />} />
+              <Route path="/teleconsult" element={<Teleconsult />} />
+              <Route path="/community" element={<CommunityProgrammes />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            
+          </BrowserRouter>
+        </TooltipProvider>
+      </AppProvider>
+    </QueryClientProvider>
+  </PrototypeGate>
 );
 
 export default App;
