@@ -111,23 +111,6 @@ export default function Medications() {
         lastOrderDate: formatDateTime(med.order_completed_at || med.created_at),
       }));
       setPastMedications(mappedPast);
-      
-      // Create orderable medications from past ones
-      const uniqueMeds = new Map<string, OrderableMedication>();
-      data.forEach(med => {
-        if (!uniqueMeds.has(med.name)) {
-          uniqueMeds.set(med.name, {
-            id: `order-${med.id}`,
-            name: med.name,
-            purpose: getPurpose(med.name),
-            pricePerBox: med.price_per_box ? Number(med.price_per_box) : getPrice(med.name),
-            tabletsPerBox: med.tablets_per_box || getTablets(med.name),
-            prescribedBy: 'Polyclinic doctor',
-            selected: false,
-          });
-        }
-      });
-      setOrderableMedications(Array.from(uniqueMeds.values()));
     } else {
       // Show demo medications for demonstration
       setPastMedications([
@@ -159,42 +142,84 @@ export default function Medications() {
           lastOrderDate: '01 Nov 2025',
         },
       ]);
-      
-      setOrderableMedications([
-        {
-          id: 'order-1',
-          name: 'Amlodipine 5mg',
-          purpose: t('meds.purpose.bp'),
-          pricePerBox: 12.50,
-          tabletsPerBox: 30,
-          prescribedBy: t('meds.prescriber.polyclinic'),
-          selected: false,
-        },
-        {
-          id: 'order-2',
-          name: 'Metformin 500mg',
-          purpose: t('meds.purpose.chronic'),
-          pricePerBox: 18.00,
-          tabletsPerBox: 60,
-          prescribedBy: t('meds.prescriber.hospital'),
-          selected: false,
-        },
-        {
-          id: 'order-3',
-          name: 'Omeprazole 20mg',
-          purpose: t('meds.purpose.digestive'),
-          pricePerBox: 8.50,
-          tabletsPerBox: 14,
-          prescribedBy: t('meds.prescriber.polyclinic'),
-          selected: false,
-        },
-      ]);
     }
+    
+    // Always show all available medications for ordering
+    setOrderableMedications([
+      {
+        id: 'order-1',
+        name: 'Amlodipine 5mg',
+        purpose: t('meds.purpose.bp'),
+        pricePerBox: 12.50,
+        tabletsPerBox: 30,
+        prescribedBy: t('meds.prescriber.polyclinic'),
+        selected: false,
+      },
+      {
+        id: 'order-2',
+        name: 'Metformin 500mg',
+        purpose: t('meds.purpose.chronic'),
+        pricePerBox: 18.00,
+        tabletsPerBox: 60,
+        prescribedBy: t('meds.prescriber.hospital'),
+        selected: false,
+      },
+      {
+        id: 'order-3',
+        name: 'Omeprazole 20mg',
+        purpose: t('meds.purpose.digestive'),
+        pricePerBox: 8.50,
+        tabletsPerBox: 14,
+        prescribedBy: t('meds.prescriber.polyclinic'),
+        selected: false,
+      },
+    ]);
   };
 
   useEffect(() => {
     fetchMedications();
   }, [user?.id, t]);
+
+  // Real-time subscription for delivery status updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    const channel = supabase
+      .channel('medications-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'medications',
+          filter: `kiosk_user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Medication update received:', payload);
+          // Update the past medications list with new delivery status
+          setPastMedications(prev => prev.map(med => {
+            if (med.id === payload.new.id) {
+              return {
+                ...med,
+                deliveryStatus: getDeliveryStatusText(payload.new.delivery_status),
+                status: payload.new.is_current ? 'ongoing' : 'completed',
+              };
+            }
+            return med;
+          }));
+          
+          toast({
+            title: t('meds.statusUpdate'),
+            description: `${payload.new.name}: ${getDeliveryStatusText(payload.new.delivery_status)}`,
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, t, toast]);
 
   const getPrice = (name: string): number => {
     if (name.includes('Amlodipine')) return 12.50;
