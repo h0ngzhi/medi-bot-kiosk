@@ -46,10 +46,12 @@ const mockRewards: Reward[] = [
   },
 ];
 
-const chasCardColors = {
+const chasCardColors: Record<string, string> = {
   Blue: 'from-blue-400 to-blue-600',
   Orange: 'from-orange-400 to-orange-600',
   Green: 'from-green-400 to-green-600',
+  'Merdeka generation': 'from-amber-500 to-amber-700',
+  'Pioneer generation': 'from-purple-500 to-purple-700',
 };
 
 export default function Profile() {
@@ -108,7 +110,7 @@ export default function Profile() {
       <main className="max-w-2xl mx-auto px-6">
         {/* CHAS Card */}
         <div 
-          className={`bg-gradient-to-br ${chasCardColors[user.chasType]} rounded-3xl p-6 text-white shadow-medium mb-6 animate-fade-in`}
+          className={`bg-gradient-to-br ${chasCardColors[user.chasType] || 'from-blue-400 to-blue-600'} rounded-3xl p-6 text-white shadow-medium mb-6 animate-fade-in`}
         >
           <div className="flex items-start justify-between mb-8">
             <div>
@@ -151,15 +153,22 @@ export default function Profile() {
             <h2 className="text-xl font-bold text-foreground">{t('profile.history')}</h2>
           </div>
           <div className="space-y-3">
-            {user.participationHistory.map((item, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-3 p-3 bg-muted rounded-xl"
-              >
-                <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                <span className="text-foreground">{item}</span>
+            {user.participationHistory.length > 0 ? (
+              user.participationHistory.map((item, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-3 p-3 bg-muted rounded-xl"
+                >
+                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
+                  <span className="text-foreground">{item}</span>
+                </div>
+              ))
+            ) : (
+              <div className="text-center py-6 text-muted-foreground">
+                <p className="text-lg">No programme participation yet</p>
+                <p className="text-sm mt-1">Join community programmes to earn points!</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
 
