@@ -174,15 +174,24 @@ export default function ScanCard() {
         if (insertError) throw insertError;
         kioskUser = newUser;
       } else {
-        // Update existing user's CHAS type if different
-        if (kioskUser.chas_card_type?.toLowerCase() !== chasType.toLowerCase()) {
-          const { error: updateError } = await supabase
+        // Update existing user's name and CHAS type if different
+        const needsUpdate = 
+          kioskUser.chas_card_type?.toLowerCase() !== chasType.toLowerCase() ||
+          kioskUser.name !== name;
+        
+        if (needsUpdate) {
+          const { data: updatedUser, error: updateError } = await supabase
             .from('kiosk_users')
-            .update({ chas_card_type: chasType.toLowerCase() })
-            .eq('id', kioskUser.id);
+            .update({ 
+              chas_card_type: chasType.toLowerCase(),
+              name: name 
+            })
+            .eq('id', kioskUser.id)
+            .select()
+            .single();
           
-          if (!updateError) {
-            kioskUser.chas_card_type = chasType.toLowerCase();
+          if (!updateError && updatedUser) {
+            kioskUser = updatedUser;
           }
         }
       }
