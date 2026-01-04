@@ -74,113 +74,125 @@ export default function Medications() {
   const subsidyPercent = subsidyMap[chasType] || 0;
   const deliveryFee = deliveryOption === 'home' ? 5.00 : 0;
 
-  useEffect(() => {
-    const fetchMedications = async () => {
-      if (!user?.id) return;
+  const formatDateTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleString('en-SG', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+  };
+
+  const fetchMedications = async () => {
+    if (!user?.id) return;
+    
+    const { data, error } = await supabase
+      .from('medications')
+      .select('*')
+      .eq('kiosk_user_id', user.id)
+      .order('order_completed_at', { ascending: false, nullsFirst: false });
+
+    if (error) {
+      console.error('Error fetching medications:', error);
+      return;
+    }
+
+    if (data && data.length > 0) {
+      const mappedPast: PastMedication[] = data.map(med => ({
+        id: med.id,
+        name: med.name,
+        purpose: getPurpose(med.name),
+        status: med.is_current ? 'ongoing' : 'completed',
+        deliveryStatus: getDeliveryStatusText(med.delivery_status),
+        prescribedBy: 'Polyclinic doctor',
+        lastOrderDate: formatDateTime(med.order_completed_at || med.created_at),
+      }));
+      setPastMedications(mappedPast);
       
-      const { data, error } = await supabase
-        .from('medications')
-        .select('*')
-        .eq('kiosk_user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching medications:', error);
-        return;
-      }
-
-      if (data && data.length > 0) {
-        const mappedPast: PastMedication[] = data.map(med => ({
-          id: med.id,
-          name: med.name,
-          purpose: getPurpose(med.name),
-          status: med.is_current ? 'ongoing' : 'completed',
-          deliveryStatus: getDeliveryStatusText(med.delivery_status),
-          prescribedBy: 'Polyclinic doctor',
-          lastOrderDate: new Date(med.created_at).toLocaleDateString(),
-        }));
-        setPastMedications(mappedPast);
-        
-        // Create orderable medications from past ones
-        const uniqueMeds = new Map<string, OrderableMedication>();
-        data.forEach(med => {
-          if (!uniqueMeds.has(med.name)) {
-            uniqueMeds.set(med.name, {
-              id: `order-${med.id}`,
-              name: med.name,
-              purpose: getPurpose(med.name),
-              pricePerBox: getPrice(med.name),
-              tabletsPerBox: getTablets(med.name),
-              prescribedBy: 'Polyclinic doctor',
-              selected: false,
-            });
-          }
-        });
-        setOrderableMedications(Array.from(uniqueMeds.values()));
-      } else {
-        // Show demo medications for demonstration
-        setPastMedications([
-          {
-            id: '1',
-            name: 'Amlodipine 5mg',
-            purpose: t('meds.purpose.bp'),
-            status: 'ongoing',
-            deliveryStatus: t('meds.delivery.scheduled'),
-            prescribedBy: t('meds.prescriber.polyclinic'),
-            lastOrderDate: '15 Dec 2025',
-          },
-          {
-            id: '2',
-            name: 'Metformin 500mg',
-            purpose: t('meds.purpose.chronic'),
-            status: 'ongoing',
-            deliveryStatus: t('meds.delivery.ready'),
-            prescribedBy: t('meds.prescriber.hospital'),
-            lastOrderDate: '10 Dec 2025',
-          },
-          {
-            id: '3',
-            name: 'Omeprazole 20mg',
-            purpose: t('meds.purpose.digestive'),
-            status: 'completed',
-            deliveryStatus: t('meds.delivery.delivered'),
-            prescribedBy: t('meds.prescriber.polyclinic'),
-            lastOrderDate: '01 Nov 2025',
-          },
-        ]);
-        
-        setOrderableMedications([
-          {
-            id: 'order-1',
-            name: 'Amlodipine 5mg',
-            purpose: t('meds.purpose.bp'),
-            pricePerBox: 12.50,
-            tabletsPerBox: 30,
-            prescribedBy: t('meds.prescriber.polyclinic'),
+      // Create orderable medications from past ones
+      const uniqueMeds = new Map<string, OrderableMedication>();
+      data.forEach(med => {
+        if (!uniqueMeds.has(med.name)) {
+          uniqueMeds.set(med.name, {
+            id: `order-${med.id}`,
+            name: med.name,
+            purpose: getPurpose(med.name),
+            pricePerBox: med.price_per_box ? Number(med.price_per_box) : getPrice(med.name),
+            tabletsPerBox: med.tablets_per_box || getTablets(med.name),
+            prescribedBy: 'Polyclinic doctor',
             selected: false,
-          },
-          {
-            id: 'order-2',
-            name: 'Metformin 500mg',
-            purpose: t('meds.purpose.chronic'),
-            pricePerBox: 18.00,
-            tabletsPerBox: 60,
-            prescribedBy: t('meds.prescriber.hospital'),
-            selected: false,
-          },
-          {
-            id: 'order-3',
-            name: 'Omeprazole 20mg',
-            purpose: t('meds.purpose.digestive'),
-            pricePerBox: 8.50,
-            tabletsPerBox: 14,
-            prescribedBy: t('meds.prescriber.polyclinic'),
-            selected: false,
-          },
-        ]);
-      }
-    };
+          });
+        }
+      });
+      setOrderableMedications(Array.from(uniqueMeds.values()));
+    } else {
+      // Show demo medications for demonstration
+      setPastMedications([
+        {
+          id: '1',
+          name: 'Amlodipine 5mg',
+          purpose: t('meds.purpose.bp'),
+          status: 'ongoing',
+          deliveryStatus: t('meds.delivery.scheduled'),
+          prescribedBy: t('meds.prescriber.polyclinic'),
+          lastOrderDate: '15 Dec 2025',
+        },
+        {
+          id: '2',
+          name: 'Metformin 500mg',
+          purpose: t('meds.purpose.chronic'),
+          status: 'ongoing',
+          deliveryStatus: t('meds.delivery.ready'),
+          prescribedBy: t('meds.prescriber.hospital'),
+          lastOrderDate: '10 Dec 2025',
+        },
+        {
+          id: '3',
+          name: 'Omeprazole 20mg',
+          purpose: t('meds.purpose.digestive'),
+          status: 'completed',
+          deliveryStatus: t('meds.delivery.delivered'),
+          prescribedBy: t('meds.prescriber.polyclinic'),
+          lastOrderDate: '01 Nov 2025',
+        },
+      ]);
+      
+      setOrderableMedications([
+        {
+          id: 'order-1',
+          name: 'Amlodipine 5mg',
+          purpose: t('meds.purpose.bp'),
+          pricePerBox: 12.50,
+          tabletsPerBox: 30,
+          prescribedBy: t('meds.prescriber.polyclinic'),
+          selected: false,
+        },
+        {
+          id: 'order-2',
+          name: 'Metformin 500mg',
+          purpose: t('meds.purpose.chronic'),
+          pricePerBox: 18.00,
+          tabletsPerBox: 60,
+          prescribedBy: t('meds.prescriber.hospital'),
+          selected: false,
+        },
+        {
+          id: 'order-3',
+          name: 'Omeprazole 20mg',
+          purpose: t('meds.purpose.digestive'),
+          pricePerBox: 8.50,
+          tabletsPerBox: 14,
+          prescribedBy: t('meds.prescriber.polyclinic'),
+          selected: false,
+        },
+      ]);
+    }
+  };
 
+  useEffect(() => {
     fetchMedications();
   }, [user?.id, t]);
 
@@ -241,16 +253,76 @@ export default function Medications() {
   const selectedMeds = orderableMedications.filter(m => m.selected);
   const canProceed = selectedMeds.length > 0;
 
+  const calculateSubtotal = (): number => {
+    return selectedMeds.reduce((sum, med) => sum + med.pricePerBox, 0);
+  };
+
+  const calculateTotal = (): number => {
+    const subtotal = calculateSubtotal();
+    const subsidyAmount = subtotal * (subsidyPercent / 100);
+    return subtotal - subsidyAmount + deliveryFee;
+  };
+
   const handlePaymentSubmit = async () => {
+    if (!user?.id) {
+      toast({
+        title: 'Error',
+        description: 'User not found. Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsProcessing(true);
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsProcessing(false);
-    setOrderComplete(true);
-    toast({
-      title: t('meds.orderPlaced'),
-      description: t('meds.orderPlacedDesc'),
-    });
+    
+    try {
+      const now = new Date().toISOString();
+      const totalAmount = calculateTotal();
+      const perMedTotal = totalAmount / selectedMeds.length;
+
+      // Insert each selected medication as a new order
+      const medicationsToInsert = selectedMeds.map(med => ({
+        kiosk_user_id: user.id,
+        name: med.name,
+        dosage: med.name.split(' ').pop() || null,
+        price_per_box: med.pricePerBox,
+        tablets_per_box: med.tabletsPerBox,
+        payment_method: paymentOption,
+        delivery_method: deliveryOption,
+        collection_clinic: deliveryOption === 'clinic' ? selectedClinic : null,
+        delivery_status: 'pending',
+        is_current: true,
+        order_completed_at: now,
+        subsidy_percent: subsidyPercent,
+        total_paid: perMedTotal,
+      }));
+
+      const { error } = await supabase
+        .from('medications')
+        .insert(medicationsToInsert);
+
+      if (error) {
+        throw error;
+      }
+
+      // Refetch medications to update past medications list
+      await fetchMedications();
+
+      setOrderComplete(true);
+      toast({
+        title: t('meds.orderPlaced'),
+        description: t('meds.orderPlacedDesc'),
+      });
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to place order. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleBack = () => {
@@ -602,11 +674,4 @@ export default function Medications() {
       <AccessibilityBar />
     </div>
   );
-
-  function calculateTotal(): number {
-    const subtotal = selectedMeds.reduce((sum, med) => sum + med.pricePerBox, 0);
-    const subsidyAmount = subtotal * (subsidyPercent / 100);
-    const afterSubsidy = subtotal - subsidyAmount;
-    return afterSubsidy + deliveryFee;
-  }
 }
