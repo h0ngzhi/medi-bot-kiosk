@@ -10,6 +10,7 @@ export default function ScanCard() {
   const [scanState, setScanState] = useState<ScanState>('scanning');
   const [errorMessage, setErrorMessage] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
+  const isRunningRef = useRef(false);
   const navigate = useNavigate();
   const { setUser, t } = useApp();
 
@@ -35,6 +36,7 @@ export default function ScanCard() {
             // QR code not detected - ignore
           }
         );
+        isRunningRef.current = true;
       } catch (err) {
         console.error('Camera error:', err);
         if (mounted) {
@@ -48,16 +50,19 @@ export default function ScanCard() {
 
     return () => {
       mounted = false;
-      if (scannerRef.current) {
-        scannerRef.current.stop().catch(console.error);
+      if (scannerRef.current && isRunningRef.current) {
+        scannerRef.current.stop().then(() => {
+          isRunningRef.current = false;
+        }).catch(console.error);
       }
     };
   }, []);
 
   const handleQRCodeScanned = async (qrData: string) => {
     // Stop the scanner
-    if (scannerRef.current) {
+    if (scannerRef.current && isRunningRef.current) {
       await scannerRef.current.stop().catch(console.error);
+      isRunningRef.current = false;
     }
 
     setScanState('processing');
