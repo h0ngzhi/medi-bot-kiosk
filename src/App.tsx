@@ -13,7 +13,7 @@ import Teleconsult from "./pages/Teleconsult";
 import CommunityProgrammes from "./pages/CommunityProgrammes";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
-import VoiceButton from "./components/VoiceButton";
+
 
 const queryClient = new QueryClient();
 
@@ -35,7 +35,7 @@ const App = () => (
             <Route path="/profile" element={<Profile />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <VoiceButton />
+          
         </BrowserRouter>
       </TooltipProvider>
     </AppProvider>
