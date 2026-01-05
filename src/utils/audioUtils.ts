@@ -5,6 +5,7 @@ export class AudioRecorder {
   private audioContext: AudioContext | null = null;
   private processor: ScriptProcessorNode | null = null;
   private source: MediaStreamAudioSourceNode | null = null;
+  private isPaused = false;
 
   constructor(private onAudioData: (audioData: Float32Array) => void) {}
 
@@ -28,6 +29,9 @@ export class AudioRecorder {
       this.processor = this.audioContext.createScriptProcessor(4096, 1, 1);
 
       this.processor.onaudioprocess = (e) => {
+        // Don't send audio data when paused (prevents echo)
+        if (this.isPaused) return;
+        
         const inputData = e.inputBuffer.getChannelData(0);
         this.onAudioData(new Float32Array(inputData));
       };
@@ -40,6 +44,16 @@ export class AudioRecorder {
       console.error('Error accessing microphone:', error);
       throw error;
     }
+  }
+
+  pause() {
+    this.isPaused = true;
+    console.log('Audio recording paused');
+  }
+
+  resume() {
+    this.isPaused = false;
+    console.log('Audio recording resumed');
   }
 
   stop() {
@@ -59,6 +73,7 @@ export class AudioRecorder {
       this.audioContext.close();
       this.audioContext = null;
     }
+    this.isPaused = false;
     console.log('Audio recording stopped');
   }
 }
