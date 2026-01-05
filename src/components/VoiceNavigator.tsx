@@ -26,6 +26,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   const recorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioQueueRef = useRef<AudioQueue | null>(null);
+  const isSpeakingRef = useRef(false); // Track speaking state for mic control
 
   const handleNavigate = useCallback((page: string) => {
     const routes: Record<string, string> = {
@@ -72,7 +73,12 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         break;
 
       case 'response.audio.delta':
-        setIsSpeaking(true);
+        if (!isSpeakingRef.current) {
+          isSpeakingRef.current = true;
+          setIsSpeaking(true);
+          // Pause microphone while AI is speaking to prevent echo
+          recorderRef.current?.pause();
+        }
         // Decode base64 audio and play
         const binaryString = atob(data.delta);
         const bytes = new Uint8Array(binaryString.length);
@@ -83,7 +89,14 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         break;
 
       case 'response.audio.done':
+        isSpeakingRef.current = false;
         setIsSpeaking(false);
+        // Resume microphone after AI finishes speaking with a small delay
+        setTimeout(() => {
+          if (recorderRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+            recorderRef.current.resume();
+          }
+        }, 150);
         break;
 
       case 'response.audio_transcript.delta':
@@ -218,17 +231,24 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
     setResponse('');
   }, []);
 
+  // Connect when opened, disconnect when closed
   useEffect(() => {
-    if (isOpen && !isConnected) {
-      connect();
-    }
-    
-    return () => {
-      if (!isOpen) {
-        disconnect();
+    if (isOpen) {
+      if (!isConnected) {
+        connect();
       }
+    } else {
+      // Always disconnect when not open
+      disconnect();
+    }
+  }, [isOpen]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      disconnect();
     };
-  }, [isOpen, isConnected, connect, disconnect]);
+  }, []);
 
   const handleClose = () => {
     disconnect();
