@@ -80,6 +80,17 @@ interface Programme {
   guest_option: string | null;
   updated_at: string | null;
   created_at: string;
+  serial_id: string | null;
+  series_id: string;
+  recurrence_type: string | null;
+}
+
+interface ExistingSeries {
+  series_id: string;
+  title: string;
+  serial_id: string | null;
+  event_date: string | null;
+  review_count: number;
 }
 
 type ProgrammeForm = {
@@ -105,6 +116,8 @@ type ProgrammeForm = {
   learning_objectives: string;
   guest_option: string;
   recurrence_type: string;
+  series_mode: 'new' | 'existing';
+  selected_series_id: string;
 };
 
 // Helper to convert hours + minutes to duration string for storage
@@ -174,6 +187,8 @@ const emptyForm: ProgrammeForm = {
   learning_objectives: "",
   guest_option: "",
   recurrence_type: "one_time",
+  series_mode: 'new',
+  selected_series_id: "",
 };
 
 const AdminProgrammes = () => {
@@ -187,6 +202,8 @@ const AdminProgrammes = () => {
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedProgramme, setSelectedProgramme] = useState<Programme | null>(null);
   const [activeTab, setActiveTab] = useState<"upcoming" | "completed">("upcoming");
+  const [existingSeries, setExistingSeries] = useState<ExistingSeries[]>([]);
+  const [reviewCounts, setReviewCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     fetchProgrammes();
@@ -269,12 +286,88 @@ const AdminProgrammes = () => {
         variant: "destructive",
       });
     } else {
-      const progs = data || [];
+      const progs = (data || []) as Programme[];
       setProgrammes(progs);
       // Check for recurring programmes that need new instances
       await checkAndCreateRecurringProgrammes(progs);
+      // Fetch existing series with review counts
+      await fetchExistingSeriesWithReviews(progs);
     }
     setLoading(false);
+  };
+
+  // Fetch unique series with review counts for the series selection dropdown
+  const fetchExistingSeriesWithReviews = async (progs: Programme[]) => {
+    // Get unique series
+    const seriesMap = new Map<string, { title: string; serial_id: string | null; event_date: string | null }>();
+    for (const p of progs) {
+      if (p.series_id && !seriesMap.has(p.series_id)) {
+        seriesMap.set(p.series_id, {
+          title: p.title,
+          serial_id: p.serial_id,
+          event_date: p.event_date,
+        });
+      } else if (p.series_id && seriesMap.has(p.series_id)) {
+        // Keep the latest date
+        const existing = seriesMap.get(p.series_id)!;
+        if (p.event_date && (!existing.event_date || p.event_date > existing.event_date)) {
+          seriesMap.set(p.series_id, {
+            title: p.title,
+            serial_id: p.serial_id || existing.serial_id,
+            event_date: p.event_date,
+          });
+        }
+      }
+    }
+
+    // Fetch review counts for each series
+    const seriesIds = Array.from(seriesMap.keys());
+    const reviewCountMap: Record<string, number> = {};
+
+    if (seriesIds.length > 0) {
+      // Get all programme IDs for each series
+      const programmeIdsBySeries: Record<string, string[]> = {};
+      for (const p of progs) {
+        if (p.series_id) {
+          if (!programmeIdsBySeries[p.series_id]) {
+            programmeIdsBySeries[p.series_id] = [];
+          }
+          programmeIdsBySeries[p.series_id].push(p.id);
+        }
+      }
+
+      // Fetch all feedback
+      const { data: feedback } = await supabase
+        .from("programme_feedback")
+        .select("programme_id");
+
+      if (feedback) {
+        for (const seriesId of seriesIds) {
+          const progIds = programmeIdsBySeries[seriesId] || [];
+          const count = feedback.filter(f => progIds.includes(f.programme_id)).length;
+          reviewCountMap[seriesId] = count;
+        }
+      }
+    }
+
+    setReviewCounts(reviewCountMap);
+
+    // Build existing series list
+    const seriesList: ExistingSeries[] = Array.from(seriesMap.entries()).map(([series_id, info]) => ({
+      series_id,
+      title: info.title,
+      serial_id: info.serial_id,
+      event_date: info.event_date,
+      review_count: reviewCountMap[series_id] || 0,
+    }));
+
+    // Sort by review count (highest first), then by date
+    seriesList.sort((a, b) => {
+      if (b.review_count !== a.review_count) return b.review_count - a.review_count;
+      return (b.event_date || '').localeCompare(a.event_date || '');
+    });
+
+    setExistingSeries(seriesList);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -332,12 +425,17 @@ const AdminProgrammes = () => {
         fetchProgrammes();
       }
     } else {
-      // For new programmes, generate a series_id (will be its own id)
+      // For new programmes, determine series_id based on mode
       const newId = crypto.randomUUID();
+      const seriesId = form.series_mode === 'existing' && form.selected_series_id 
+        ? form.selected_series_id 
+        : newId;
+      
       const payload = {
         ...basePayload,
         id: newId,
-        series_id: newId, // New programme starts its own series
+        series_id: seriesId,
+        recurrence_type: form.recurrence_type,
       };
       
       const { error } = await supabase
@@ -351,7 +449,13 @@ const AdminProgrammes = () => {
           variant: "destructive",
         });
       } else {
-        toast({ title: "Success", description: "Programme created" });
+        const isLinkingToExisting = form.series_mode === 'existing' && form.selected_series_id;
+        toast({ 
+          title: "Success", 
+          description: isLinkingToExisting 
+            ? "Programme created and linked to existing series" 
+            : "Programme created" 
+        });
         setDialogOpen(false);
         setForm(emptyForm);
         fetchProgrammes();
@@ -383,7 +487,9 @@ const AdminProgrammes = () => {
       languages: programme.languages?.join(', ') || "",
       learning_objectives: programme.learning_objectives?.join('\n') || "",
       guest_option: programme.guest_option || "",
-      recurrence_type: (programme as any).recurrence_type || "one_time",
+      recurrence_type: programme.recurrence_type || "one_time",
+      series_mode: 'new', // When editing, we don't change series
+      selected_series_id: programme.series_id || "",
     });
     setDialogOpen(true);
   };
@@ -477,6 +583,76 @@ const AdminProgrammes = () => {
                   </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-6 py-4">
+                  {/* Programme Series Selection - Only for new programmes */}
+                  {!editingId && existingSeries.length > 0 && (
+                    <div className="space-y-4 bg-muted/50 rounded-lg p-4">
+                      <h3 className="font-semibold text-foreground border-b pb-2">
+                        Programme Series
+                      </h3>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            id="series_new"
+                            name="series_mode"
+                            checked={form.series_mode === 'new'}
+                            onChange={() => setForm({ ...form, series_mode: 'new', selected_series_id: '' })}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="series_new" className="cursor-pointer">
+                            Start new programme series
+                          </Label>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            id="series_existing"
+                            name="series_mode"
+                            checked={form.series_mode === 'existing'}
+                            onChange={() => setForm({ ...form, series_mode: 'existing' })}
+                            className="h-4 w-4"
+                          />
+                          <Label htmlFor="series_existing" className="cursor-pointer">
+                            Continue existing programme series (inherit reviews)
+                          </Label>
+                        </div>
+                        {form.series_mode === 'existing' && (
+                          <div className="ml-7">
+                            <Select
+                              value={form.selected_series_id}
+                              onValueChange={(v) => setForm({ ...form, selected_series_id: v })}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a programme series..." />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {existingSeries.map((s) => (
+                                  <SelectItem key={s.series_id} value={s.series_id}>
+                                    <div className="flex items-center gap-2">
+                                      <span>{s.title}</span>
+                                      {s.serial_id && (
+                                        <span className="text-muted-foreground text-xs">#{s.serial_id}</span>
+                                      )}
+                                      {s.review_count > 0 && (
+                                        <Badge variant="secondary" className="text-xs">
+                                          <Star className="h-3 w-3 mr-1" />
+                                          {s.review_count}
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              New sessions will share the same reviews as the selected series.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Programme Basics */}
                   <div className="space-y-4">
                     <h3 className="font-semibold text-foreground border-b pb-2">
@@ -942,6 +1118,17 @@ const AdminProgrammes = () => {
                         <h3 className="font-semibold text-foreground">
                           {programme.title}
                         </h3>
+                        {programme.serial_id && (
+                          <Badge variant="outline" className="text-xs font-mono">
+                            #{programme.serial_id}
+                          </Badge>
+                        )}
+                        {reviewCounts[programme.series_id] > 0 && (
+                          <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">
+                            <Star className="h-3 w-3 mr-1 fill-amber-500" />
+                            {reviewCounts[programme.series_id]} review{reviewCounts[programme.series_id] !== 1 ? 's' : ''}
+                          </Badge>
+                        )}
                         <Badge
                           variant="secondary"
                           className={getCategoryColor(programme.category)}
@@ -1081,6 +1268,11 @@ const AdminProgrammes = () => {
                         <div className="flex-1 space-y-2">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold text-foreground">{programme.title}</h3>
+                            {programme.serial_id && (
+                              <Badge variant="outline" className="text-xs font-mono">
+                                #{programme.serial_id}
+                              </Badge>
+                            )}
                             <Badge variant="secondary" className="bg-muted text-muted-foreground">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Completed
@@ -1097,7 +1289,7 @@ const AdminProgrammes = () => {
                             {programme.current_signups || 0} participants attended
                           </p>
                           {/* Feedback Display - uses series_id to show all reviews from recurring sessions */}
-                          <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={(programme as any).series_id} />
+                          <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={programme.series_id} />
                         </div>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" onClick={() => openAttendanceDialog(programme)} className="gap-1">
