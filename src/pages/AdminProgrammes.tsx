@@ -240,6 +240,7 @@ const AdminProgrammes = () => {
                 learning_objectives: programme.learning_objectives,
                 guest_option: programme.guest_option,
                 recurrence_type: recurrenceType,
+                series_id: (programme as any).series_id, // Keep same series_id for reviews
               }]);
             
             if (!error) {
@@ -288,7 +289,7 @@ const AdminProgrammes = () => {
       return;
     }
 
-    const payload = {
+    const basePayload = {
       title: form.title,
       description: form.description || null,
       category: form.category,
@@ -314,7 +315,7 @@ const AdminProgrammes = () => {
     if (editingId) {
       const { error } = await supabase
         .from("community_programmes")
-        .update(payload)
+        .update(basePayload)
         .eq("id", editingId);
 
       if (error) {
@@ -331,6 +332,14 @@ const AdminProgrammes = () => {
         fetchProgrammes();
       }
     } else {
+      // For new programmes, generate a series_id (will be its own id)
+      const newId = crypto.randomUUID();
+      const payload = {
+        ...basePayload,
+        id: newId,
+        series_id: newId, // New programme starts its own series
+      };
+      
       const { error } = await supabase
         .from("community_programmes")
         .insert([payload]);
@@ -1087,8 +1096,8 @@ const AdminProgrammes = () => {
                           <p className="text-sm text-muted-foreground">
                             {programme.current_signups || 0} participants attended
                           </p>
-                          {/* Feedback Display */}
-                          <ProgrammeFeedbackDisplay programmeId={programme.id} />
+                          {/* Feedback Display - uses series_id to show all reviews from recurring sessions */}
+                          <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={(programme as any).series_id} />
                         </div>
                         <div className="flex gap-2">
                           <Button variant="outline" size="sm" onClick={() => openAttendanceDialog(programme)} className="gap-1">

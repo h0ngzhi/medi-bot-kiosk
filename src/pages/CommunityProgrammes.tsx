@@ -407,8 +407,8 @@ export default function CommunityProgrammes() {
                   </p>
                 )}
 
-                {/* Public Feedback Display */}
-                <ProgrammeFeedbackDisplay programmeId={programme.id} />
+                {/* Public Feedback Display - uses series_id to show all reviews from recurring sessions */}
+                <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={(programme as any).series_id} />
 
                 {/* Leave feedback button for signed-up users */}
                 {programme.isSignedUp && !programme.hasSubmittedFeedback && (
