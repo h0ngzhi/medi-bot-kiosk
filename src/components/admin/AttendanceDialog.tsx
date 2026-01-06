@@ -9,8 +9,19 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Phone, CheckCircle2, Clock, Award } from "lucide-react";
+import { Users, Phone, CheckCircle2, Clock, Award, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Signup {
@@ -159,6 +170,72 @@ export const AttendanceDialog = ({
     }
   };
 
+  const handleRemoveSignup = async (signupId: string, kioskUserId: string, wasAttended: boolean) => {
+    try {
+      // If they had attended, we need to deduct points
+      if (wasAttended) {
+        const { data: userData, error: fetchError } = await supabase
+          .from("kiosk_users")
+          .select("points")
+          .eq("id", kioskUserId)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        if (userData) {
+          const newPoints = Math.max(0, (userData.points || 0) - pointsReward);
+          const { error: pointsError } = await supabase
+            .from("kiosk_users")
+            .update({ points: newPoints })
+            .eq("id", kioskUserId);
+
+          if (pointsError) throw pointsError;
+        }
+      }
+
+      // Delete the signup record
+      const { error: deleteError } = await supabase
+        .from("user_programme_signups")
+        .delete()
+        .eq("id", signupId);
+
+      if (deleteError) throw deleteError;
+
+      // Decrement the programme's current_signups
+      const { data: programmeData, error: progFetchError } = await supabase
+        .from("community_programmes")
+        .select("current_signups")
+        .eq("id", programmeId)
+        .maybeSingle();
+
+      if (progFetchError) throw progFetchError;
+
+      if (programmeData) {
+        const newSignups = Math.max(0, (programmeData.current_signups || 0) - 1);
+        await supabase
+          .from("community_programmes")
+          .update({ current_signups: newSignups })
+          .eq("id", programmeId);
+      }
+
+      toast({
+        title: "Removed",
+        description: wasAttended 
+          ? `Participant removed and ${pointsReward} points deducted.`
+          : "Participant removed from signup list.",
+      });
+
+      fetchSignups();
+      onAttendanceMarked();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove participant",
+        variant: "destructive",
+      });
+    }
+  };
+
   const pendingCount = signups.filter((s) => s.status !== "attended").length;
   const attendedCount = signups.filter((s) => s.status === "attended").length;
 
@@ -244,16 +321,48 @@ export const AttendanceDialog = ({
                       </div>
                     </div>
 
-                    <Badge
-                      variant={isAttended ? "default" : "secondary"}
-                      className={
-                        isAttended
-                          ? "bg-success text-success-foreground"
-                          : "bg-warning/10 text-warning"
-                      }
-                    >
-                      {isAttended ? "Attended" : "Pending"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={isAttended ? "default" : "secondary"}
+                        className={
+                          isAttended
+                            ? "bg-success text-success-foreground"
+                            : "bg-warning/10 text-warning"
+                        }
+                      >
+                        {isAttended ? "Attended" : "Pending"}
+                      </Badge>
+
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Remove Participant?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Remove "{signup.participant_name || "Unknown"}" from this programme?
+                              {isAttended && ` Their ${pointsReward} points will also be deducted.`}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleRemoveSignup(signup.id, signup.kiosk_user_id, isAttended)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Remove
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 );
               })}
