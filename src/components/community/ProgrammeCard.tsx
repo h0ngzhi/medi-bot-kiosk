@@ -10,7 +10,11 @@ import {
   UserCheck,
   ChevronDown,
   ChevronUp,
-  Info
+  Info,
+  BookOpen,
+  User,
+  Languages,
+  Target
 } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
@@ -32,6 +36,12 @@ export interface Programme {
   spotsLeft?: number;
   lastUpdated: string;
   isSignedUp?: boolean;
+  // Enhanced details
+  duration?: string;
+  groupSize?: string;
+  languages?: string[];
+  conductedBy?: string;
+  learningObjectives?: string[];
 }
 
 interface ProgrammeCardProps {
@@ -110,6 +120,28 @@ export function ProgrammeCard({ programme, onSignUp, index }: ProgrammeCardProps
           {programme.description}
         </p>
 
+        {/* Quick info badges */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          {programme.duration && (
+            <Badge variant="outline" className="text-sm py-1 px-3">
+              <Clock className="w-3.5 h-3.5 mr-1.5" />
+              {programme.duration}
+            </Badge>
+          )}
+          {programme.groupSize && (
+            <Badge variant="outline" className="text-sm py-1 px-3">
+              <Users className="w-3.5 h-3.5 mr-1.5" />
+              {programme.groupSize}
+            </Badge>
+          )}
+          {programme.languages && programme.languages.length > 0 && (
+            <Badge variant="outline" className="text-sm py-1 px-3">
+              <Languages className="w-3.5 h-3.5 mr-1.5" />
+              {programme.languages.join(' / ')}
+            </Badge>
+          )}
+        </div>
+
         {/* Key details */}
         <div className="space-y-2 mb-4">
           <div 
@@ -129,6 +161,16 @@ export function ProgrammeCard({ programme, onSignUp, index }: ProgrammeCardProps
             <MapPin className="w-5 h-5 text-primary flex-shrink-0" />
             <span className="text-base">{programme.venue}</span>
           </div>
+
+          {programme.conductedBy && (
+            <div 
+              className="flex items-center gap-3 text-foreground cursor-default"
+              onMouseEnter={() => handleSpeak(`Conducted by ${programme.conductedBy}`)}
+            >
+              <User className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-base">{t('community.conductedBy')}: <span className="font-medium">{programme.conductedBy}</span></span>
+            </div>
+          )}
 
           {programme.spotsLeft !== undefined && (
             <div className="flex items-center gap-3 text-foreground cursor-default">
@@ -158,17 +200,41 @@ export function ProgrammeCard({ programme, onSignUp, index }: ProgrammeCardProps
         </Button>
 
         {expanded && (
-          <div className="bg-muted rounded-2xl p-4 mb-4 space-y-3 animate-fade-in">
+          <div className="bg-muted rounded-2xl p-4 mb-4 space-y-4 animate-fade-in">
+            {/* Learning Objectives */}
+            {programme.learningObjectives && programme.learningObjectives.length > 0 && (
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
+                  <Target className="w-4 h-4 text-primary" />
+                  {t('community.learningObjectives')}
+                </p>
+                <ul className="space-y-1.5 ml-6">
+                  {programme.learningObjectives.map((objective, idx) => (
+                    <li 
+                      key={idx} 
+                      className="text-sm text-muted-foreground list-disc cursor-default"
+                      onMouseEnter={() => handleSpeak(objective)}
+                    >
+                      {objective}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {programme.eligibility && (
               <div>
-                <p className="text-sm font-semibold text-foreground mb-1">{t('community.eligibility')}</p>
-                <p className="text-sm text-muted-foreground">{programme.eligibility}</p>
+                <p className="text-sm font-semibold text-foreground mb-1 flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-primary" />
+                  {t('community.eligibility')}
+                </p>
+                <p className="text-sm text-muted-foreground ml-6">{programme.eligibility}</p>
               </div>
             )}
             
             <div>
               <p className="text-sm font-semibold text-foreground mb-1">{t('community.howToJoin')}</p>
-              <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <p className="text-sm text-muted-foreground flex items-center gap-2 ml-6">
                 {programme.registrationMethod === 'phone' && <Phone className="w-4 h-4" />}
                 {programme.registrationMethod === 'walkin' && <UserCheck className="w-4 h-4" />}
                 {getRegistrationText()}
