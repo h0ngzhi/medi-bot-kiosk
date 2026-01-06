@@ -473,16 +473,16 @@ const AdminProgrammes = () => {
                         <div>
                           <Label htmlFor="guest_option">Guest Tag (Optional)</Label>
                           <Select
-                            value={form.guest_option}
+                            value={form.guest_option || "none"}
                             onValueChange={(v) =>
-                              setForm({ ...form, guest_option: v })
+                              setForm({ ...form, guest_option: v === "none" ? "" : v })
                             }
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="No tag" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="">No tag</SelectItem>
+                              <SelectItem value="none">No tag</SelectItem>
                               <SelectItem value="caregiver_welcome">👥 Caregiver Welcome</SelectItem>
                               <SelectItem value="bring_friend">👥 Bring a Friend</SelectItem>
                             </SelectContent>
