@@ -46,13 +46,15 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
     setIsSubmitting(true);
 
     try {
-      // Insert signup into database
+      // Insert signup into database with name and phone
       const { error } = await supabase
         .from('user_programme_signups')
         .insert({
           kiosk_user_id: user?.id || '',
           programme_id: programme.id,
-          status: 'signed_up'
+          status: 'signed_up',
+          participant_name: name.trim(),
+          phone_number: phone.replace(/\s/g, '')
         });
 
       if (error) throw error;

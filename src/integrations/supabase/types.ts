@@ -19,6 +19,7 @@ export type Database = {
           category: string | null
           conducted_by: string | null
           created_at: string
+          current_signups: number | null
           description: string | null
           duration: string | null
           event_date: string | null
@@ -28,6 +29,7 @@ export type Database = {
           languages: string[] | null
           learning_objectives: string[] | null
           location: string | null
+          max_capacity: number | null
           points_reward: number
           title: string
         }
@@ -35,6 +37,7 @@ export type Database = {
           category?: string | null
           conducted_by?: string | null
           created_at?: string
+          current_signups?: number | null
           description?: string | null
           duration?: string | null
           event_date?: string | null
@@ -44,6 +47,7 @@ export type Database = {
           languages?: string[] | null
           learning_objectives?: string[] | null
           location?: string | null
+          max_capacity?: number | null
           points_reward?: number
           title: string
         }
@@ -51,6 +55,7 @@ export type Database = {
           category?: string | null
           conducted_by?: string | null
           created_at?: string
+          current_signups?: number | null
           description?: string | null
           duration?: string | null
           event_date?: string | null
@@ -60,6 +65,7 @@ export type Database = {
           languages?: string[] | null
           learning_objectives?: string[] | null
           location?: string | null
+          max_capacity?: number | null
           points_reward?: number
           title?: string
         }
@@ -254,6 +260,8 @@ export type Database = {
           attended_at: string | null
           id: string
           kiosk_user_id: string
+          participant_name: string | null
+          phone_number: string | null
           programme_id: string
           signed_up_at: string
           status: string
@@ -262,6 +270,8 @@ export type Database = {
           attended_at?: string | null
           id?: string
           kiosk_user_id: string
+          participant_name?: string | null
+          phone_number?: string | null
           programme_id: string
           signed_up_at?: string
           status?: string
@@ -270,6 +280,8 @@ export type Database = {
           attended_at?: string | null
           id?: string
           kiosk_user_id?: string
+          participant_name?: string | null
+          phone_number?: string | null
           programme_id?: string
           signed_up_at?: string
           status?: string

@@ -28,6 +28,9 @@ export interface Programme {
   location: string | null;
   points_reward: number;
   is_active: boolean;
+  // Capacity tracking
+  max_capacity: number;
+  current_signups: number;
   // Enhanced details from DB
   duration: string | null;
   group_size: string | null;
@@ -162,6 +165,17 @@ export function ProgrammeCard({ programme, onSignUp, index }: ProgrammeCardProps
               <span className="text-base">{t('community.conductedBy')}: <span className="font-medium">{programme.conducted_by}</span></span>
             </div>
           )}
+
+          {/* Spots remaining */}
+          <div className="flex items-center gap-3 text-foreground cursor-default">
+            <Users className="w-5 h-5 text-primary flex-shrink-0" />
+            <span className="text-base">
+              {programme.max_capacity - programme.current_signups > 0 
+                ? <><span className="font-bold text-success">{programme.max_capacity - programme.current_signups}</span> {t('community.spotsLeft')} (of {programme.max_capacity})</>
+                : <span className="text-destructive font-medium">{t('community.fullCapacity')}</span>
+              }
+            </span>
+          </div>
         </div>
 
         {/* Expandable details */}
@@ -215,6 +229,15 @@ export function ProgrammeCard({ programme, onSignUp, index }: ProgrammeCardProps
           >
             <Award className="w-5 h-5 mr-2" />
             {t('community.signed')}
+          </Button>
+        ) : programme.max_capacity - programme.current_signups <= 0 ? (
+          <Button
+            variant="outline"
+            size="lg"
+            disabled
+            className="w-full h-14 text-lg"
+          >
+            {t('community.fullCapacity')}
           </Button>
         ) : (
           <Button
