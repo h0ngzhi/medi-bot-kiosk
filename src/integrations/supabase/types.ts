@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       community_programmes: {
         Row: {
+          admin_email: string | null
           category: string | null
           conducted_by: string | null
           contact_number: string | null
@@ -39,6 +40,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          admin_email?: string | null
           category?: string | null
           conducted_by?: string | null
           contact_number?: string | null
@@ -62,6 +64,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          admin_email?: string | null
           category?: string | null
           conducted_by?: string | null
           contact_number?: string | null

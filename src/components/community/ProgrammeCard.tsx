@@ -13,7 +13,9 @@ import {
   BookOpen,
   User,
   Languages,
-  Target
+  Target,
+  Phone,
+  Mail
 } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
@@ -37,6 +39,9 @@ export interface Programme {
   languages: string[] | null;
   conducted_by: string | null;
   learning_objectives: string[] | null;
+  // Admin contact info
+  contact_number?: string | null;
+  admin_email?: string | null;
   // Local state
   isSignedUp?: boolean;
 }
@@ -164,6 +169,30 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
             >
               <User className="w-5 h-5 text-primary flex-shrink-0" />
               <span className="text-base">{t('community.conductedBy')}: <span className="font-medium">{programme.conducted_by}</span></span>
+            </div>
+          )}
+
+          {/* Admin contact info */}
+          {(programme.contact_number || programme.admin_email) && (
+            <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm mt-2 pt-2 border-t border-border/50">
+              {programme.contact_number && (
+                <a 
+                  href={`tel:${programme.contact_number}`}
+                  className="flex items-center gap-1.5 hover:text-primary transition-colors"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>{programme.contact_number}</span>
+                </a>
+              )}
+              {programme.admin_email && (
+                <a 
+                  href={`mailto:${programme.admin_email}`}
+                  className="flex items-center gap-1.5 hover:text-primary transition-colors"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>{programme.admin_email}</span>
+                </a>
+              )}
             </div>
           )}
 
