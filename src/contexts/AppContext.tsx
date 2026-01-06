@@ -261,7 +261,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.feedbackError': 'Failed to submit feedback. Please try again.',
     'community.feedbackSubmittedShort': 'Feedback Submitted',
     'community.cannotCancelStarted': 'Cannot cancel as the programme has already started.',
-    
+    'community.onlineProgramme': 'Online Programme',
+    'community.joinOnline': 'Join Meeting',
     // Profile
     'profile.title': 'My Profile',
     'profile.chas': 'CHAS Card Type',
@@ -525,6 +526,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.bringFriend': '可带朋友',
     'community.thankyouRegistering': '感谢您登记兴趣。',
     'community.organiserContact': '主办方会在需要时联系您。',
+    'community.onlineProgramme': '线上活动',
+    'community.joinOnline': '加入会议',
     
     'profile.title': '我的资料',
     'profile.chas': 'CHAS卡类型',
@@ -786,6 +789,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.bringFriend': 'Bawa Rakan',
     'community.thankyouRegistering': 'Terima kasih kerana mendaftar minat anda.',
     'community.organiserContact': 'Penganjur akan menghubungi anda jika perlu.',
+    'community.onlineProgramme': 'Program Dalam Talian',
+    'community.joinOnline': 'Sertai Mesyuarat',
     
     'profile.title': 'Profil Saya',
     'profile.chas': 'Jenis Kad CHAS',
@@ -1047,7 +1052,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.bringFriend': 'நண்பரை அழைத்து வாருங்கள்',
     'community.thankyouRegistering': 'உங்கள் ஆர்வத்தைப் பதிவு செய்ததற்கு நன்றி.',
     'community.organiserContact': 'தேவைப்பட்டால் ஒருங்கிணைப்பாளர் உங்களைத் தொடர்பு கொள்வார்.',
-    
+    'community.onlineProgramme': 'ஆன்லைன் திட்டம்',
+    'community.joinOnline': 'கூட்டத்தில் சேர்',
     'profile.title': 'எனது சுயவிவரம்',
     'profile.chas': 'CHAS அட்டை வகை',
     'profile.points': 'மொத்த புள்ளிகள்',

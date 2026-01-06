@@ -89,6 +89,7 @@ type ProgrammeForm = {
   contact_number: string;
   admin_email: string;
   is_online: boolean;
+  online_link: string;
   is_active: boolean;
   points_reward: number;
   duration: string;
@@ -122,6 +123,7 @@ const emptyForm: ProgrammeForm = {
   contact_number: "",
   admin_email: "",
   is_online: false,
+  online_link: "",
   is_active: true,
   points_reward: 10,
   duration: "2 hours",
@@ -185,12 +187,13 @@ const AdminProgrammes = () => {
       category: form.category,
       event_date: form.event_date || null,
       event_time: form.event_time || null,
-      location: form.location || null,
-      region: form.region,
+      location: form.is_online ? null : (form.location || null),
+      region: form.is_online ? null : form.region,
       max_capacity: form.max_capacity,
       contact_number: form.contact_number || null,
       admin_email: form.admin_email || null,
       is_online: form.is_online,
+      online_link: form.is_online ? (form.online_link || null) : null,
       is_active: form.is_active,
       points_reward: form.points_reward,
       duration: form.duration || null,
@@ -254,6 +257,7 @@ const AdminProgrammes = () => {
       contact_number: programme.contact_number || "",
       admin_email: programme.admin_email || "",
       is_online: programme.is_online || false,
+      online_link: (programme as any).online_link || "",
       is_active: programme.is_active,
       points_reward: programme.points_reward,
       duration: programme.duration || "",
@@ -570,7 +574,22 @@ const AdminProgrammes = () => {
                       />
                       <Label htmlFor="is_online">Online Programme</Label>
                     </div>
-                    {!form.is_online && (
+                    {form.is_online ? (
+                      <div>
+                        <Label htmlFor="online_link">Online Meeting Link *</Label>
+                        <Input
+                          id="online_link"
+                          value={form.online_link}
+                          onChange={(e) =>
+                            setForm({ ...form, online_link: e.target.value })
+                          }
+                          placeholder="e.g. https://zoom.us/j/123456789"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Zoom, Google Meet, or other video call link
+                        </p>
+                      </div>
+                    ) : (
                       <>
                         <div>
                           <Label htmlFor="location">Venue Name</Label>
