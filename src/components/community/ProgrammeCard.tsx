@@ -19,7 +19,9 @@ import {
   Lock,
   CheckCircle,
   Star,
-  MessageSquare
+  MessageSquare,
+  Video,
+  ExternalLink
 } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
@@ -37,6 +39,8 @@ export interface Programme {
   location: string | null;
   points_reward: number;
   is_active: boolean;
+  is_online?: boolean | null;
+  online_link?: string | null;
   // Capacity tracking
   max_capacity: number;
   current_signups: number;
@@ -204,7 +208,27 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, index
             </div>
           )}
           
-          {programme.location && (
+          {programme.is_online && programme.online_link ? (
+            <div 
+              className="flex items-center gap-3 text-foreground cursor-default"
+              onMouseEnter={() => handleSpeak('Online programme')}
+            >
+              <Video className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-base font-medium">{t('community.onlineProgramme')}</span>
+              {programme.isSignedUp && (
+                <a 
+                  href={programme.online_link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-primary hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span>{t('community.joinOnline')}</span>
+                  <ExternalLink className="w-4 h-4" />
+                </a>
+              )}
+            </div>
+          ) : programme.location && (
             <div 
               className="flex items-center gap-3 text-foreground cursor-default"
               onMouseEnter={() => handleSpeak(programme.location || '')}
