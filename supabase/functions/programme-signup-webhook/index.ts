@@ -24,12 +24,14 @@ serve(async (req) => {
       programme_location,
       admin_email,
       admin_phone,
-      webhook_url,
     } = payload;
+
+    // Get webhook URL from environment or payload
+    const webhook_url = Deno.env.get("N8N_SIGNUP_WEBHOOK_URL");
 
     // If no webhook URL is configured, just log and return success
     if (!webhook_url) {
-      console.log("No n8n webhook URL configured, skipping notification");
+      console.log("No N8N_SIGNUP_WEBHOOK_URL configured, skipping notification");
       return new Response(
         JSON.stringify({ 
           success: true, 
