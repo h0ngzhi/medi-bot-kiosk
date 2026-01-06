@@ -1,15 +1,28 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, Camera, XCircle } from 'lucide-react';
+import { CheckCircle2, Loader2, Camera, XCircle, Keyboard } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 type ScanState = 'scanning' | 'processing' | 'success' | 'error';
 
 export default function ScanCard() {
   const [scanState, setScanState] = useState<ScanState>('scanning');
   const [errorMessage, setErrorMessage] = useState('');
+  const [showManualEntry, setShowManualEntry] = useState(false);
+  const [manualNric, setManualNric] = useState('');
+  const [manualName, setManualName] = useState('');
+  const [manualChasType, setManualChasType] = useState('Blue');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
   const navigate = useNavigate();
@@ -387,6 +400,15 @@ export default function ScanCard() {
     window.location.reload();
   };
 
+  const handleManualSubmit = () => {
+    if (!manualNric.trim() || !manualName.trim()) {
+      return;
+    }
+    const qrData = `${manualNric.trim()}:${manualName.trim()}:${manualChasType}`;
+    setShowManualEntry(false);
+    handleQRCodeScanned(qrData);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted flex flex-col items-center justify-center p-6">
       {/* Header */}
@@ -456,12 +478,83 @@ export default function ScanCard() {
         )}
       </div>
 
-      {/* Instructions */}
+      {/* Instructions and Manual Entry */}
       {scanState === 'scanning' && (
-        <p className="mt-8 text-lg text-muted-foreground text-center max-w-sm">
-          Position the QR code on your IC or CHAS card within the frame
-        </p>
+        <div className="mt-8 text-center">
+          <p className="text-lg text-muted-foreground max-w-sm mb-6">
+            Position the QR code on your IC or CHAS card within the frame
+          </p>
+          
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => setShowManualEntry(true)}
+            className="h-14 px-6 text-base gap-2"
+          >
+            <Keyboard className="w-5 h-5" />
+            Enter Manually (For Testers)
+          </Button>
+        </div>
       )}
+
+      {/* Manual Entry Dialog */}
+      <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Manual Entry</DialogTitle>
+            <DialogDescription className="text-base">
+              Enter credentials to bypass QR scanning (for testing only)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">NRIC / FIN</label>
+              <Input
+                value={manualNric}
+                onChange={(e) => setManualNric(e.target.value.toUpperCase())}
+                placeholder="S1234567A"
+                className="h-12 text-lg"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Name</label>
+              <Input
+                value={manualName}
+                onChange={(e) => setManualName(e.target.value)}
+                placeholder="Tan Ah Kow"
+                className="h-12 text-lg"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">CHAS Card Type</label>
+              <select
+                value={manualChasType}
+                onChange={(e) => setManualChasType(e.target.value)}
+                className="w-full h-12 text-lg px-3 rounded-md border border-input bg-background"
+              >
+                <option value="Blue">Blue</option>
+                <option value="Orange">Orange</option>
+                <option value="Green">Green</option>
+                <option value="Merdeka generation">Merdeka Generation</option>
+                <option value="Pioneer generation">Pioneer Generation</option>
+              </select>
+            </div>
+            
+            <Button
+              variant="default"
+              size="lg"
+              onClick={handleManualSubmit}
+              disabled={!manualNric.trim() || !manualName.trim()}
+              className="w-full h-14 text-lg mt-4"
+            >
+              Continue
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
