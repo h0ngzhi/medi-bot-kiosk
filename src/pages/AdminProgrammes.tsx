@@ -97,6 +97,7 @@ type ProgrammeForm = {
   languages: string;
   learning_objectives: string;
   guest_option: string;
+  recurrence_type: string;
 };
 
 const CATEGORIES = [
@@ -129,6 +130,7 @@ const emptyForm: ProgrammeForm = {
   languages: "",
   learning_objectives: "",
   guest_option: "",
+  recurrence_type: "one_time",
 };
 
 const AdminProgrammes = () => {
@@ -523,16 +525,39 @@ const AdminProgrammes = () => {
                         />
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="duration">Duration</Label>
-                      <Input
-                        id="duration"
-                        value={form.duration}
-                        onChange={(e) =>
-                          setForm({ ...form, duration: e.target.value })
-                        }
-                        placeholder="e.g. 2 hours"
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="duration">Duration</Label>
+                        <Input
+                          id="duration"
+                          value={form.duration}
+                          onChange={(e) =>
+                            setForm({ ...form, duration: e.target.value })
+                          }
+                          placeholder="e.g. 2 hours"
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="recurrence">Recurrence</Label>
+                        <Select
+                          value={form.recurrence_type || "one_time"}
+                          onValueChange={(v) =>
+                            setForm({ ...form, recurrence_type: v })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="one_time">One-time</SelectItem>
+                            <SelectItem value="weekly">Weekly (max 1 month)</SelectItem>
+                            <SelectItem value="bi_weekly">Bi-weekly (max 1 month)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Recurring programmes need manual review after 1 month.
+                        </p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-3">
                       <Switch

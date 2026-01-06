@@ -5,9 +5,10 @@ import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
 import { ProgrammeCard, Programme } from '@/components/community/ProgrammeCard';
 import { ProgrammeSignupForm } from '@/components/community/ProgrammeSignupForm';
-import { ProgrammeFeedback } from '@/components/community/ProgrammeFeedback';
+import { ProgrammeFeedbackForm } from '@/components/community/ProgrammeFeedbackForm';
 import { speakText } from '@/utils/speechUtils';
 import { supabase } from '@/integrations/supabase/client';
+import { isRegistrationOpen } from '@/utils/programmeUtils';
 import { 
   ArrowLeft, 
   Filter,
@@ -43,8 +44,7 @@ export default function CommunityProgrammes() {
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [selectedProgramme, setSelectedProgramme] = useState<Programme | null>(null);
   const [showSignupForm, setShowSignupForm] = useState(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackDismissed, setFeedbackDismissed] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -65,8 +65,10 @@ export default function CommunityProgrammes() {
 
         if (error) throw error;
 
-        // Now fetch user's signups to mark signed-up programmes
+        // Now fetch user's signups and feedback to mark signed-up programmes
         let signedUpIds: string[] = [];
+        let feedbackSubmittedIds: string[] = [];
+        
         if (user?.id) {
           const { data: signups } = await supabase
             .from('user_programme_signups')
@@ -76,14 +78,25 @@ export default function CommunityProgrammes() {
           if (signups) {
             signedUpIds = signups.map(s => s.programme_id);
           }
+
+          // Check for submitted feedback
+          const { data: feedbacks } = await supabase
+            .from('programme_feedback')
+            .select('programme_id')
+            .eq('kiosk_user_id', user.id);
+
+          if (feedbacks) {
+            feedbackSubmittedIds = feedbacks.map(f => f.programme_id);
+          }
         }
 
-        const programmesWithSignup = (data || []).map(p => ({
+        const programmesWithState = (data || []).map(p => ({
           ...p,
-          isSignedUp: signedUpIds.includes(p.id)
+          isSignedUp: signedUpIds.includes(p.id),
+          hasSubmittedFeedback: feedbackSubmittedIds.includes(p.id)
         }));
 
-        setProgrammes(programmesWithSignup);
+        setProgrammes(programmesWithState);
       } catch (error) {
         console.error('Error fetching programmes:', error);
       } finally {
@@ -99,6 +112,11 @@ export default function CommunityProgrammes() {
     setShowSignupForm(true);
   };
 
+  const handleFeedback = (programme: Programme) => {
+    setSelectedProgramme(programme);
+    setShowFeedbackForm(true);
+  };
+
   const handleSignupSuccess = () => {
     if (selectedProgramme) {
       setProgrammes(prev =>
@@ -108,18 +126,30 @@ export default function CommunityProgrammes() {
             : p
         )
       );
-      
-      // Show feedback after successful signup (only once per session)
-      if (!feedbackDismissed) {
-        setTimeout(() => {
-          setShowFeedback(true);
-        }, 1500);
-      }
+    }
+  };
+
+  const handleFeedbackSuccess = () => {
+    if (selectedProgramme) {
+      setProgrammes(prev =>
+        prev.map(p =>
+          p.id === selectedProgramme.id
+            ? { ...p, hasSubmittedFeedback: true }
+            : p
+        )
+      );
     }
   };
 
   const handleCancelParticipation = async (programme: Programme) => {
     if (!user?.id) return;
+
+    // Check if programme has started - cancel not allowed
+    const canCancel = isRegistrationOpen(programme.event_date, programme.event_time);
+    if (!canCancel) {
+      toast.error(t('community.cannotCancelStarted'));
+      return;
+    }
 
     try {
       // Delete the signup record
@@ -157,8 +187,10 @@ export default function CommunityProgrammes() {
     ? programmes
     : programmes.filter(p => p.category === activeCategory);
 
-  // Get user's signed up programmes
-  const myProgrammes = programmes.filter(p => p.isSignedUp);
+  // Get user's signed up programmes (only upcoming ones where registration is still open)
+  const myProgrammes = programmes.filter(p => 
+    p.isSignedUp && isRegistrationOpen(p.event_date, p.event_time)
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted pb-32">
@@ -211,7 +243,7 @@ export default function CommunityProgrammes() {
         </div>
       </div>
 
-      {/* Your Programmes Section - Prominent at top */}
+      {/* Your Programmes Section - Only shows upcoming programmes where cancel is allowed */}
       {!loading && myProgrammes.length > 0 && (
         <div className="max-w-2xl mx-auto px-6 mb-8">
           <div className="bg-success/10 border-2 border-success/30 rounded-3xl p-6">
@@ -295,6 +327,7 @@ export default function CommunityProgrammes() {
               programme={programme}
               onSignUp={handleSignUp}
               onCancel={handleCancelParticipation}
+              onFeedback={handleFeedback}
               index={index}
             />
           ))
@@ -322,14 +355,16 @@ export default function CommunityProgrammes() {
         />
       )}
 
-      {/* Feedback component */}
-      <ProgrammeFeedback
-        isOpen={showFeedback}
-        onClose={() => {
-          setShowFeedback(false);
-          setFeedbackDismissed(true);
-        }}
-      />
+      {/* Feedback form modal */}
+      {selectedProgramme && (
+        <ProgrammeFeedbackForm
+          isOpen={showFeedbackForm}
+          onClose={() => setShowFeedbackForm(false)}
+          programmeId={selectedProgramme.id}
+          programmeName={selectedProgramme.title}
+          onSuccess={handleFeedbackSuccess}
+        />
+      )}
 
       <AccessibilityBar />
     </div>

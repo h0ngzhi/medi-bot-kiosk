@@ -36,6 +36,7 @@ export type Database = {
           location: string | null
           max_capacity: number | null
           points_reward: number
+          recurrence_type: string | null
           region: string | null
           title: string
           updated_at: string | null
@@ -61,6 +62,7 @@ export type Database = {
           location?: string | null
           max_capacity?: number | null
           points_reward?: number
+          recurrence_type?: string | null
           region?: string | null
           title: string
           updated_at?: string | null
@@ -86,6 +88,7 @@ export type Database = {
           location?: string | null
           max_capacity?: number | null
           points_reward?: number
+          recurrence_type?: string | null
           region?: string | null
           title?: string
           updated_at?: string | null
@@ -227,6 +230,51 @@ export type Database = {
             columns: ["kiosk_user_id"]
             isOneToOne: false
             referencedRelation: "kiosk_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      programme_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          kiosk_user_id: string
+          participant_name: string
+          programme_id: string
+          rating: number
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          kiosk_user_id: string
+          participant_name: string
+          programme_id: string
+          rating: number
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          kiosk_user_id?: string
+          participant_name?: string
+          programme_id?: string
+          rating?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programme_feedback_kiosk_user_id_fkey"
+            columns: ["kiosk_user_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programme_feedback_programme_id_fkey"
+            columns: ["programme_id"]
+            isOneToOne: false
+            referencedRelation: "community_programmes"
             referencedColumns: ["id"]
           },
         ]
