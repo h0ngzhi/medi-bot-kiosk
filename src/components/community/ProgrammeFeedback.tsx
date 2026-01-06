@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ThumbsUp, ThumbsDown, X, Send } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, X, Send, Mic, Loader2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { speakText } from '@/utils/speechUtils';
 import { toast } from 'sonner';
+import { useVoiceInput } from '@/hooks/useVoiceInput';
 
 interface ProgrammeFeedbackProps {
   isOpen: boolean;
@@ -18,6 +19,14 @@ export function ProgrammeFeedback({ isOpen, onClose, programmeName }: ProgrammeF
   const [comment, setComment] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
+  const { isRecording, isProcessing, toggleRecording } = useVoiceInput({
+    language,
+    onTranscript: (text) => {
+      setComment((prev) => prev ? `${prev} ${text}` : text);
+      toast.success(t('community.voiceRecorded') || 'Voice recorded successfully');
+    }
+  });
+
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
       speakText(text, language);
@@ -28,13 +37,27 @@ export function ProgrammeFeedback({ isOpen, onClose, programmeName }: ProgrammeF
     // In a real app, this would send to backend
     console.log('Feedback submitted:', { rating, comment, programmeName });
     setSubmitted(true);
-    toast.success(t('community.feedbackThanks'));
+    toast.success(t('community.feedbackThanks'), {
+      description: t('community.feedbackSubmitted') || 'Your feedback helps us improve our services.',
+      duration: 3000,
+    });
     setTimeout(() => {
       onClose();
       setRating(null);
       setComment('');
       setSubmitted(false);
     }, 2000);
+  };
+
+  const handleVoiceClick = async () => {
+    if (isRecording) {
+      await toggleRecording();
+    } else {
+      await toggleRecording();
+      toast.info(t('community.speakNow') || 'Speak now...', {
+        duration: 2000,
+      });
+    }
   };
 
   if (!isOpen) return null;
@@ -98,12 +121,34 @@ export function ProgrammeFeedback({ isOpen, onClose, programmeName }: ProgrammeF
               >
                 {t('community.optionalComment')}
               </label>
-              <Textarea
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                placeholder={t('community.commentPlaceholder')}
-                className="min-h-[100px] text-lg"
-              />
+              <div className="relative">
+                <Textarea
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  placeholder={t('community.commentPlaceholder')}
+                  className="min-h-[100px] text-lg pr-14"
+                />
+                <Button
+                  type="button"
+                  variant={isRecording ? 'destructive' : 'outline'}
+                  size="icon"
+                  onClick={handleVoiceClick}
+                  disabled={isProcessing}
+                  className={`absolute right-2 bottom-2 rounded-full h-10 w-10 ${
+                    isRecording ? 'animate-pulse' : ''
+                  }`}
+                  title={t('community.tapToSpeak') || 'Tap to speak'}
+                >
+                  {isProcessing ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Mic className={`w-5 h-5 ${isRecording ? 'text-white' : ''}`} />
+                  )}
+                </Button>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                {t('community.voiceHint') || 'Tap the microphone to speak your feedback'}
+              </p>
             </div>
 
             <Button
