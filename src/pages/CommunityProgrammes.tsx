@@ -19,13 +19,13 @@ import {
   X
 } from 'lucide-react';
 
-// Realistic Singapore CCN programmes data
+// Realistic Singapore CCN programmes data with enhanced details
 const mockProgrammes: Programme[] = [
   // Active Ageing
   {
     id: '1',
     title: 'Morning Tai Chi for Seniors',
-    description: 'Gentle exercise to improve balance and flexibility. Suitable for beginners. Wear comfortable clothes and shoes.',
+    description: 'Learn gentle Tai Chi movements to improve balance, flexibility, and overall well-being. Suitable for beginners with no prior experience needed.',
     category: 'active-ageing',
     date: 'Every Tuesday & Thursday',
     time: '7:30 AM - 8:30 AM',
@@ -36,11 +36,21 @@ const mockProgrammes: Programme[] = [
     pointsReward: 30,
     spotsLeft: 15,
     lastUpdated: '1 Jan 2026',
+    duration: '1 hour',
+    groupSize: '20-40 pax',
+    languages: ['English', 'Mandarin'],
+    conductedBy: 'Certified Tai Chi Instructor',
+    learningObjectives: [
+      'Learn basic Tai Chi postures and breathing techniques',
+      'Improve balance and reduce risk of falls',
+      'Build strength in legs and core muscles',
+      'Practice relaxation and stress relief'
+    ]
   },
   {
     id: '2',
     title: 'Qigong & Stretching Class',
-    description: 'Slow, flowing movements to reduce stress and improve breathing. Great for those with joint pain.',
+    description: 'Gentle flowing movements combined with deep breathing exercises to improve energy flow, reduce stress, and enhance flexibility.',
     category: 'active-ageing',
     date: 'Every Wednesday',
     time: '9:00 AM - 10:00 AM',
@@ -51,11 +61,21 @@ const mockProgrammes: Programme[] = [
     pointsReward: 30,
     spotsLeft: 20,
     lastUpdated: '1 Jan 2026',
+    duration: '1 hour',
+    groupSize: '15-25 pax',
+    languages: ['Mandarin'],
+    conductedBy: 'Qigong Master',
+    learningObjectives: [
+      'Master basic Qigong breathing techniques',
+      'Learn gentle stretching exercises for joint mobility',
+      'Understand the connection between breath and movement',
+      'Practice daily exercises for home'
+    ]
   },
   {
     id: '3',
     title: 'Low-Impact Aerobics',
-    description: 'Fun exercise class with upbeat music. Modified movements for seniors. No jumping or running.',
+    description: 'Fun and energetic exercise class with upbeat music. All movements are modified for seniors with no jumping or high-impact activities.',
     category: 'active-ageing',
     date: 'Every Monday & Friday',
     time: '10:00 AM - 11:00 AM',
@@ -66,13 +86,23 @@ const mockProgrammes: Programme[] = [
     pointsReward: 30,
     spotsLeft: 25,
     lastUpdated: '1 Jan 2026',
+    duration: '1 hour',
+    groupSize: '20-30 pax',
+    languages: ['English'],
+    conductedBy: 'Fitness Instructor (Senior-certified)',
+    learningObjectives: [
+      'Improve cardiovascular fitness safely',
+      'Learn low-impact exercise movements',
+      'Build stamina and endurance',
+      'Enjoy social exercise in a group setting'
+    ]
   },
 
   // Health Education
   {
     id: '4',
     title: 'Managing Diabetes: Eating Well',
-    description: 'Learn which foods help control blood sugar. Simple tips for healthy meals at home. Free recipe booklet provided.',
+    description: 'Learn about the close relationship between nutrition and diabetes management. Discover practical tips for healthy eating and meal planning.',
     category: 'health-education',
     date: 'Saturday, 18 Jan 2026',
     time: '2:00 PM - 4:00 PM',
@@ -84,11 +114,21 @@ const mockProgrammes: Programme[] = [
     pointsReward: 50,
     spotsLeft: 8,
     lastUpdated: '1 Jan 2026',
+    duration: '2 hours',
+    groupSize: '15-30 pax',
+    languages: ['English', 'Mandarin'],
+    conductedBy: 'Dietitian',
+    learningObjectives: [
+      'Understand how different foods affect blood sugar levels',
+      'Learn to read food labels and make healthier choices',
+      'Plan balanced meals for better diabetes control',
+      'Identify healthy snack options for diabetics'
+    ]
   },
   {
     id: '5',
     title: 'Fall Prevention Workshop',
-    description: 'Tips to prevent falls at home. Learn simple exercises to improve balance. Home safety checklist included.',
+    description: 'Comprehensive workshop on preventing falls at home. Learn simple exercises and get a home safety checklist to make your home safer.',
     category: 'health-education',
     date: 'Wednesday, 22 Jan 2026',
     time: '10:00 AM - 12:00 PM',
@@ -99,27 +139,47 @@ const mockProgrammes: Programme[] = [
     pointsReward: 50,
     spotsLeft: 12,
     lastUpdated: '1 Jan 2026',
+    duration: '2 hours',
+    groupSize: '20-30 pax',
+    languages: ['English'],
+    conductedBy: 'Physiotherapist',
+    learningObjectives: [
+      'Identify common fall hazards at home',
+      'Learn balance exercises to do at home',
+      'Understand the importance of proper footwear',
+      'Create a safer home environment checklist'
+    ]
   },
   {
     id: '6',
-    title: 'Heart Health Talk',
-    description: 'Understanding blood pressure and cholesterol. When to see a doctor. Questions answered by healthcare staff.',
+    title: 'Nutrition & Oral Health Workshop',
+    description: 'Learn about the close relationship between nutrition and oral health, and how to maintain oral health through a balanced diet and proper oral hygiene.',
     category: 'health-education',
     date: 'Friday, 24 Jan 2026',
-    time: '3:00 PM - 4:30 PM',
+    time: '3:00 PM - 5:00 PM',
     venue: 'Toa Payoh Community Club, Seminar Room',
     region: 'Central',
     eligibility: 'All are welcome',
     registrationMethod: 'walkin',
     pointsReward: 50,
     lastUpdated: '1 Jan 2026',
+    duration: '2 hours',
+    groupSize: '10-30 pax',
+    languages: ['English', 'Mandarin'],
+    conductedBy: 'Dietitian + Oral Health Therapist',
+    learningObjectives: [
+      'Recognize the relationship between nutrition and oral health',
+      'Understand how poor nutrition leads to oral health problems',
+      'Identify the important nutrients for good oral health',
+      'Demonstrate good oral care to maintain good oral health'
+    ]
   },
 
   // Social Engagement
   {
     id: '7',
     title: 'Mandarin Karaoke Social',
-    description: 'Sing your favourite oldies with new friends. Light refreshments provided. Just come and have fun!',
+    description: 'Sing your favourite oldies with new friends in a relaxed and fun environment. Light refreshments provided. Just come and enjoy!',
     category: 'social',
     date: 'Every Thursday',
     time: '2:00 PM - 4:00 PM',
@@ -129,11 +189,15 @@ const mockProgrammes: Programme[] = [
     registrationMethod: 'walkin',
     pointsReward: 20,
     lastUpdated: '1 Jan 2026',
+    duration: '2 hours',
+    groupSize: '15-25 pax',
+    languages: ['Mandarin'],
+    conductedBy: 'Community Volunteer'
   },
   {
     id: '8',
     title: 'Mahjong Interest Group',
-    description: 'Weekly mahjong sessions to keep your mind sharp. Beginners can learn from experienced players.',
+    description: 'Weekly mahjong sessions to keep your mind sharp and make new friends. Beginners can learn from experienced players in a supportive setting.',
     category: 'social',
     date: 'Every Saturday',
     time: '9:00 AM - 12:00 PM',
@@ -144,11 +208,20 @@ const mockProgrammes: Programme[] = [
     pointsReward: 20,
     spotsLeft: 4,
     lastUpdated: '1 Jan 2026',
+    duration: '3 hours',
+    groupSize: '16-24 pax',
+    languages: ['Mandarin', 'Hokkien'],
+    conductedBy: 'Centre Staff',
+    learningObjectives: [
+      'Learn or improve mahjong skills',
+      'Keep the mind active and sharp',
+      'Build friendships with fellow seniors'
+    ]
   },
   {
     id: '9',
     title: 'Gardening Club',
-    description: 'Learn to grow vegetables and herbs. Take home plants for your HDB corridor garden. Seeds provided.',
+    description: 'Learn to grow vegetables and herbs in small spaces. Perfect for HDB living. Take home plants and seeds to start your own garden.',
     category: 'social',
     date: 'Every Sunday',
     time: '8:00 AM - 10:00 AM',
@@ -160,13 +233,23 @@ const mockProgrammes: Programme[] = [
     pointsReward: 25,
     spotsLeft: 10,
     lastUpdated: '1 Jan 2026',
+    duration: '2 hours',
+    groupSize: '10-20 pax',
+    languages: ['English', 'Mandarin'],
+    conductedBy: 'NParks Community Gardener',
+    learningObjectives: [
+      'Learn basic gardening techniques for small spaces',
+      'Understand which plants grow well in Singapore',
+      'Practice composting and sustainable gardening',
+      'Take home seedlings to grow at home'
+    ]
   },
 
   // Caregiver Support
   {
     id: '10',
     title: 'Caregiver Support Circle',
-    description: 'Share experiences with other caregivers. Learn coping strategies. Trained counsellor available.',
+    description: 'A safe space to share experiences with fellow caregivers. Learn coping strategies and self-care tips from trained professionals.',
     category: 'caregiver',
     date: 'First Saturday of each month',
     time: '10:00 AM - 12:00 PM',
@@ -177,11 +260,21 @@ const mockProgrammes: Programme[] = [
     phoneNumber: '6850 7800',
     pointsReward: 40,
     lastUpdated: '1 Jan 2026',
+    duration: '2 hours',
+    groupSize: '8-15 pax',
+    languages: ['English', 'Mandarin'],
+    conductedBy: 'Medical Social Worker + Counsellor',
+    learningObjectives: [
+      'Share experiences in a supportive environment',
+      'Learn stress management techniques',
+      'Discover community resources for caregivers',
+      'Build a support network with fellow caregivers'
+    ]
   },
   {
     id: '11',
     title: 'Dementia Care Basics',
-    description: 'Understand dementia symptoms. Learn communication tips. How to create a safe home environment.',
+    description: 'Understand dementia symptoms and learn practical communication tips. Get guidance on creating a safe and supportive home environment.',
     category: 'caregiver',
     date: 'Saturday, 25 Jan 2026',
     time: '2:00 PM - 5:00 PM',
@@ -192,13 +285,23 @@ const mockProgrammes: Programme[] = [
     pointsReward: 60,
     spotsLeft: 15,
     lastUpdated: '1 Jan 2026',
+    duration: '3 hours',
+    groupSize: '15-25 pax',
+    languages: ['English'],
+    conductedBy: 'Dementia Care Specialist + Occupational Therapist',
+    learningObjectives: [
+      'Understand the different stages of dementia',
+      'Learn effective communication techniques',
+      'Manage challenging behaviors with patience',
+      'Create a dementia-friendly home environment'
+    ]
   },
 
   // Digital Literacy
   {
     id: '12',
     title: 'Smartphone Basics for Seniors',
-    description: 'Learn to use WhatsApp, take photos, and make video calls. Bring your own phone. Patient instructors.',
+    description: 'Learn to use WhatsApp, take photos, and make video calls with your loved ones. Bring your own phone. Patient one-on-one guidance provided.',
     category: 'digital',
     date: 'Every Wednesday',
     time: '2:00 PM - 4:00 PM',
@@ -209,11 +312,21 @@ const mockProgrammes: Programme[] = [
     pointsReward: 40,
     spotsLeft: 6,
     lastUpdated: '1 Jan 2026',
+    duration: '2 hours',
+    groupSize: '10-15 pax',
+    languages: ['English', 'Mandarin'],
+    conductedBy: 'Digital Ambassador (IMDA)',
+    learningObjectives: [
+      'Navigate your smartphone confidently',
+      'Send messages and photos on WhatsApp',
+      'Make video calls to family and friends',
+      'Take and share photos'
+    ]
   },
   {
     id: '13',
     title: 'Singpass & Government Apps',
-    description: 'Set up Singpass on your phone. Learn to check CPF, book appointments. One-on-one help available.',
+    description: 'Set up Singpass on your phone and learn to use government digital services. Check CPF, book appointments, and access benefits easily.',
     category: 'digital',
     date: 'Tuesday, 21 Jan 2026',
     time: '10:00 AM - 12:00 PM',
@@ -223,11 +336,21 @@ const mockProgrammes: Programme[] = [
     registrationMethod: 'walkin',
     pointsReward: 40,
     lastUpdated: '1 Jan 2026',
+    duration: '2 hours',
+    groupSize: '15-20 pax',
+    languages: ['English', 'Mandarin', 'Malay'],
+    conductedBy: 'ServiceSG Ambassador',
+    learningObjectives: [
+      'Set up and use Singpass on your phone',
+      'Check CPF balances and statements',
+      'Book polyclinic appointments online',
+      'Access government e-services confidently'
+    ]
   },
   {
     id: '14',
     title: 'Online Safety for Seniors',
-    description: 'Spot scam messages. Protect your personal information. What to do if you receive suspicious calls.',
+    description: 'Learn to spot scam messages and protect your personal information online. Know what to do if you receive suspicious calls or messages.',
     category: 'digital',
     date: 'Friday, 31 Jan 2026',
     time: '3:00 PM - 4:30 PM',
@@ -238,6 +361,16 @@ const mockProgrammes: Programme[] = [
     pointsReward: 45,
     spotsLeft: 20,
     lastUpdated: '1 Jan 2026',
+    duration: '1.5 hours',
+    groupSize: '20-30 pax',
+    languages: ['English'],
+    conductedBy: 'Singapore Police Force (Crime Prevention)',
+    learningObjectives: [
+      'Recognize common types of scams targeting seniors',
+      'Identify fake messages and phishing attempts',
+      'Protect personal and banking information',
+      'Know what to do if you suspect a scam'
+    ]
   },
 ];
 
