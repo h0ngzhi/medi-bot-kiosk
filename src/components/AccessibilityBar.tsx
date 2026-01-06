@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Globe, Mic, Volume2, VolumeX, Lock, Eye } from 'lucide-react';
+import { Globe, Mic, Volume2, VolumeX, Lock } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,6 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog';
 import VoiceNavigator from './VoiceNavigator';
-import { EyeTrackingOverlay } from './EyeTrackingOverlay';
 import { toast } from 'sonner';
 
 const VOICE_GUIDE_PASSWORD = 'catinthebin123';
@@ -24,7 +23,6 @@ export function AccessibilityBar() {
   const navigate = useNavigate();
   const location = useLocation();
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
-  const [isEyeTrackingOpen, setIsEyeTrackingOpen] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordError, setPasswordError] = useState(false);
@@ -111,17 +109,6 @@ export function AccessibilityBar() {
             <Mic className="w-5 h-5" />
             <span className="text-sm">{t('access.voice')}</span>
           </Button>
-          
-          <Button
-            variant="accessibility"
-            size="accessibility"
-            onClick={() => setIsEyeTrackingOpen(true)}
-            onMouseEnter={() => handleSpeak('Eye Control')}
-            className="flex-1"
-          >
-            <Eye className="w-5 h-5" />
-            <span className="text-sm">Eye Control</span>
-          </Button>
         </div>
       </div>
 
@@ -169,7 +156,6 @@ export function AccessibilityBar() {
       </Dialog>
 
       <VoiceNavigator isOpen={isVoiceOpen} onClose={() => setIsVoiceOpen(false)} />
-      <EyeTrackingOverlay isOpen={isEyeTrackingOpen} onClose={() => setIsEyeTrackingOpen(false)} />
     </>
   );
 }
