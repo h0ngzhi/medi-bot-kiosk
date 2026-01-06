@@ -524,17 +524,29 @@ const AdminProgrammes = () => {
     return Math.max(0, max - current);
   };
 
+  // Normalize category for display (handles snake_case from DB)
+  const formatCategory = (category: string | null): string => {
+    if (!category) return "Uncategorized";
+    // Handle snake_case like "active_ageing" -> "Active Ageing"
+    return category
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  };
+
   const getCategoryColor = (category: string | null) => {
-    switch (category) {
-      case "Active Ageing":
+    const normalized = formatCategory(category).toLowerCase();
+    switch (normalized) {
+      case "active ageing":
         return "bg-primary/10 text-primary";
-      case "Social":
+      case "social":
         return "bg-secondary/10 text-secondary";
-      case "Health Education":
+      case "health education":
+      case "health":
         return "bg-success/10 text-success";
-      case "Caregiver":
+      case "caregiver":
         return "bg-warning/10 text-warning";
-      case "Digital Literacy":
+      case "digital literacy":
         return "bg-info/10 text-info";
       default:
         return "bg-muted text-muted-foreground";
@@ -1133,7 +1145,7 @@ const AdminProgrammes = () => {
                           variant="secondary"
                           className={getCategoryColor(programme.category)}
                         >
-                          {programme.category}
+                          {formatCategory(programme.category)}
                         </Badge>
                         {!programme.is_active && (
                           <Badge variant="outline" className="text-muted-foreground">
@@ -1273,6 +1285,18 @@ const AdminProgrammes = () => {
                                 #{programme.serial_id}
                               </Badge>
                             )}
+                            {reviewCounts[programme.series_id] > 0 && (
+                              <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">
+                                <Star className="h-3 w-3 mr-1 fill-amber-500" />
+                                {reviewCounts[programme.series_id]} review{reviewCounts[programme.series_id] !== 1 ? 's' : ''}
+                              </Badge>
+                            )}
+                            <Badge
+                              variant="secondary"
+                              className={getCategoryColor(programme.category)}
+                            >
+                              {formatCategory(programme.category)}
+                            </Badge>
                             <Badge variant="secondary" className="bg-muted text-muted-foreground">
                               <CheckCircle className="h-3 w-3 mr-1" />
                               Completed
