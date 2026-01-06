@@ -312,7 +312,11 @@ export default function CommunityProgrammes() {
           onClose={() => setShowSignupForm(false)}
           programme={{
             id: selectedProgramme.id,
-            title: selectedProgramme.title
+            title: selectedProgramme.title,
+            event_date: selectedProgramme.event_date,
+            location: selectedProgramme.location,
+            admin_email: selectedProgramme.admin_email,
+            contact_number: selectedProgramme.contact_number
           }}
           onSuccess={handleSignupSuccess}
         />
