@@ -19,6 +19,7 @@ import {
   X,
   Loader2
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 type Category = 'all' | 'active_ageing' | 'health' | 'social' | 'caregiver' | 'digital';
 
@@ -114,6 +115,41 @@ export default function CommunityProgrammes() {
     }
   };
 
+  const handleCancelParticipation = async (programme: Programme) => {
+    if (!user?.id) return;
+
+    try {
+      // Delete the signup record
+      const { error } = await supabase
+        .from('user_programme_signups')
+        .delete()
+        .eq('kiosk_user_id', user.id)
+        .eq('programme_id', programme.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setProgrammes(prev =>
+        prev.map(p =>
+          p.id === programme.id
+            ? { ...p, isSignedUp: false, current_signups: Math.max(0, p.current_signups - 1) }
+            : p
+        )
+      );
+
+      // Decrement the signup count in database
+      await supabase
+        .from('community_programmes')
+        .update({ current_signups: Math.max(0, programme.current_signups - 1) })
+        .eq('id', programme.id);
+
+      toast.success(t('community.cancelSuccess'));
+    } catch (error) {
+      console.error('Error cancelling participation:', error);
+      toast.error(t('community.cancelError'));
+    }
+  };
+
   const filteredProgrammes = activeCategory === 'all'
     ? programmes
     : programmes.filter(p => p.category === activeCategory);
@@ -181,6 +217,7 @@ export default function CommunityProgrammes() {
               key={programme.id}
               programme={programme}
               onSignUp={handleSignUp}
+              onCancel={handleCancelParticipation}
               index={index}
             />
           ))
