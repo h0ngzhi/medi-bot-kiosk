@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 type Language = 'en' | 'zh' | 'ms' | 'ta';
 
@@ -1130,11 +1130,33 @@ const translations: Record<Language, Record<string, string>> = {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const SESSION_KEY = 'kiosk_user_session';
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useState<Language>('en');
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(() => {
+    // Restore user session from localStorage on initial load
+    try {
+      const saved = localStorage.getItem(SESSION_KEY);
+      if (saved) {
+        return JSON.parse(saved) as UserProfile;
+      }
+    } catch (e) {
+      console.error('Failed to restore session:', e);
+    }
+    return null;
+  });
   const [isVoiceEnabled, setIsVoiceEnabled] = useState(false);
   const [isTtsEnabled, setIsTtsEnabled] = useState(true);
+
+  // Persist user session to localStorage whenever it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(SESSION_KEY);
+    }
+  }, [user]);
 
   const t = (key: string): string => {
     return translations[language][key] || key;
