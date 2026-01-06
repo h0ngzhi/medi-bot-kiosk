@@ -135,7 +135,7 @@ export function ProgrammeFeedback({ isOpen, onClose, programmeName }: ProgrammeF
                 />
                 <div className="absolute right-2 bottom-2 flex items-center gap-2">
                   {isRecording && (
-                    <span className="text-sm font-medium text-destructive animate-pulse">
+                    <span className="text-base font-medium text-destructive animate-pulse">
                       {formatTime(recordingTime)}
                     </span>
                   )}
@@ -160,7 +160,7 @@ export function ProgrammeFeedback({ isOpen, onClose, programmeName }: ProgrammeF
                   </Button>
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground mt-2">
+              <p className="text-base text-muted-foreground mt-2">
                 {isRecording 
                   ? t('community.tapToStop') || '🔴 Recording... Tap the button to stop'
                   : t('community.voiceHint') || 'Tap the microphone to speak your feedback'

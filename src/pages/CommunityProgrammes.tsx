@@ -175,7 +175,7 @@ export default function CommunityProgrammes() {
             >
               {t('community.title')}
             </h1>
-            <p className="text-sm text-muted-foreground">{t('community.subtitle')}</p>
+            <p className="text-lg text-muted-foreground">{t('community.subtitle')}</p>
           </div>
         </div>
       </header>
