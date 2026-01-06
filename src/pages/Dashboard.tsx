@@ -1,53 +1,46 @@
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '@/contexts/AppContext';
-import { Button } from '@/components/ui/button';
-import { AccessibilityBar } from '@/components/AccessibilityBar';
-import { speakText } from '@/utils/speechUtils';
-import { 
-  Heart, 
-  Video, 
-  Users, 
-  User, 
-  ChevronRight,
-  LogOut
-} from 'lucide-react';
+import { useNavigate } from "react-router-dom";
+import { useApp } from "@/contexts/AppContext";
+import { Button } from "@/components/ui/button";
+import { AccessibilityBar } from "@/components/AccessibilityBar";
+import { speakText } from "@/utils/speechUtils";
+import { Heart, Video, Users, User, ChevronRight, LogOut } from "lucide-react";
 
 const menuItems = [
   {
-    id: 'health',
-    icon: Heart,
-    titleKey: 'dashboard.health',
-    descKey: 'dashboard.health.desc',
-    path: '/health',
-    color: 'text-primary',
-    bgColor: 'bg-primary/10',
-  },
-  {
-    id: 'teleconsult',
-    icon: Video,
-    titleKey: 'dashboard.teleconsult',
-    descKey: 'dashboard.teleconsult.desc',
-    path: '/teleconsult',
-    color: 'text-secondary',
-    bgColor: 'bg-secondary/10',
-  },
-  {
-    id: 'community',
+    id: "community",
     icon: Users,
-    titleKey: 'dashboard.community',
-    descKey: 'dashboard.community.desc',
-    path: '/community',
-    color: 'text-success',
-    bgColor: 'bg-success/10',
+    titleKey: "dashboard.community",
+    descKey: "dashboard.community.desc",
+    path: "/community",
+    color: "text-success",
+    bgColor: "bg-success/10",
   },
   {
-    id: 'profile',
+    id: "health",
+    icon: Heart,
+    titleKey: "dashboard.health",
+    descKey: "dashboard.health.desc",
+    path: "/health",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+  },
+  {
+    id: "teleconsult",
+    icon: Video,
+    titleKey: "dashboard.teleconsult",
+    descKey: "dashboard.teleconsult.desc",
+    path: "/teleconsult",
+    color: "text-secondary",
+    bgColor: "bg-secondary/10",
+  },
+  {
+    id: "profile",
     icon: User,
-    titleKey: 'dashboard.profile',
-    descKey: 'dashboard.profile.desc',
-    path: '/profile',
-    color: 'text-warning',
-    bgColor: 'bg-warning/10',
+    titleKey: "dashboard.profile",
+    descKey: "dashboard.profile.desc",
+    path: "/profile",
+    color: "text-warning",
+    bgColor: "bg-warning/10",
   },
 ];
 
@@ -63,7 +56,7 @@ export default function Dashboard() {
 
   const handleLogout = () => {
     setUser(null);
-    navigate('/');
+    navigate("/");
   };
 
   return (
@@ -72,24 +65,24 @@ export default function Dashboard() {
       <header className="bg-card shadow-soft p-6 mb-8">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
           <div className="animate-fade-in">
-            <p 
+            <p
               className="text-lg text-muted-foreground cursor-default"
-              onMouseEnter={() => handleSpeak(t('dashboard.welcome'))}
+              onMouseEnter={() => handleSpeak(t("dashboard.welcome"))}
             >
-              {t('dashboard.welcome')}
+              {t("dashboard.welcome")}
             </p>
-            <h1 
+            <h1
               className="text-heading text-foreground cursor-default"
-              onMouseEnter={() => handleSpeak(user?.name || 'Guest')}
+              onMouseEnter={() => handleSpeak(user?.name || "Guest")}
             >
-              {user?.name || 'Guest'}
+              {user?.name || "Guest"}
             </h1>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            onMouseEnter={() => handleSpeak(t('common.logout'))}
+            onMouseEnter={() => handleSpeak(t("common.logout"))}
             className="w-14 h-14 rounded-full"
           >
             <LogOut className="w-6 h-6 text-muted-foreground" />
@@ -99,12 +92,12 @@ export default function Dashboard() {
 
       {/* Main content */}
       <main className="max-w-2xl mx-auto px-6">
-        <h2 
-          className="text-heading text-foreground mb-8 animate-fade-in cursor-default" 
-          style={{ animationDelay: '0.1s' }}
-          onMouseEnter={() => handleSpeak(t('dashboard.title'))}
+        <h2
+          className="text-heading text-foreground mb-8 animate-fade-in cursor-default"
+          style={{ animationDelay: "0.1s" }}
+          onMouseEnter={() => handleSpeak(t("dashboard.title"))}
         >
-          {t('dashboard.title')}
+          {t("dashboard.title")}
         </h2>
 
         {/* Menu grid */}
@@ -122,7 +115,10 @@ export default function Dashboard() {
               <div className={`w-16 h-16 rounded-2xl ${item.bgColor} flex items-center justify-center flex-shrink-0`}>
                 <item.icon className={`w-8 h-8 ${item.color}`} />
               </div>
-              <div className="flex-1 min-w-0" onMouseEnter={() => handleSpeak(`${t(item.titleKey)}. ${t(item.descKey)}`)}>
+              <div
+                className="flex-1 min-w-0"
+                onMouseEnter={() => handleSpeak(`${t(item.titleKey)}. ${t(item.descKey)}`)}
+              >
                 <h3 className="text-xl font-bold text-foreground">{t(item.titleKey)}</h3>
                 <p className="text-base text-muted-foreground">{t(item.descKey)}</p>
               </div>
