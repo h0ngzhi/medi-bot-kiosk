@@ -93,9 +93,9 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
       <div className={`${category.bg} px-6 py-3 flex items-center justify-between`}>
         <span className={`font-semibold ${category.text}`}>{category.label}</span>
         <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 text-warning">
-            <Award className="w-4 h-4" />
-            <span className="font-bold text-sm">{programme.points_reward} {t('community.points')}</span>
+          <div className="flex items-center gap-1.5 text-warning">
+            <Award className="w-5 h-5" />
+            <span className="font-bold text-base">{programme.points_reward} {t('community.points')}</span>
           </div>
         </div>
       </div>
@@ -121,20 +121,20 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
         {/* Quick info badges */}
         <div className="flex flex-wrap gap-2 mb-4">
           {programme.duration && (
-            <Badge variant="outline" className="text-sm py-1 px-3">
-              <Clock className="w-3.5 h-3.5 mr-1.5" />
+            <Badge variant="outline" className="text-base py-1.5 px-4">
+              <Clock className="w-4 h-4 mr-2" />
               {programme.duration}
             </Badge>
           )}
           {programme.group_size && (
-            <Badge variant="outline" className="text-sm py-1 px-3">
-              <Users className="w-3.5 h-3.5 mr-1.5" />
+            <Badge variant="outline" className="text-base py-1.5 px-4">
+              <Users className="w-4 h-4 mr-2" />
               {programme.group_size}
             </Badge>
           )}
           {programme.languages && programme.languages.length > 0 && (
-            <Badge variant="outline" className="text-sm py-1 px-3">
-              <Languages className="w-3.5 h-3.5 mr-1.5" />
+            <Badge variant="outline" className="text-base py-1.5 px-4">
+              <Languages className="w-4 h-4 mr-2" />
               {programme.languages.join(' / ')}
             </Badge>
           )}
@@ -174,22 +174,22 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
 
           {/* Admin contact info */}
           {(programme.contact_number || programme.admin_email) && (
-            <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-sm mt-2 pt-2 border-t border-border/50">
+            <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-base mt-2 pt-2 border-t border-border/50">
               {programme.contact_number && (
                 <a 
                   href={`tel:${programme.contact_number}`}
-                  className="flex items-center gap-1.5 hover:text-primary transition-colors"
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
                 >
-                  <Phone className="w-4 h-4" />
+                  <Phone className="w-5 h-5" />
                   <span>{programme.contact_number}</span>
                 </a>
               )}
               {programme.admin_email && (
                 <a 
                   href={`mailto:${programme.admin_email}`}
-                  className="flex items-center gap-1.5 hover:text-primary transition-colors"
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
                 >
-                  <Mail className="w-4 h-4" />
+                  <Mail className="w-5 h-5" />
                   <span>{programme.admin_email}</span>
                 </a>
               )}
@@ -213,30 +213,30 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
           <>
             <Button
               variant="ghost"
-              size="sm"
+              size="default"
               onClick={() => setExpanded(!expanded)}
-              className="w-full justify-between mb-4 text-muted-foreground hover:text-foreground"
+              className="w-full justify-between mb-4 text-muted-foreground hover:text-foreground text-base"
             >
               <span className="flex items-center gap-2">
-                <Info className="w-4 h-4" />
+                <Info className="w-5 h-5" />
                 {t('community.moreDetails')}
               </span>
-              {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
             </Button>
 
             {expanded && (
               <div className="bg-muted rounded-2xl p-4 mb-4 space-y-4 animate-fade-in">
                 {/* Learning Objectives */}
                 <div>
-                  <p className="text-sm font-semibold text-foreground mb-2 flex items-center gap-2">
-                    <Target className="w-4 h-4 text-primary" />
+                  <p className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+                    <Target className="w-5 h-5 text-primary" />
                     {t('community.learningObjectives')}
                   </p>
-                  <ul className="space-y-1.5 ml-6">
+                  <ul className="space-y-2 ml-6">
                     {programme.learning_objectives.map((objective, idx) => (
                       <li 
                         key={idx} 
-                        className="text-sm text-muted-foreground list-disc cursor-default"
+                        className="text-base text-muted-foreground list-disc cursor-default"
                         onMouseEnter={() => handleSpeak(objective)}
                       >
                         {objective}
