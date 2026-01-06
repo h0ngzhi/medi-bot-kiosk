@@ -226,7 +226,15 @@ export default function CommunityProgrammes() {
               {myProgrammes.map((programme) => (
                 <div 
                   key={programme.id}
-                  className="bg-card rounded-2xl p-4 shadow-sm"
+                  className="bg-card rounded-2xl p-4 shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                  onClick={() => {
+                    const element = document.getElementById(`programme-${programme.id}`);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      element.classList.add('ring-2', 'ring-primary');
+                      setTimeout(() => element.classList.remove('ring-2', 'ring-primary'), 2000);
+                    }
+                  }}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
@@ -251,7 +259,10 @@ export default function CommunityProgrammes() {
                     <Button
                       variant="outline"
                       size="lg"
-                      onClick={() => handleCancelParticipation(programme)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCancelParticipation(programme);
+                      }}
                       className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground h-12 px-4"
                     >
                       <X className="w-5 h-5 mr-2" />

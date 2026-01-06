@@ -27,6 +27,7 @@ export interface Programme {
   description: string | null;
   category: string;
   event_date: string | null;
+  event_time: string | null;
   location: string | null;
   points_reward: number;
   is_active: boolean;
@@ -86,7 +87,8 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
 
   return (
     <div
-      className="bg-card rounded-3xl shadow-soft overflow-hidden animate-slide-up"
+      id={`programme-${programme.id}`}
+      className="bg-card rounded-3xl shadow-soft overflow-hidden animate-slide-up scroll-mt-6"
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       {/* Header with category */}
@@ -151,6 +153,16 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
               <span className="text-base font-medium">{formatDate(programme.event_date)}</span>
             </div>
           )}
+
+          {programme.event_time && (
+            <div 
+              className="flex items-center gap-3 text-foreground cursor-default"
+              onMouseEnter={() => handleSpeak(programme.event_time || '')}
+            >
+              <Clock className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-base">{programme.event_time}</span>
+            </div>
+          )}
           
           {programme.location && (
             <div 
@@ -171,6 +183,17 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
               <span className="text-base">{t('community.conductedBy')}: <span className="font-medium">{programme.conducted_by}</span></span>
             </div>
           )}
+
+          {/* Spots remaining - now above contact organiser */}
+          <div className="flex items-center gap-3 text-foreground cursor-default">
+            <Users className="w-5 h-5 text-primary flex-shrink-0" />
+            <span className="text-base">
+              {programme.max_capacity - programme.current_signups > 0 
+                ? <><span className="font-bold text-success">{programme.max_capacity - programme.current_signups}</span> {t('community.spotsLeft')} (of {programme.max_capacity})</>
+                : <span className="text-destructive font-medium">{t('community.fullCapacity')}</span>
+              }
+            </span>
+          </div>
 
           {/* Admin contact info */}
           {(programme.contact_number || programme.admin_email) && (
@@ -198,17 +221,6 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
               </div>
             </div>
           )}
-
-          {/* Spots remaining */}
-          <div className="flex items-center gap-3 text-foreground cursor-default">
-            <Users className="w-5 h-5 text-primary flex-shrink-0" />
-            <span className="text-base">
-              {programme.max_capacity - programme.current_signups > 0 
-                ? <><span className="font-bold text-success">{programme.max_capacity - programme.current_signups}</span> {t('community.spotsLeft')} (of {programme.max_capacity})</>
-                : <span className="text-destructive font-medium">{t('community.fullCapacity')}</span>
-              }
-            </span>
-          </div>
         </div>
 
         {/* Expandable details */}
