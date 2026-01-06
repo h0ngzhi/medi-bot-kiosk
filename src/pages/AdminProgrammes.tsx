@@ -92,13 +92,48 @@ type ProgrammeForm = {
   online_link: string;
   is_active: boolean;
   points_reward: number;
-  duration: string;
+  duration_hours: number;
+  duration_minutes: number;
   conducted_by: string;
   group_size: string;
   languages: string;
   learning_objectives: string;
   guest_option: string;
   recurrence_type: string;
+};
+
+// Helper to convert hours + minutes to duration string for storage
+const formatDurationForStorage = (hours: number, minutes: number): string => {
+  const parts = [];
+  if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+  if (minutes > 0) parts.push(`${minutes} minutes`);
+  return parts.length > 0 ? parts.join(' ') : '1 hour';
+};
+
+// Helper to parse duration string back to hours and minutes
+const parseDurationString = (duration: string | null): { hours: number; minutes: number } => {
+  if (!duration) return { hours: 1, minutes: 0 };
+  
+  const lowerDuration = duration.toLowerCase();
+  let hours = 0;
+  let minutes = 0;
+  
+  const hoursMatch = lowerDuration.match(/(\d+\.?\d*)\s*h(ou)?r?s?/);
+  if (hoursMatch) {
+    hours = Math.floor(parseFloat(hoursMatch[1]));
+  }
+  
+  const minutesMatch = lowerDuration.match(/(\d+)\s*min(ute)?s?/);
+  if (minutesMatch) {
+    minutes = parseInt(minutesMatch[1], 10);
+  }
+  
+  // If nothing matched, default to 1 hour
+  if (hours === 0 && minutes === 0) {
+    hours = 1;
+  }
+  
+  return { hours, minutes };
 };
 
 const CATEGORIES = [
@@ -126,7 +161,8 @@ const emptyForm: ProgrammeForm = {
   online_link: "",
   is_active: true,
   points_reward: 10,
-  duration: "2 hours",
+  duration_hours: 1,
+  duration_minutes: 0,
   conducted_by: "",
   group_size: "",
   languages: "",
@@ -196,7 +232,7 @@ const AdminProgrammes = () => {
       online_link: form.is_online ? (form.online_link || null) : null,
       is_active: form.is_active,
       points_reward: form.points_reward,
-      duration: form.duration || null,
+      duration: formatDurationForStorage(form.duration_hours, form.duration_minutes),
       conducted_by: form.conducted_by || null,
       group_size: form.group_size || null,
       languages: form.languages ? form.languages.split(',').map(l => l.trim()).filter(Boolean) : null,
@@ -260,7 +296,8 @@ const AdminProgrammes = () => {
       online_link: (programme as any).online_link || "",
       is_active: programme.is_active,
       points_reward: programme.points_reward,
-      duration: programme.duration || "",
+      duration_hours: parseDurationString(programme.duration).hours,
+      duration_minutes: parseDurationString(programme.duration).minutes,
       conducted_by: programme.conducted_by || "",
       group_size: programme.group_size || "",
       languages: programme.languages?.join(', ') || "",
@@ -532,15 +569,50 @@ const AdminProgrammes = () => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="duration">Duration</Label>
-                        <Input
-                          id="duration"
-                          value={form.duration}
-                          onChange={(e) =>
-                            setForm({ ...form, duration: e.target.value })
-                          }
-                          placeholder="e.g. 2 hours"
-                        />
+                        <Label>Duration</Label>
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <Select
+                              value={form.duration_hours.toString()}
+                              onValueChange={(v) =>
+                                setForm({ ...form, duration_hours: parseInt(v) })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[0, 1, 2, 3, 4, 5, 6].map((h) => (
+                                  <SelectItem key={h} value={h.toString()}>
+                                    {h} hr{h !== 1 ? 's' : ''}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="flex-1">
+                            <Select
+                              value={form.duration_minutes.toString()}
+                              onValueChange={(v) =>
+                                setForm({ ...form, duration_minutes: parseInt(v) })
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {[0, 15, 30, 45].map((m) => (
+                                  <SelectItem key={m} value={m.toString()}>
+                                    {m} min
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Programme ends after this duration (affects reviews)
+                        </p>
                       </div>
                       <div>
                         <Label htmlFor="recurrence">Recurrence</Label>
