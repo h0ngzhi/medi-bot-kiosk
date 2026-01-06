@@ -238,6 +238,7 @@ const translations: Record<Language, Record<string, string>> = {
     'community.voiceRecorded': 'Voice recorded successfully',
     'community.speakNow': 'Speak now...',
     'community.tapToSpeak': 'Tap to speak',
+    'community.tapToStop': '🔴 Recording... Tap the button to stop',
     'community.voiceHint': 'Tap the microphone to speak your feedback',
     
     // Profile
@@ -491,6 +492,7 @@ const translations: Record<Language, Record<string, string>> = {
     'community.voiceRecorded': '语音录制成功',
     'community.speakNow': '请开始说话...',
     'community.tapToSpeak': '点击说话',
+    'community.tapToStop': '🔴 录音中... 点击按钮停止',
     'community.voiceHint': '点击麦克风说出您的反馈',
     
     'profile.title': '我的资料',
@@ -741,6 +743,7 @@ const translations: Record<Language, Record<string, string>> = {
     'community.voiceRecorded': 'Suara berjaya dirakam',
     'community.speakNow': 'Sila bercakap sekarang...',
     'community.tapToSpeak': 'Ketuk untuk bercakap',
+    'community.tapToStop': '🔴 Merakam... Ketuk butang untuk berhenti',
     'community.voiceHint': 'Ketuk mikrofon untuk menyuarakan maklum balas anda',
     
     'profile.title': 'Profil Saya',
@@ -991,6 +994,7 @@ const translations: Record<Language, Record<string, string>> = {
     'community.voiceRecorded': 'குரல் வெற்றிகரமாக பதிவு செய்யப்பட்டது',
     'community.speakNow': 'இப்போது பேசுங்கள்...',
     'community.tapToSpeak': 'பேச தட்டவும்',
+    'community.tapToStop': '🔴 பதிவு செய்கிறது... நிறுத்த பொத்தானைத் தட்டவும்',
     'community.voiceHint': 'உங்கள் கருத்தைக் கூற மைக்ரோஃபோனைத் தட்டவும்',
     
     'profile.title': 'எனது சுயவிவரம்',
