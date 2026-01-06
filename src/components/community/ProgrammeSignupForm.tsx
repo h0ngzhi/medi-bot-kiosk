@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { X, CheckCircle2, Phone, User } from 'lucide-react';
+import { X, CheckCircle2, Phone, User, Printer, Loader2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { speakText } from '@/utils/speechUtils';
 import { toast } from 'sonner';
@@ -17,6 +17,7 @@ interface ProgrammeSignupFormProps {
     location?: string | null;
     admin_email?: string | null;
     contact_number?: string | null;
+    is_online?: boolean | null;
   };
   onSuccess: () => void;
 }
@@ -27,11 +28,32 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
   const [phone, setPhone] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const [hasPrinted, setHasPrinted] = useState(false);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
       speakText(text, language);
     }
+  };
+
+  const handlePrintGuide = () => {
+    setIsPrinting(true);
+    // Simulate printing delay
+    setTimeout(() => {
+      setIsPrinting(false);
+      setHasPrinted(true);
+      toast.success(t('community.printSuccess'));
+    }, 2000);
+  };
+
+  const handleClose = () => {
+    onClose();
+    setSubmitted(false);
+    setName(user?.name || '');
+    setPhone('');
+    setIsPrinting(false);
+    setHasPrinted(false);
   };
 
   const handleSubmit = async () => {
@@ -91,13 +113,6 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
       setSubmitted(true);
       onSuccess();
       toast.success(t('community.signupSuccess'));
-      
-      setTimeout(() => {
-        onClose();
-        setSubmitted(false);
-        setName(user?.name || '');
-        setPhone('');
-      }, 2500);
     } catch (error) {
       console.error('Signup error:', error);
       toast.error(t('community.signupFailed'));
@@ -107,6 +122,9 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
   };
 
   if (!isOpen) return null;
+
+  // Only show print option for physical location programmes
+  const showPrintOption = !programme.is_online && programme.location;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 animate-fade-in">
@@ -121,7 +139,7 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClose}
+            onClick={handleClose}
             className="rounded-full"
           >
             <X className="w-5 h-5" />
@@ -172,12 +190,54 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
             </Button>
           </>
         ) : (
-          <div className="text-center py-8">
+          <div className="text-center py-6">
             <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-8 h-8 text-success" />
             </div>
             <p className="text-xl font-bold text-foreground mb-2">{t('community.thankyouRegistering')}</p>
-            <p className="text-muted-foreground text-base">{t('community.organiserContact')}</p>
+            <p className="text-muted-foreground text-base mb-6">{t('community.organiserContact')}</p>
+            
+            {showPrintOption && (
+              <div className="border-t pt-6">
+                <p className="text-sm text-muted-foreground mb-4">{t('community.needDirections')}</p>
+                
+                {hasPrinted ? (
+                  <div className="flex items-center justify-center gap-2 text-success">
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span className="font-medium">{t('community.printed')}</span>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={handlePrintGuide}
+                    disabled={isPrinting}
+                    className="w-full h-12"
+                  >
+                    {isPrinting ? (
+                      <>
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        {t('community.printing')}
+                      </>
+                    ) : (
+                      <>
+                        <Printer className="w-5 h-5 mr-2" />
+                        {t('community.printGuide')}
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            )}
+            
+            <Button
+              variant="ghost"
+              size="lg"
+              onClick={handleClose}
+              className="w-full mt-4"
+            >
+              {t('community.close')}
+            </Button>
           </div>
         )}
       </div>
