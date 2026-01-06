@@ -13,6 +13,10 @@ interface ProgrammeSignupFormProps {
   programme: {
     id: string;
     title: string;
+    event_date?: string | null;
+    location?: string | null;
+    admin_email?: string | null;
+    contact_number?: string | null;
   };
   onSuccess: () => void;
 }
@@ -63,6 +67,26 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
         });
 
       if (error) throw error;
+
+      // Call webhook for n8n automation (fire and forget - don't block on this)
+      try {
+        await supabase.functions.invoke('programme-signup-webhook', {
+          body: {
+            participant_name: name.trim(),
+            participant_phone: phone.replace(/\s/g, ''),
+            programme_title: programme.title,
+            programme_date: programme.event_date,
+            programme_location: programme.location,
+            admin_email: programme.admin_email,
+            admin_phone: programme.contact_number,
+            // n8n webhook URL will be configured in the edge function or passed here later
+            webhook_url: null, // Will be configured in n8n settings
+          }
+        });
+      } catch (webhookError) {
+        // Don't fail signup if webhook fails
+        console.log('Webhook notification skipped or failed:', webhookError);
+      }
 
       setSubmitted(true);
       onSuccess();

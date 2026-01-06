@@ -63,6 +63,7 @@ interface Programme {
   max_capacity: number | null;
   current_signups: number | null;
   contact_number: string | null;
+  admin_email: string | null;
   is_online: boolean | null;
   is_active: boolean;
   points_reward: number;
@@ -82,6 +83,7 @@ type ProgrammeForm = {
   region: string;
   max_capacity: number;
   contact_number: string;
+  admin_email: string;
   is_online: boolean;
   is_active: boolean;
   points_reward: number;
@@ -109,6 +111,7 @@ const emptyForm: ProgrammeForm = {
   region: "Central",
   max_capacity: 30,
   contact_number: "",
+  admin_email: "",
   is_online: false,
   is_active: true,
   points_reward: 10,
@@ -172,6 +175,7 @@ const AdminProgrammes = () => {
       region: form.region,
       max_capacity: form.max_capacity,
       contact_number: form.contact_number || null,
+      admin_email: form.admin_email || null,
       is_online: form.is_online,
       is_active: form.is_active,
       points_reward: form.points_reward,
@@ -230,6 +234,7 @@ const AdminProgrammes = () => {
       region: programme.region || "Central",
       max_capacity: programme.max_capacity || 30,
       contact_number: programme.contact_number || "",
+      admin_email: programme.admin_email || "",
       is_online: programme.is_online || false,
       is_active: programme.is_active,
       points_reward: programme.points_reward,
@@ -515,7 +520,7 @@ const AdminProgrammes = () => {
                         />
                       </div>
                       <div>
-                        <Label htmlFor="contact_number">Contact Number</Label>
+                        <Label htmlFor="contact_number">Admin Phone Number</Label>
                         <Input
                           id="contact_number"
                           value={form.contact_number}
@@ -525,6 +530,21 @@ const AdminProgrammes = () => {
                           placeholder="e.g. 6123 4567"
                         />
                       </div>
+                    </div>
+                    <div>
+                      <Label htmlFor="admin_email">Admin Email</Label>
+                      <Input
+                        id="admin_email"
+                        type="email"
+                        value={form.admin_email}
+                        onChange={(e) =>
+                          setForm({ ...form, admin_email: e.target.value })
+                        }
+                        placeholder="e.g. admin@cc.gov.sg"
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Email to notify when someone signs up
+                      </p>
                     </div>
                     <div className="flex items-center gap-3">
                       <Switch
