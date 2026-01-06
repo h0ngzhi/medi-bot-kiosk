@@ -16,6 +16,13 @@ import {
 
 type ScanState = 'scanning' | 'processing' | 'success' | 'error';
 
+interface ExistingUser {
+  id: string;
+  name: string;
+  user_id: string;
+  chas_card_type: string | null;
+}
+
 export default function ScanCard() {
   const [scanState, setScanState] = useState<ScanState>('scanning');
   const [errorMessage, setErrorMessage] = useState('');
@@ -23,10 +30,25 @@ export default function ScanCard() {
   const [manualNric, setManualNric] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualChasType, setManualChasType] = useState('Blue');
+  const [existingUsers, setExistingUsers] = useState<ExistingUser[]>([]);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
   const navigate = useNavigate();
   const { setUser, t } = useApp();
+
+  // Fetch existing users when manual entry dialog opens
+  useEffect(() => {
+    if (showManualEntry) {
+      supabase
+        .from('kiosk_users')
+        .select('id, name, user_id, chas_card_type')
+        .order('updated_at', { ascending: false })
+        .limit(5)
+        .then(({ data }) => {
+          if (data) setExistingUsers(data);
+        });
+    }
+  }, [showManualEntry]);
 
   useEffect(() => {
     let mounted = true;
@@ -385,6 +407,23 @@ export default function ScanCard() {
     window.location.reload();
   };
 
+  const handleQuickSelect = (user: ExistingUser) => {
+    const chasType = user.chas_card_type 
+      ? user.chas_card_type.charAt(0).toUpperCase() + user.chas_card_type.slice(1)
+      : 'Blue';
+    const qrData = `${user.user_id}:${user.name}:${chasType}`;
+    setShowManualEntry(false);
+    handleQRCodeScanned(qrData);
+  };
+
+  const formatChasTypeDisplay = (type: string | null): string => {
+    if (!type) return 'Blue';
+    const lower = type.toLowerCase();
+    if (lower === 'merdeka generation') return 'Merdeka';
+    if (lower === 'pioneer generation') return 'Pioneer';
+    return type.charAt(0).toUpperCase() + type.slice(1);
+  };
+
   const handleManualSubmit = () => {
     if (!manualNric.trim() || !manualName.trim()) {
       return;
@@ -484,15 +523,52 @@ export default function ScanCard() {
 
       {/* Manual Entry Dialog */}
       <Dialog open={showManualEntry} onOpenChange={setShowManualEntry}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl">Manual Entry</DialogTitle>
             <DialogDescription className="text-base">
-              Enter credentials to bypass QR scanning (for testing only)
+              Select an existing user or enter new credentials
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
+            {/* Quick Select Existing Users */}
+            {existingUsers.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Quick Select</label>
+                <div className="space-y-2">
+                  {existingUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => handleQuickSelect(user)}
+                      className="w-full p-3 text-left rounded-lg border border-border hover:bg-accent hover:border-primary transition-colors"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-foreground">{user.name}</p>
+                          <p className="text-sm text-muted-foreground">{user.user_id}</p>
+                        </div>
+                        <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
+                          {formatChasTypeDisplay(user.chas_card_type)}
+                        </span>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or enter manually
+                </span>
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-2">NRIC / FIN</label>
               <Input
