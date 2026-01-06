@@ -13,6 +13,7 @@ import Teleconsult from "./pages/Teleconsult";
 import CommunityProgrammes from "./pages/CommunityProgrammes";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import AdminProgrammes from "./pages/AdminProgrammes";
 import { HealthChatBot } from "@/components/HealthChatBot";
 
 
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/teleconsult" element={<Teleconsult />} />
               <Route path="/community" element={<CommunityProgrammes />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/admin/programmes" element={<AdminProgrammes />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <HealthChatBot />
