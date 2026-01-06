@@ -260,6 +260,7 @@ export default function CommunityProgrammes() {
   const [selectedProgramme, setSelectedProgramme] = useState<Programme | null>(null);
   const [showSignupForm, setShowSignupForm] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [feedbackDismissed, setFeedbackDismissed] = useState(false);
   const [interactionCount, setInteractionCount] = useState(0);
 
   const handleSpeak = (text: string) => {
@@ -292,15 +293,15 @@ export default function CommunityProgrammes() {
     fetchSignups();
   }, [user?.id]);
 
-  // Show feedback after 3 interactions
+  // Show feedback after 3 interactions (only once)
   useEffect(() => {
-    if (interactionCount >= 3 && !showFeedback) {
+    if (interactionCount >= 3 && !showFeedback && !feedbackDismissed) {
       const timer = setTimeout(() => {
         setShowFeedback(true);
       }, 500);
       return () => clearTimeout(timer);
     }
-  }, [interactionCount, showFeedback]);
+  }, [interactionCount, showFeedback, feedbackDismissed]);
 
   const handleSignUp = (programme: Programme) => {
     setSelectedProgramme(programme);
@@ -436,7 +437,10 @@ export default function CommunityProgrammes() {
       {/* Feedback Modal */}
       <ProgrammeFeedback
         isOpen={showFeedback}
-        onClose={() => setShowFeedback(false)}
+        onClose={() => {
+          setShowFeedback(false);
+          setFeedbackDismissed(true);
+        }}
       />
 
       <AccessibilityBar />
