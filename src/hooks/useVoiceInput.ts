@@ -82,8 +82,9 @@ export function useVoiceInput({
             try {
               const base64Audio = (reader.result as string).split(',')[1];
               
+              // Don't pass language - let Whisper auto-detect for better multilingual support
               const { data, error: fnError } = await supabase.functions.invoke('transcribe-audio', {
-                body: { audio: base64Audio, language }
+                body: { audio: base64Audio, language: 'auto' }
               });
 
               if (fnError) {
