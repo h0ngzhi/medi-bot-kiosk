@@ -39,6 +39,7 @@ export type Database = {
           points_reward: number
           recurrence_type: string | null
           region: string | null
+          series_id: string
           title: string
           updated_at: string | null
         }
@@ -66,6 +67,7 @@ export type Database = {
           points_reward?: number
           recurrence_type?: string | null
           region?: string | null
+          series_id: string
           title: string
           updated_at?: string | null
         }
@@ -93,6 +95,7 @@ export type Database = {
           points_reward?: number
           recurrence_type?: string | null
           region?: string | null
+          series_id?: string
           title?: string
           updated_at?: string | null
         }

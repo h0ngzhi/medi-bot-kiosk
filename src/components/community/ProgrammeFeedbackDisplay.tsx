@@ -13,9 +13,10 @@ interface Feedback {
 
 interface ProgrammeFeedbackDisplayProps {
   programmeId: string;
+  seriesId?: string; // Optional series_id to fetch reviews from all sessions
 }
 
-export function ProgrammeFeedbackDisplay({ programmeId }: ProgrammeFeedbackDisplayProps) {
+export function ProgrammeFeedbackDisplay({ programmeId, seriesId }: ProgrammeFeedbackDisplayProps) {
   const { t } = useApp();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,20 +24,43 @@ export function ProgrammeFeedbackDisplay({ programmeId }: ProgrammeFeedbackDispl
   useEffect(() => {
     const fetchFeedbacks = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('programme_feedback')
-        .select('*')
-        .eq('programme_id', programmeId)
-        .order('created_at', { ascending: false });
+      
+      if (seriesId) {
+        // First get all programme IDs in this series
+        const { data: seriesProgrammes } = await supabase
+          .from('community_programmes')
+          .select('id')
+          .eq('series_id', seriesId);
+        
+        if (seriesProgrammes && seriesProgrammes.length > 0) {
+          const programmeIds = seriesProgrammes.map(p => p.id);
+          const { data, error } = await supabase
+            .from('programme_feedback')
+            .select('*')
+            .in('programme_id', programmeIds)
+            .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        setFeedbacks(data);
+          if (!error && data) {
+            setFeedbacks(data);
+          }
+        }
+      } else {
+        // Fallback to single programme
+        const { data, error } = await supabase
+          .from('programme_feedback')
+          .select('*')
+          .eq('programme_id', programmeId)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setFeedbacks(data);
+        }
       }
       setLoading(false);
     };
 
     fetchFeedbacks();
-  }, [programmeId]);
+  }, [programmeId, seriesId]);
 
   if (loading) return null;
   if (feedbacks.length === 0) return null;
