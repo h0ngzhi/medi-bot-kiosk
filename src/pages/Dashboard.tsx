@@ -3,7 +3,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { AccessibilityBar } from "@/components/AccessibilityBar";
 import { speakText } from "@/utils/speechUtils";
-import { Heart, Video, Users, User, ChevronRight, LogOut } from "lucide-react";
+import { Heart, MapPin, Users, User, ChevronRight, LogOut } from "lucide-react";
 
 const menuItems = [
   {
@@ -25,11 +25,11 @@ const menuItems = [
     bgColor: "bg-primary/10",
   },
   {
-    id: "teleconsult",
-    icon: Video,
-    titleKey: "dashboard.teleconsult",
-    descKey: "dashboard.teleconsult.desc",
-    path: "/teleconsult",
+    id: "findcare",
+    icon: MapPin,
+    titleKey: "dashboard.findcare",
+    descKey: "dashboard.findcare.desc",
+    path: "/findcare",
     color: "text-secondary",
     bgColor: "bg-secondary/10",
   },

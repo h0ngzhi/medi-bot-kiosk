@@ -9,7 +9,7 @@ import ScanCard from "./pages/ScanCard";
 import LanguageSelection from "./pages/LanguageSelection";
 import Dashboard from "./pages/Dashboard";
 import HealthScreenings from "./pages/HealthScreenings";
-import Teleconsult from "./pages/Teleconsult";
+import FindCare from "./pages/FindCare";
 import CommunityProgrammes from "./pages/CommunityProgrammes";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -32,7 +32,7 @@ const App = () => (
               <Route path="/language" element={<LanguageSelection />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/health" element={<HealthScreenings />} />
-              <Route path="/teleconsult" element={<Teleconsult />} />
+              <Route path="/findcare" element={<FindCare />} />
               <Route path="/community" element={<CommunityProgrammes />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin/programmes" element={<AdminProgrammes />} />
