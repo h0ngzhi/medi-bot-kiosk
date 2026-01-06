@@ -53,8 +53,11 @@ serve(async (req) => {
       throw new Error('OpenAI API key not configured');
     }
 
+    console.log('Received language:', language);
+
     // Process audio in chunks
     const binaryAudio = processBase64Chunks(audio);
+    console.log('Audio size:', binaryAudio.length, 'bytes');
     
     // Prepare form data
     const formData = new FormData();
@@ -62,16 +65,23 @@ serve(async (req) => {
     formData.append('file', blob, 'audio.webm');
     formData.append('model', 'whisper-1');
     
-    // Map language codes to Whisper language codes
-    const languageMap: Record<string, string> = {
-      'en': 'en',
-      'zh': 'zh',
-      'ms': 'ms',
-      'ta': 'ta'
-    };
-    
-    if (language && languageMap[language]) {
-      formData.append('language', languageMap[language]);
+    // Only set language if specifically provided, otherwise let Whisper auto-detect
+    // This allows users to speak in any language
+    if (language && language !== 'auto') {
+      // Map language codes to Whisper language codes
+      const languageMap: Record<string, string> = {
+        'en': 'en',
+        'zh': 'zh',
+        'ms': 'ms',
+        'ta': 'ta'
+      };
+      
+      if (languageMap[language]) {
+        formData.append('language', languageMap[language]);
+        console.log('Using language:', languageMap[language]);
+      }
+    } else {
+      console.log('Using auto language detection');
     }
 
     console.log('Sending audio to Whisper API...');
