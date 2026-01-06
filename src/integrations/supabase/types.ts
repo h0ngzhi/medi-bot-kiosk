@@ -18,56 +18,71 @@ export type Database = {
         Row: {
           category: string | null
           conducted_by: string | null
+          contact_number: string | null
           created_at: string
           current_signups: number | null
           description: string | null
           duration: string | null
           event_date: string | null
+          event_time: string | null
           group_size: string | null
           id: string
           is_active: boolean
+          is_online: boolean | null
           languages: string[] | null
           learning_objectives: string[] | null
           location: string | null
           max_capacity: number | null
           points_reward: number
+          region: string | null
           title: string
+          updated_at: string | null
         }
         Insert: {
           category?: string | null
           conducted_by?: string | null
+          contact_number?: string | null
           created_at?: string
           current_signups?: number | null
           description?: string | null
           duration?: string | null
           event_date?: string | null
+          event_time?: string | null
           group_size?: string | null
           id?: string
           is_active?: boolean
+          is_online?: boolean | null
           languages?: string[] | null
           learning_objectives?: string[] | null
           location?: string | null
           max_capacity?: number | null
           points_reward?: number
+          region?: string | null
           title: string
+          updated_at?: string | null
         }
         Update: {
           category?: string | null
           conducted_by?: string | null
+          contact_number?: string | null
           created_at?: string
           current_signups?: number | null
           description?: string | null
           duration?: string | null
           event_date?: string | null
+          event_time?: string | null
           group_size?: string | null
           id?: string
           is_active?: boolean
+          is_online?: boolean | null
           languages?: string[] | null
           learning_objectives?: string[] | null
           location?: string | null
           max_capacity?: number | null
           points_reward?: number
+          region?: string | null
           title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
