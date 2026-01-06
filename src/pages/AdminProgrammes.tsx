@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { AttendanceDialog } from "@/components/admin/AttendanceDialog";
+import { FeedbackManagementDialog } from "@/components/admin/FeedbackManagementDialog";
 import { ProgrammeFeedbackDisplay } from "@/components/community/ProgrammeFeedbackDisplay";
 import { getProgrammeStatus } from "@/utils/programmeUtils";
 
@@ -200,6 +201,7 @@ const AdminProgrammes = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProgrammeForm>(emptyForm);
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
   const [selectedProgramme, setSelectedProgramme] = useState<Programme | null>(null);
   const [activeTab, setActiveTab] = useState<"upcoming" | "completed">("upcoming");
   const [existingSeries, setExistingSeries] = useState<ExistingSeries[]>([]);
@@ -516,6 +518,11 @@ const AdminProgrammes = () => {
     setEditingId(null);
     setForm(emptyForm);
     setDialogOpen(true);
+  };
+
+  const openFeedbackDialog = (programme: Programme) => {
+    setSelectedProgramme(programme);
+    setFeedbackDialogOpen(true);
   };
 
   const getSpotsRemaining = (programme: Programme) => {
@@ -1316,9 +1323,9 @@ const AdminProgrammes = () => {
                           <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={programme.series_id} />
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openAttendanceDialog(programme)} className="gap-1">
+                          <Button variant="outline" size="sm" onClick={() => openFeedbackDialog(programme)} className="gap-1">
                             <Star className="h-4 w-4" />
-                            View Feedback
+                            Manage Feedback
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
@@ -1360,6 +1367,18 @@ const AdminProgrammes = () => {
             programmeTitle={selectedProgramme.title}
             pointsReward={selectedProgramme.points_reward}
             onAttendanceMarked={fetchProgrammes}
+          />
+        )}
+
+        {/* Feedback Management Dialog */}
+        {selectedProgramme && (
+          <FeedbackManagementDialog
+            isOpen={feedbackDialogOpen}
+            onClose={() => setFeedbackDialogOpen(false)}
+            programmeId={selectedProgramme.id}
+            programmeName={selectedProgramme.title}
+            seriesId={selectedProgramme.series_id}
+            onFeedbackDeleted={() => fetchExistingSeriesWithReviews(programmes)}
           />
         )}
       </main>
