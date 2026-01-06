@@ -246,6 +246,10 @@ const translations: Record<Language, Record<string, string>> = {
     'community.yourProgrammes': 'Your Programmes',
     'community.allProgrammes': 'All Programmes',
     'community.contactOrganiser': 'Contact Organiser',
+    'community.caregiverWelcome': 'Caregiver Welcome',
+    'community.bringFriend': 'Bring a Friend',
+    'community.thankyouRegistering': 'Thank you for registering your interest.',
+    'community.organiserContact': 'The organiser will contact you if needed.',
     
     // Profile
     'profile.title': 'My Profile',
@@ -506,6 +510,10 @@ const translations: Record<Language, Record<string, string>> = {
     'community.yourProgrammes': '您已报名的活动',
     'community.allProgrammes': '所有活动',
     'community.contactOrganiser': '联系主办方',
+    'community.caregiverWelcome': '欢迎看护者',
+    'community.bringFriend': '可带朋友',
+    'community.thankyouRegistering': '感谢您登记兴趣。',
+    'community.organiserContact': '主办方会在需要时联系您。',
     
     'profile.title': '我的资料',
     'profile.chas': 'CHAS卡类型',
@@ -763,6 +771,10 @@ const translations: Record<Language, Record<string, string>> = {
     'community.yourProgrammes': 'Program Anda',
     'community.allProgrammes': 'Semua Program',
     'community.contactOrganiser': 'Hubungi Penganjur',
+    'community.caregiverWelcome': 'Penjaga Dialu-alukan',
+    'community.bringFriend': 'Bawa Rakan',
+    'community.thankyouRegistering': 'Terima kasih kerana mendaftar minat anda.',
+    'community.organiserContact': 'Penganjur akan menghubungi anda jika perlu.',
     
     'profile.title': 'Profil Saya',
     'profile.chas': 'Jenis Kad CHAS',
@@ -1020,6 +1032,10 @@ const translations: Record<Language, Record<string, string>> = {
     'community.yourProgrammes': 'உங்கள் நிகழ்ச்சிகள்',
     'community.allProgrammes': 'அனைத்து நிகழ்ச்சிகள்',
     'community.contactOrganiser': 'ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளவும்',
+    'community.caregiverWelcome': 'பராமரிப்பாளர் வரவேற்கப்படுகிறார்',
+    'community.bringFriend': 'நண்பரை அழைத்து வாருங்கள்',
+    'community.thankyouRegistering': 'உங்கள் ஆர்வத்தைப் பதிவு செய்ததற்கு நன்றி.',
+    'community.organiserContact': 'தேவைப்பட்டால் ஒருங்கிணைப்பாளர் உங்களைத் தொடர்பு கொள்வார்.',
     
     'profile.title': 'எனது சுயவிவரம்',
     'profile.chas': 'CHAS அட்டை வகை',

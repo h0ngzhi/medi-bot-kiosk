@@ -15,7 +15,9 @@ import {
   Languages,
   Target,
   Phone,
-  Mail
+  Mail,
+  Heart,
+  UserPlus
 } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
@@ -43,6 +45,8 @@ export interface Programme {
   // Admin contact info
   contact_number?: string | null;
   admin_email?: string | null;
+  // Guest option tag
+  guest_option?: string | null;
   // Local state
   isSignedUp?: boolean;
 }
@@ -93,7 +97,21 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
     >
       {/* Header with category */}
       <div className={`${category.bg} px-6 py-3 flex items-center justify-between`}>
-        <span className={`font-semibold ${category.text}`}>{category.label}</span>
+        <div className="flex items-center gap-3">
+          <span className={`font-semibold ${category.text}`}>{category.label}</span>
+          {programme.guest_option && (
+            <Badge 
+              variant="outline" 
+              className="bg-card/80 border-primary/30 text-primary font-medium text-sm py-1 px-2.5"
+            >
+              {programme.guest_option === 'caregiver_welcome' ? (
+                <><Heart className="w-3.5 h-3.5 mr-1.5" />{t('community.caregiverWelcome')}</>
+              ) : (
+                <><UserPlus className="w-3.5 h-3.5 mr-1.5" />{t('community.bringFriend')}</>
+              )}
+            </Badge>
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 text-warning">
             <Award className="w-5 h-5" />

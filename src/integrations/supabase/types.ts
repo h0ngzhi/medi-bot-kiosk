@@ -27,6 +27,7 @@ export type Database = {
           event_date: string | null
           event_time: string | null
           group_size: string | null
+          guest_option: string | null
           id: string
           is_active: boolean
           is_online: boolean | null
@@ -51,6 +52,7 @@ export type Database = {
           event_date?: string | null
           event_time?: string | null
           group_size?: string | null
+          guest_option?: string | null
           id?: string
           is_active?: boolean
           is_online?: boolean | null
@@ -75,6 +77,7 @@ export type Database = {
           event_date?: string | null
           event_time?: string | null
           group_size?: string | null
+          guest_option?: string | null
           id?: string
           is_active?: boolean
           is_online?: boolean | null

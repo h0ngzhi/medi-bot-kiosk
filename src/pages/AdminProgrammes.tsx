@@ -72,6 +72,7 @@ interface Programme {
   group_size: string | null;
   languages: string[] | null;
   learning_objectives: string[] | null;
+  guest_option: string | null;
   updated_at: string | null;
   created_at: string;
 }
@@ -95,6 +96,7 @@ type ProgrammeForm = {
   group_size: string;
   languages: string;
   learning_objectives: string;
+  guest_option: string;
 };
 
 const CATEGORIES = [
@@ -126,6 +128,7 @@ const emptyForm: ProgrammeForm = {
   group_size: "",
   languages: "",
   learning_objectives: "",
+  guest_option: "",
 };
 
 const AdminProgrammes = () => {
@@ -193,6 +196,7 @@ const AdminProgrammes = () => {
       group_size: form.group_size || null,
       languages: form.languages ? form.languages.split(',').map(l => l.trim()).filter(Boolean) : null,
       learning_objectives: form.learning_objectives ? form.learning_objectives.split('\n').map(l => l.trim()).filter(Boolean) : null,
+      guest_option: form.guest_option || null,
     };
 
     if (editingId) {
@@ -255,6 +259,7 @@ const AdminProgrammes = () => {
       group_size: programme.group_size || "",
       languages: programme.languages?.join(', ') || "",
       learning_objectives: programme.learning_objectives?.join('\n') || "",
+      guest_option: programme.guest_option || "",
     });
     setDialogOpen(true);
   };
@@ -449,20 +454,43 @@ const AdminProgrammes = () => {
                           />
                         </div>
                       </div>
-                      <div>
-                        <Label htmlFor="learning_objectives">Learning Objectives (one per line)</Label>
-                        <Textarea
-                          id="learning_objectives"
-                          value={form.learning_objectives}
-                          onChange={(e) =>
-                            setForm({ ...form, learning_objectives: e.target.value })
-                          }
-                          placeholder="Learn basic techniques&#10;Improve balance and coordination&#10;Build strength"
-                          rows={4}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Enter each objective on a new line. Shows in "More Details" section.
-                        </p>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="learning_objectives">Learning Objectives (one per line)</Label>
+                          <Textarea
+                            id="learning_objectives"
+                            value={form.learning_objectives}
+                            onChange={(e) =>
+                              setForm({ ...form, learning_objectives: e.target.value })
+                            }
+                            placeholder="Learn basic techniques&#10;Improve balance and coordination&#10;Build strength"
+                            rows={3}
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Enter each objective on a new line.
+                          </p>
+                        </div>
+                        <div>
+                          <Label htmlFor="guest_option">Guest Tag (Optional)</Label>
+                          <Select
+                            value={form.guest_option}
+                            onValueChange={(v) =>
+                              setForm({ ...form, guest_option: v })
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="No tag" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="">No tag</SelectItem>
+                              <SelectItem value="caregiver_welcome">👥 Caregiver Welcome</SelectItem>
+                              <SelectItem value="bring_friend">👥 Bring a Friend</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Shows a small tag on the programme card.
+                          </p>
+                        </div>
                       </div>
                     </div>
 
