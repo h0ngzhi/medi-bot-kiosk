@@ -6,9 +6,10 @@ import { AccessibilityBar } from '@/components/AccessibilityBar';
 import { ProgrammeCard, Programme } from '@/components/community/ProgrammeCard';
 import { ProgrammeSignupForm } from '@/components/community/ProgrammeSignupForm';
 import { ProgrammeFeedbackForm } from '@/components/community/ProgrammeFeedbackForm';
+import { ProgrammeFeedbackDisplay } from '@/components/community/ProgrammeFeedbackDisplay';
 import { speakText } from '@/utils/speechUtils';
 import { supabase } from '@/integrations/supabase/client';
-import { isRegistrationOpen } from '@/utils/programmeUtils';
+import { isRegistrationOpen, getProgrammeStatus } from '@/utils/programmeUtils';
 import { 
   ArrowLeft, 
   Filter,
@@ -21,7 +22,9 @@ import {
   Loader2,
   UserCheck,
   Calendar,
-  MapPin
+  MapPin,
+  CheckCircle,
+  Star
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -183,12 +186,25 @@ export default function CommunityProgrammes() {
     }
   };
 
-  const filteredProgrammes = activeCategory === 'all'
-    ? programmes
-    : programmes.filter(p => p.category === activeCategory);
+  // Separate programmes into upcoming and completed
+  const upcomingProgrammes = programmes.filter(p => 
+    getProgrammeStatus(p.event_date, p.event_time, p.duration) === 'upcoming'
+  );
+  
+  const completedProgrammes = programmes.filter(p => 
+    getProgrammeStatus(p.event_date, p.event_time, p.duration) === 'completed'
+  );
+
+  const filteredUpcomingProgrammes = activeCategory === 'all'
+    ? upcomingProgrammes
+    : upcomingProgrammes.filter(p => p.category === activeCategory);
+
+  const filteredCompletedProgrammes = activeCategory === 'all'
+    ? completedProgrammes
+    : completedProgrammes.filter(p => p.category === activeCategory);
 
   // Get user's signed up programmes (only upcoming ones where registration is still open)
-  const myProgrammes = programmes.filter(p => 
+  const myProgrammes = upcomingProgrammes.filter(p => 
     p.isSignedUp && isRegistrationOpen(p.event_date, p.event_time)
   );
 
@@ -308,7 +324,7 @@ export default function CommunityProgrammes() {
         </div>
       )}
 
-      {/* All Programme cards */}
+      {/* Upcoming Programme cards */}
       <div className="max-w-2xl mx-auto px-6 space-y-6">
         <h2 
           className="text-xl font-bold text-foreground"
@@ -320,8 +336,8 @@ export default function CommunityProgrammes() {
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
-        ) : filteredProgrammes.length > 0 ? (
-          filteredProgrammes.map((programme, index) => (
+        ) : filteredUpcomingProgrammes.length > 0 ? (
+          filteredUpcomingProgrammes.map((programme, index) => (
             <ProgrammeCard
               key={programme.id}
               programme={programme}
@@ -337,6 +353,92 @@ export default function CommunityProgrammes() {
           </div>
         )}
       </div>
+
+      {/* Completed Programmes Section */}
+      {!loading && filteredCompletedProgrammes.length > 0 && (
+        <div className="max-w-2xl mx-auto px-6 space-y-6 mt-10">
+          <h2 
+            className="text-xl font-bold text-foreground flex items-center gap-3"
+            onMouseEnter={() => handleSpeak(t('community.completedProgrammes'))}
+          >
+            <CheckCircle className="w-6 h-6 text-muted-foreground" />
+            {t('community.completedProgrammes')}
+          </h2>
+          <p className="text-muted-foreground text-base -mt-4">
+            {t('community.completedProgrammesDesc')}
+          </p>
+          
+          {filteredCompletedProgrammes.map((programme) => (
+            <div 
+              key={programme.id}
+              className="bg-card rounded-3xl shadow-soft overflow-hidden opacity-90"
+            >
+              {/* Header */}
+              <div className="bg-muted/50 px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="font-semibold text-muted-foreground">{programme.category}</span>
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <CheckCircle className="w-4 h-4" />
+                    {t('community.completed')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                <h3 className="text-xl font-bold text-foreground mb-2">{programme.title}</h3>
+                
+                {programme.event_date && (
+                  <p className="text-base text-muted-foreground flex items-center gap-2 mb-2">
+                    <Calendar className="w-5 h-5" />
+                    {new Date(programme.event_date).toLocaleDateString('en-SG', { 
+                      weekday: 'short', 
+                      day: 'numeric', 
+                      month: 'long',
+                      year: 'numeric'
+                    })}
+                  </p>
+                )}
+
+                {programme.location && (
+                  <p className="text-base text-muted-foreground flex items-center gap-2 mb-4">
+                    <MapPin className="w-5 h-5" />
+                    {programme.location}
+                  </p>
+                )}
+
+                {/* Public Feedback Display */}
+                <ProgrammeFeedbackDisplay programmeId={programme.id} />
+
+                {/* Leave feedback button for signed-up users */}
+                {programme.isSignedUp && !programme.hasSubmittedFeedback && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => handleFeedback(programme)}
+                    className="w-full h-14 text-lg mt-4 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                  >
+                    <Star className="w-5 h-5 mr-2" />
+                    {t('community.leaveFeedback')}
+                  </Button>
+                )}
+
+                {programme.isSignedUp && programme.hasSubmittedFeedback && (
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    disabled
+                    className="w-full h-14 text-lg mt-4"
+                  >
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    {t('community.feedbackSubmittedShort')}
+                  </Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Signup form modal */}
       {selectedProgramme && (

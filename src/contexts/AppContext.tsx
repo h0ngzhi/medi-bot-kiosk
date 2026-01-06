@@ -269,6 +269,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.printed': 'Guide Printed!',
     'community.printSuccess': 'Directions guide printed successfully!',
     'community.close': 'Close',
+    'community.completedProgrammes': 'Completed Programmes',
+    'community.completedProgrammesDesc': 'View past events and leave reviews',
     // Profile
     'profile.title': 'My Profile',
     'profile.chas': 'CHAS Card Type',
@@ -540,6 +542,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.printed': '指南已打印！',
     'community.printSuccess': '路线指南已成功打印！',
     'community.close': '关闭',
+    'community.completedProgrammes': '已完成的活动',
+    'community.completedProgrammesDesc': '查看过去的活动并留下评价',
     
     'profile.title': '我的资料',
     'profile.chas': 'CHAS卡类型',
@@ -809,6 +813,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.printed': 'Panduan Dicetak!',
     'community.printSuccess': 'Panduan arah berjaya dicetak!',
     'community.close': 'Tutup',
+    'community.completedProgrammes': 'Program Selesai',
+    'community.completedProgrammesDesc': 'Lihat acara lepas dan tinggalkan ulasan',
     
     'profile.title': 'Profil Saya',
     'profile.chas': 'Jenis Kad CHAS',
@@ -1078,6 +1084,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.printed': 'வழிகாட்டி அச்சிடப்பட்டது!',
     'community.printSuccess': 'வழிகாட்டி வெற்றிகரமாக அச்சிடப்பட்டது!',
     'community.close': 'மூடு',
+    'community.completedProgrammes': 'முடிந்த திட்டங்கள்',
+    'community.completedProgrammesDesc': 'கடந்த நிகழ்வுகளைப் பார்த்து மதிப்புரைகள் இடுங்கள்',
     'profile.title': 'எனது சுயவிவரம்',
     'profile.chas': 'CHAS அட்டை வகை',
     'profile.points': 'மொத்த புள்ளிகள்',

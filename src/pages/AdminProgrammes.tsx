@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -47,9 +48,13 @@ import {
   Clock,
   RefreshCw,
   ClipboardList,
+  CheckCircle,
+  Star,
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { AttendanceDialog } from "@/components/admin/AttendanceDialog";
+import { ProgrammeFeedbackDisplay } from "@/components/community/ProgrammeFeedbackDisplay";
+import { getProgrammeStatus } from "@/utils/programmeUtils";
 
 interface Programme {
   id: string;
@@ -181,17 +186,80 @@ const AdminProgrammes = () => {
   const [form, setForm] = useState<ProgrammeForm>(emptyForm);
   const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
   const [selectedProgramme, setSelectedProgramme] = useState<Programme | null>(null);
+  const [activeTab, setActiveTab] = useState<"upcoming" | "completed">("upcoming");
 
   useEffect(() => {
     fetchProgrammes();
   }, []);
+
+  // Check for completed recurring programmes and create new entries
+  const checkAndCreateRecurringProgrammes = async (programmes: Programme[]) => {
+    for (const programme of programmes) {
+      const status = getProgrammeStatus(programme.event_date, programme.event_time, programme.duration);
+      const recurrenceType = (programme as any).recurrence_type;
+      
+      if (status === 'completed' && recurrenceType && recurrenceType !== 'one_time' && programme.event_date) {
+        // Check if a future instance already exists with same title
+        const { data: existingFuture } = await supabase
+          .from("community_programmes")
+          .select("id")
+          .eq("title", programme.title)
+          .gt("event_date", programme.event_date)
+          .limit(1);
+        
+        if (!existingFuture || existingFuture.length === 0) {
+          // Calculate new date
+          const currentDate = new Date(programme.event_date);
+          const daysToAdd = recurrenceType === 'weekly' ? 7 : 14;
+          const newDate = addDays(currentDate, daysToAdd);
+          
+          // Only create if new date is within 1 month from original
+          const maxDate = addDays(currentDate, 30);
+          if (newDate <= maxDate) {
+            const { error } = await supabase
+              .from("community_programmes")
+              .insert([{
+                title: programme.title,
+                description: programme.description,
+                category: programme.category,
+                event_date: format(newDate, 'yyyy-MM-dd'),
+                event_time: programme.event_time,
+                location: programme.location,
+                region: (programme as any).region,
+                max_capacity: programme.max_capacity,
+                current_signups: 0,
+                contact_number: programme.contact_number,
+                admin_email: programme.admin_email,
+                is_online: programme.is_online,
+                is_active: true,
+                points_reward: programme.points_reward,
+                duration: programme.duration,
+                conducted_by: programme.conducted_by,
+                group_size: programme.group_size,
+                languages: programme.languages,
+                learning_objectives: programme.learning_objectives,
+                guest_option: programme.guest_option,
+                recurrence_type: recurrenceType,
+              }]);
+            
+            if (!error) {
+              toast({
+                title: "Recurring Programme Created",
+                description: `New session for "${programme.title}" created for ${format(newDate, 'dd MMM yyyy')}`,
+              });
+            }
+          }
+        }
+      }
+    }
+  };
 
   const fetchProgrammes = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("community_programmes")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("event_date", { ascending: false });
 
     if (error) {
       toast({
@@ -200,7 +268,10 @@ const AdminProgrammes = () => {
         variant: "destructive",
       });
     } else {
-      setProgrammes(data || []);
+      const progs = data || [];
+      setProgrammes(progs);
+      // Check for recurring programmes that need new instances
+      await checkAndCreateRecurringProgrammes(progs);
     }
     setLoading(false);
   };
@@ -822,22 +893,33 @@ const AdminProgrammes = () => {
           </p>
         </div>
 
-        {/* Programme List */}
-        {loading ? (
-          <div className="text-center py-12 text-muted-foreground">
-            Loading programmes...
-          </div>
-        ) : programmes.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">No programmes yet</p>
-            <Button onClick={openNewDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Your First Programme
-            </Button>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {programmes.map((programme) => (
+        {/* Programme List with Tabs */}
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "upcoming" | "completed")} className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="upcoming" className="gap-2">
+              <Calendar className="h-4 w-4" />
+              Upcoming ({programmes.filter(p => getProgrammeStatus(p.event_date, p.event_time, p.duration) === 'upcoming').length})
+            </TabsTrigger>
+            <TabsTrigger value="completed" className="gap-2">
+              <CheckCircle className="h-4 w-4" />
+              Completed ({programmes.filter(p => getProgrammeStatus(p.event_date, p.event_time, p.duration) === 'completed').length})
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="upcoming">
+            {loading ? (
+              <div className="text-center py-12 text-muted-foreground">Loading programmes...</div>
+            ) : programmes.filter(p => getProgrammeStatus(p.event_date, p.event_time, p.duration) === 'upcoming').length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">No upcoming programmes</p>
+                <Button onClick={openNewDialog}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Programme
+                </Button>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {programmes.filter(p => getProgrammeStatus(p.event_date, p.event_time, p.duration) === 'upcoming').map((programme) => (
               <Card
                 key={programme.id}
                 className={`bg-card transition-all ${
@@ -972,8 +1054,77 @@ const AdminProgrammes = () => {
                 </CardContent>
               </Card>
             ))}
-          </div>
-        )}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="completed">
+            {programmes.filter(p => getProgrammeStatus(p.event_date, p.event_time, p.duration) === 'completed').length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No completed programmes yet</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {programmes.filter(p => getProgrammeStatus(p.event_date, p.event_time, p.duration) === 'completed').map((programme) => (
+                  <Card key={programme.id} className="bg-card opacity-90">
+                    <CardContent className="p-4">
+                      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="font-semibold text-foreground">{programme.title}</h3>
+                            <Badge variant="secondary" className="bg-muted text-muted-foreground">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              Completed
+                            </Badge>
+                          </div>
+                          {programme.event_date && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Calendar className="h-4 w-4" />
+                              {format(new Date(programme.event_date), "dd MMM yyyy")}
+                              {programme.event_time && ` at ${programme.event_time}`}
+                            </p>
+                          )}
+                          <p className="text-sm text-muted-foreground">
+                            {programme.current_signups || 0} participants attended
+                          </p>
+                          {/* Feedback Display */}
+                          <ProgrammeFeedbackDisplay programmeId={programme.id} />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => openAttendanceDialog(programme)} className="gap-1">
+                            <Star className="h-4 w-4" />
+                            View Feedback
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="icon">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Programme?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete "{programme.title}" and cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDelete(programme.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
 
         {/* Attendance Dialog */}
         {selectedProgramme && (
