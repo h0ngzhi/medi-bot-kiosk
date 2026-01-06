@@ -57,6 +57,9 @@ export interface Programme {
   guest_option?: string | null;
   // Recurrence type
   recurrence_type?: string | null;
+  // Serial ID and series
+  serial_id?: string | null;
+  series_id?: string | null;
   // Local state
   isSignedUp?: boolean;
   hasSubmittedFeedback?: boolean;
@@ -67,6 +70,7 @@ interface ProgrammeCardProps {
   onSignUp: (programme: Programme) => void;
   onCancel?: (programme: Programme) => void;
   onFeedback?: (programme: Programme) => void;
+  onExpand?: (programme: Programme) => void;
   index: number;
 }
 
@@ -78,9 +82,15 @@ const categoryColors: Record<string, { bg: string; text: string; label: string }
   'digital': { bg: 'bg-secondary/10', text: 'text-secondary', label: 'Digital Skills' },
 };
 
-export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, index }: ProgrammeCardProps) {
+export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, onExpand, index }: ProgrammeCardProps) {
   const { t, language, isTtsEnabled } = useApp();
   const [expanded, setExpanded] = useState(false);
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't expand if clicking on buttons or links
+    if ((e.target as HTMLElement).closest('button, a')) return;
+    onExpand?.(programme);
+  };
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -115,10 +125,11 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, index
   return (
     <div
       id={`programme-${programme.id}`}
-      className={`bg-card rounded-3xl shadow-soft overflow-hidden animate-slide-up scroll-mt-6 ${
+      className={`bg-card rounded-3xl shadow-soft overflow-hidden animate-slide-up scroll-mt-6 cursor-pointer hover:shadow-lg transition-shadow ${
         isCompleted ? 'opacity-80' : ''
       }`}
       style={{ animationDelay: `${index * 0.1}s` }}
+      onClick={handleCardClick}
     >
       {/* Header with category and status */}
       <div className={`${category.bg} px-6 py-3 flex items-center justify-between`}>
@@ -131,9 +142,17 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, index
             </Badge>
           )}
         </div>
-        <div className="flex items-center gap-1.5 text-warning">
-          <Award className="w-5 h-5" />
-          <span className="font-bold text-base">{programme.points_reward} {t('community.points')}</span>
+        <div className="flex items-center gap-3">
+          {/* Serial ID */}
+          {programme.serial_id && (
+            <Badge variant="outline" className="text-xs font-mono bg-background/50">
+              #{programme.serial_id}
+            </Badge>
+          )}
+          <div className="flex items-center gap-1.5 text-warning">
+            <Award className="w-5 h-5" />
+            <span className="font-bold text-base">{programme.points_reward} {t('community.points')}</span>
+          </div>
         </div>
       </div>
 
