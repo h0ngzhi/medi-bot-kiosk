@@ -6,22 +6,26 @@ import {
   Clock, 
   Users, 
   Award,
-  UserCheck,
   ChevronDown,
   ChevronUp,
   Info,
-  BookOpen,
   User,
   Languages,
   Target,
   Phone,
   Mail,
   Heart,
-  UserPlus
+  UserPlus,
+  Lock,
+  CheckCircle,
+  Star,
+  MessageSquare
 } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { speakText } from '@/utils/speechUtils';
+import { getProgrammeStatus, isRegistrationOpen, ProgrammeStatus } from '@/utils/programmeUtils';
+import { ProgrammeFeedbackDisplay } from './ProgrammeFeedbackDisplay';
 
 export interface Programme {
   id: string;
@@ -47,14 +51,18 @@ export interface Programme {
   admin_email?: string | null;
   // Guest option tag
   guest_option?: string | null;
+  // Recurrence type
+  recurrence_type?: string | null;
   // Local state
   isSignedUp?: boolean;
+  hasSubmittedFeedback?: boolean;
 }
 
 interface ProgrammeCardProps {
   programme: Programme;
   onSignUp: (programme: Programme) => void;
   onCancel?: (programme: Programme) => void;
+  onFeedback?: (programme: Programme) => void;
   index: number;
 }
 
@@ -66,7 +74,7 @@ const categoryColors: Record<string, { bg: string; text: string; label: string }
   'digital': { bg: 'bg-secondary/10', text: 'text-secondary', label: 'Digital Skills' },
 };
 
-export function ProgrammeCard({ programme, onSignUp, onCancel, index }: ProgrammeCardProps) {
+export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, index }: ProgrammeCardProps) {
   const { t, language, isTtsEnabled } = useApp();
   const [expanded, setExpanded] = useState(false);
 
@@ -77,6 +85,17 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
   };
 
   const category = categoryColors[programme.category] || categoryColors['health'];
+  
+  // Calculate programme status
+  const status: ProgrammeStatus = getProgrammeStatus(
+    programme.event_date,
+    programme.event_time,
+    programme.duration
+  );
+  
+  const registrationOpen = isRegistrationOpen(programme.event_date, programme.event_time);
+  const isCompleted = status === 'completed';
+  const spotsRemaining = programme.max_capacity - programme.current_signups;
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return '';
@@ -92,12 +111,22 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
   return (
     <div
       id={`programme-${programme.id}`}
-      className="bg-card rounded-3xl shadow-soft overflow-hidden animate-slide-up scroll-mt-6"
+      className={`bg-card rounded-3xl shadow-soft overflow-hidden animate-slide-up scroll-mt-6 ${
+        isCompleted ? 'opacity-80' : ''
+      }`}
       style={{ animationDelay: `${index * 0.1}s` }}
     >
-      {/* Header with category */}
+      {/* Header with category and status */}
       <div className={`${category.bg} px-6 py-3 flex items-center justify-between`}>
-        <span className={`font-semibold ${category.text}`}>{category.label}</span>
+        <div className="flex items-center gap-3">
+          <span className={`font-semibold ${category.text}`}>{category.label}</span>
+          {isCompleted && (
+            <Badge variant="secondary" className="bg-muted text-muted-foreground">
+              <CheckCircle className="w-3.5 h-3.5 mr-1" />
+              {t('community.completed')}
+            </Badge>
+          )}
+        </div>
         <div className="flex items-center gap-1.5 text-warning">
           <Award className="w-5 h-5" />
           <span className="font-bold text-base">{programme.points_reward} {t('community.points')}</span>
@@ -195,16 +224,18 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
             </div>
           )}
 
-          {/* Spots remaining - now above contact organiser */}
-          <div className="flex items-center gap-3 text-foreground cursor-default">
-            <Users className="w-5 h-5 text-primary flex-shrink-0" />
-            <span className="text-base">
-              {programme.max_capacity - programme.current_signups > 0 
-                ? <><span className="font-bold text-success">{programme.max_capacity - programme.current_signups}</span> {t('community.spotsLeft')} (of {programme.max_capacity})</>
-                : <span className="text-destructive font-medium">{t('community.fullCapacity')}</span>
-              }
-            </span>
-          </div>
+          {/* Spots remaining - only show if not completed */}
+          {!isCompleted && (
+            <div className="flex items-center gap-3 text-foreground cursor-default">
+              <Users className="w-5 h-5 text-primary flex-shrink-0" />
+              <span className="text-base">
+                {spotsRemaining > 0 
+                  ? <><span className="font-bold text-success">{spotsRemaining}</span> {t('community.spotsLeft')} (of {programme.max_capacity})</>
+                  : <span className="text-destructive font-medium">{t('community.fullCapacity')}</span>
+                }
+              </span>
+            </div>
+          )}
 
           {/* Admin contact info */}
           {(programme.contact_number || programme.admin_email) && (
@@ -275,8 +306,62 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
           </>
         )}
 
-        {/* Sign up button */}
-        {programme.isSignedUp ? (
+        {/* Public feedback display for completed programmes */}
+        {isCompleted && (
+          <ProgrammeFeedbackDisplay programmeId={programme.id} />
+        )}
+
+        {/* Action buttons */}
+        {isCompleted ? (
+          // Completed programme - show feedback button for registered participants
+          programme.isSignedUp && !programme.hasSubmittedFeedback ? (
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => onFeedback?.(programme)}
+              className="w-full h-14 text-lg border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              <Star className="w-5 h-5 mr-2" />
+              {t('community.leaveFeedback')}
+            </Button>
+          ) : programme.isSignedUp && programme.hasSubmittedFeedback ? (
+            <Button
+              variant="outline"
+              size="lg"
+              disabled
+              className="w-full h-14 text-lg"
+            >
+              <CheckCircle className="w-5 h-5 mr-2" />
+              {t('community.feedbackSubmittedShort')}
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="lg"
+              disabled
+              className="w-full h-14 text-lg"
+            >
+              <CheckCircle className="w-5 h-5 mr-2" />
+              {t('community.completed')}
+            </Button>
+          )
+        ) : !registrationOpen ? (
+          // Registration closed - programme has started
+          <div className="space-y-2">
+            <Button
+              variant="outline"
+              size="lg"
+              disabled
+              className="w-full h-14 text-lg"
+            >
+              <Lock className="w-5 h-5 mr-2" />
+              {t('community.registrationClosed')}
+            </Button>
+            <p className="text-center text-sm text-muted-foreground">
+              {t('community.programmeStarted')}
+            </p>
+          </div>
+        ) : programme.isSignedUp ? (
           <div className="flex gap-3">
             <Button
               variant="success"
@@ -299,7 +384,7 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
               </Button>
             )}
           </div>
-        ) : programme.max_capacity - programme.current_signups <= 0 ? (
+        ) : spotsRemaining <= 0 ? (
           <Button
             variant="outline"
             size="lg"

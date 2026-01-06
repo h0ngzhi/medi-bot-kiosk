@@ -250,6 +250,17 @@ const translations: Record<Language, Record<string, string>> = {
     'community.bringFriend': 'Bring a Friend',
     'community.thankyouRegistering': 'Thank you for registering your interest.',
     'community.organiserContact': 'The organiser will contact you if needed.',
+    'community.completed': 'Completed',
+    'community.registrationClosed': 'Registration Closed',
+    'community.programmeStarted': 'Registration is closed as the programme has started.',
+    'community.leaveFeedback': 'Leave Feedback',
+    'community.shareFeedback': 'Share Your Feedback',
+    'community.rateExperience': 'How was your experience?',
+    'community.participantFeedback': 'Participant Feedback',
+    'community.feedbackAlreadySubmitted': 'You have already submitted feedback for this programme.',
+    'community.feedbackError': 'Failed to submit feedback. Please try again.',
+    'community.feedbackSubmittedShort': 'Feedback Submitted',
+    'community.cannotCancelStarted': 'Cannot cancel as the programme has already started.',
     
     // Profile
     'profile.title': 'My Profile',
