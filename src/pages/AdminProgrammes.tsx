@@ -46,8 +46,10 @@ import {
   Globe,
   Clock,
   RefreshCw,
+  ClipboardList,
 } from "lucide-react";
 import { format } from "date-fns";
+import { AttendanceDialog } from "@/components/admin/AttendanceDialog";
 
 interface Programme {
   id: string;
@@ -122,6 +124,8 @@ const AdminProgrammes = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<ProgrammeForm>(emptyForm);
+  const [attendanceDialogOpen, setAttendanceDialogOpen] = useState(false);
+  const [selectedProgramme, setSelectedProgramme] = useState<Programme | null>(null);
 
   useEffect(() => {
     fetchProgrammes();
@@ -280,6 +284,11 @@ const AdminProgrammes = () => {
       default:
         return "bg-muted text-muted-foreground";
     }
+  };
+
+  const openAttendanceDialog = (programme: Programme) => {
+    setSelectedProgramme(programme);
+    setAttendanceDialogOpen(true);
   };
 
   return (
@@ -694,6 +703,15 @@ const AdminProgrammes = () => {
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
+                          size="sm"
+                          onClick={() => openAttendanceDialog(programme)}
+                          className="gap-1"
+                        >
+                          <ClipboardList className="h-4 w-4" />
+                          <span className="hidden sm:inline">Signups</span>
+                        </Button>
+                        <Button
+                          variant="outline"
                           size="icon"
                           onClick={() => handleEdit(programme)}
                         >
@@ -736,6 +754,18 @@ const AdminProgrammes = () => {
               </Card>
             ))}
           </div>
+        )}
+
+        {/* Attendance Dialog */}
+        {selectedProgramme && (
+          <AttendanceDialog
+            open={attendanceDialogOpen}
+            onOpenChange={setAttendanceDialogOpen}
+            programmeId={selectedProgramme.id}
+            programmeTitle={selectedProgramme.title}
+            pointsReward={selectedProgramme.points_reward}
+            onAttendanceMarked={fetchProgrammes}
+          />
         )}
       </main>
     </div>
