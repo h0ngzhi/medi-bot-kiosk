@@ -97,26 +97,10 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
     >
       {/* Header with category */}
       <div className={`${category.bg} px-6 py-3 flex items-center justify-between`}>
-        <div className="flex items-center gap-3">
-          <span className={`font-semibold ${category.text}`}>{category.label}</span>
-          {programme.guest_option && (
-            <Badge 
-              variant="outline" 
-              className="bg-card/80 border-primary/30 text-primary font-medium text-sm py-1 px-2.5"
-            >
-              {programme.guest_option === 'caregiver_welcome' ? (
-                <><Heart className="w-3.5 h-3.5 mr-1.5" />{t('community.caregiverWelcome')}</>
-              ) : (
-                <><UserPlus className="w-3.5 h-3.5 mr-1.5" />{t('community.bringFriend')}</>
-              )}
-            </Badge>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-warning">
-            <Award className="w-5 h-5" />
-            <span className="font-bold text-base">{programme.points_reward} {t('community.points')}</span>
-          </div>
+        <span className={`font-semibold ${category.text}`}>{category.label}</span>
+        <div className="flex items-center gap-1.5 text-warning">
+          <Award className="w-5 h-5" />
+          <span className="font-bold text-base">{programme.points_reward} {t('community.points')}</span>
         </div>
       </div>
 
@@ -156,6 +140,15 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
             <Badge variant="outline" className="text-base py-1.5 px-4">
               <Languages className="w-4 h-4 mr-2" />
               {programme.languages.join(' / ')}
+            </Badge>
+          )}
+          {programme.guest_option && (
+            <Badge variant="outline" className="text-base py-1.5 px-4 bg-primary/10 border-primary/30 text-primary">
+              {programme.guest_option === 'caregiver_welcome' ? (
+                <><Heart className="w-4 h-4 mr-2" />{t('community.caregiverWelcome')}</>
+              ) : (
+                <><UserPlus className="w-4 h-4 mr-2" />{t('community.bringFriend')}</>
+              )}
             </Badge>
           )}
         </div>
