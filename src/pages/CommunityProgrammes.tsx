@@ -261,7 +261,6 @@ export default function CommunityProgrammes() {
   const [showSignupForm, setShowSignupForm] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackDismissed, setFeedbackDismissed] = useState(false);
-  const [interactionCount, setInteractionCount] = useState(0);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -293,20 +292,9 @@ export default function CommunityProgrammes() {
     fetchSignups();
   }, [user?.id]);
 
-  // Show feedback after 3 interactions (only once)
-  useEffect(() => {
-    if (interactionCount >= 3 && !showFeedback && !feedbackDismissed) {
-      const timer = setTimeout(() => {
-        setShowFeedback(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [interactionCount, showFeedback, feedbackDismissed]);
-
   const handleSignUp = (programme: Programme) => {
     setSelectedProgramme(programme);
     setShowSignupForm(true);
-    setInteractionCount(prev => prev + 1);
   };
 
   const handleSignupSuccess = () => {
@@ -318,6 +306,13 @@ export default function CommunityProgrammes() {
             : p
         )
       );
+      
+      // Show feedback after successful signup (only once per session)
+      if (!feedbackDismissed) {
+        setTimeout(() => {
+          setShowFeedback(true);
+        }, 1500);
+      }
     }
   };
 
@@ -362,10 +357,7 @@ export default function CommunityProgrammes() {
                 key={cat.id}
                 variant={isActive ? 'default' : 'outline'}
                 size="lg"
-                onClick={() => {
-                  setActiveCategory(cat.id);
-                  setInteractionCount(prev => prev + 1);
-                }}
+                onClick={() => setActiveCategory(cat.id)}
                 onMouseEnter={() => handleSpeak(t(cat.labelKey))}
                 className={`flex-shrink-0 ${isActive ? '' : 'bg-card'}`}
               >
