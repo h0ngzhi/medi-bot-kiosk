@@ -34,6 +34,7 @@ interface ProgrammeDetailModalProps {
   onSignUp: (programme: Programme) => void;
   onCancel?: (programme: Programme) => void;
   onFeedback?: (programme: Programme) => void;
+  onEditFeedback?: (feedback: { id: string; rating: number; comment: string | null }) => void;
 }
 
 const categoryColors: Record<string, { bg: string; text: string; label: string }> = {
@@ -50,7 +51,8 @@ export function ProgrammeDetailModal({
   onClose, 
   onSignUp, 
   onCancel, 
-  onFeedback 
+  onFeedback,
+  onEditFeedback
 }: ProgrammeDetailModalProps) {
   const { t, language, isTtsEnabled } = useApp();
 
@@ -291,7 +293,8 @@ export function ProgrammeDetailModal({
             </h3>
             <ProgrammeFeedbackDisplay 
               programmeId={programme.id} 
-              seriesId={(programme as any).series_id} 
+              seriesId={(programme as any).series_id}
+              onEditFeedback={onEditFeedback}
             />
           </div>
 

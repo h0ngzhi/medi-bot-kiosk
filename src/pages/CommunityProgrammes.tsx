@@ -40,6 +40,12 @@ const categories: { id: Category; icon: React.ElementType; labelKey: string }[] 
   { id: 'digital', icon: Smartphone, labelKey: 'community.filterDigital' },
 ];
 
+interface EditingFeedback {
+  id: string;
+  rating: number;
+  comment: string | null;
+}
+
 export default function CommunityProgrammes() {
   const { user, t, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
@@ -50,6 +56,8 @@ export default function CommunityProgrammes() {
   const [showSignupForm, setShowSignupForm] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [editingFeedback, setEditingFeedback] = useState<EditingFeedback | null>(null);
+  const [feedbackRefreshKey, setFeedbackRefreshKey] = useState(0);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -168,6 +176,18 @@ export default function CommunityProgrammes() {
         )
       );
     }
+    setEditingFeedback(null);
+    setFeedbackRefreshKey(prev => prev + 1);
+  };
+
+  const handleEditFeedback = (feedback: { id: string; rating: number; comment: string | null }, programme: Programme) => {
+    setSelectedProgramme(programme);
+    setEditingFeedback({
+      id: feedback.id,
+      rating: feedback.rating,
+      comment: feedback.comment
+    });
+    setShowFeedbackForm(true);
   };
 
   const handleCancelParticipation = async (programme: Programme) => {
@@ -435,7 +455,12 @@ export default function CommunityProgrammes() {
                 )}
 
                 {/* Public Feedback Display - uses series_id to show all reviews from recurring sessions */}
-                <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={(programme as any).series_id} />
+                <ProgrammeFeedbackDisplay 
+                  key={feedbackRefreshKey}
+                  programmeId={programme.id} 
+                  seriesId={(programme as any).series_id}
+                  onEditFeedback={(feedback) => handleEditFeedback(feedback, programme)}
+                />
 
                 {/* Leave feedback button - only for signed-up users */}
                 {programme.isSignedUp && !programme.hasSubmittedFeedback && (
@@ -488,10 +513,14 @@ export default function CommunityProgrammes() {
       {selectedProgramme && (
         <ProgrammeFeedbackForm
           isOpen={showFeedbackForm}
-          onClose={() => setShowFeedbackForm(false)}
+          onClose={() => {
+            setShowFeedbackForm(false);
+            setEditingFeedback(null);
+          }}
           programmeId={selectedProgramme.id}
           programmeName={selectedProgramme.title}
           onSuccess={handleFeedbackSuccess}
+          editingFeedback={editingFeedback}
         />
       )}
 
@@ -503,6 +532,7 @@ export default function CommunityProgrammes() {
         onSignUp={handleSignUp}
         onCancel={handleCancelParticipation}
         onFeedback={handleFeedback}
+        onEditFeedback={selectedProgramme ? (feedback) => handleEditFeedback(feedback, selectedProgramme) : undefined}
       />
 
       <AccessibilityBar />
