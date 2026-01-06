@@ -232,6 +232,11 @@ const translations: Record<Language, Record<string, string>> = {
     'community.commentPlaceholder': 'Tell us what you think...',
     'community.submitFeedback': 'Submit Feedback',
     'community.feedbackThanks': 'Thank you for your feedback!',
+    'community.feedbackSubmitted': 'Your feedback helps us improve our services.',
+    'community.voiceRecorded': 'Voice recorded successfully',
+    'community.speakNow': 'Speak now...',
+    'community.tapToSpeak': 'Tap to speak',
+    'community.voiceHint': 'Tap the microphone to speak your feedback',
     
     // Profile
     'profile.title': 'My Profile',
@@ -478,6 +483,11 @@ const translations: Record<Language, Record<string, string>> = {
     'community.commentPlaceholder': '告诉我们您的想法...',
     'community.submitFeedback': '提交反馈',
     'community.feedbackThanks': '感谢您的反馈！',
+    'community.feedbackSubmitted': '您的反馈有助于我们改进服务。',
+    'community.voiceRecorded': '语音录制成功',
+    'community.speakNow': '请开始说话...',
+    'community.tapToSpeak': '点击说话',
+    'community.voiceHint': '点击麦克风说出您的反馈',
     
     'profile.title': '我的资料',
     'profile.chas': 'CHAS卡类型',
@@ -721,6 +731,11 @@ const translations: Record<Language, Record<string, string>> = {
     'community.commentPlaceholder': 'Beritahu kami pendapat anda...',
     'community.submitFeedback': 'Hantar Maklum Balas',
     'community.feedbackThanks': 'Terima kasih atas maklum balas anda!',
+    'community.feedbackSubmitted': 'Maklum balas anda membantu kami meningkatkan perkhidmatan.',
+    'community.voiceRecorded': 'Suara berjaya dirakam',
+    'community.speakNow': 'Sila bercakap sekarang...',
+    'community.tapToSpeak': 'Ketuk untuk bercakap',
+    'community.voiceHint': 'Ketuk mikrofon untuk menyuarakan maklum balas anda',
     
     'profile.title': 'Profil Saya',
     'profile.chas': 'Jenis Kad CHAS',
@@ -964,6 +979,11 @@ const translations: Record<Language, Record<string, string>> = {
     'community.commentPlaceholder': 'உங்கள் எண்ணங்களைச் சொல்லுங்கள்...',
     'community.submitFeedback': 'கருத்தை சமர்ப்பி',
     'community.feedbackThanks': 'உங்கள் கருத்துக்கு நன்றி!',
+    'community.feedbackSubmitted': 'உங்கள் கருத்து எங்கள் சேவைகளை மேம்படுத்த உதவுகிறது.',
+    'community.voiceRecorded': 'குரல் வெற்றிகரமாக பதிவு செய்யப்பட்டது',
+    'community.speakNow': 'இப்போது பேசுங்கள்...',
+    'community.tapToSpeak': 'பேச தட்டவும்',
+    'community.voiceHint': 'உங்கள் கருத்தைக் கூற மைக்ரோஃபோனைத் தட்டவும்',
     
     'profile.title': 'எனது சுயவிவரம்',
     'profile.chas': 'CHAS அட்டை வகை',
