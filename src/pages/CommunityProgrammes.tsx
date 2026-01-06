@@ -7,6 +7,7 @@ import { ProgrammeCard, Programme } from '@/components/community/ProgrammeCard';
 import { ProgrammeSignupForm } from '@/components/community/ProgrammeSignupForm';
 import { ProgrammeFeedbackForm } from '@/components/community/ProgrammeFeedbackForm';
 import { ProgrammeFeedbackDisplay } from '@/components/community/ProgrammeFeedbackDisplay';
+import { ProgrammeDetailModal } from '@/components/community/ProgrammeDetailModal';
 import { speakText } from '@/utils/speechUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { isRegistrationOpen, getProgrammeStatus } from '@/utils/programmeUtils';
@@ -48,6 +49,7 @@ export default function CommunityProgrammes() {
   const [selectedProgramme, setSelectedProgramme] = useState<Programme | null>(null);
   const [showSignupForm, setShowSignupForm] = useState(false);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -135,6 +137,11 @@ export default function CommunityProgrammes() {
   const handleFeedback = (programme: Programme) => {
     setSelectedProgramme(programme);
     setShowFeedbackForm(true);
+  };
+
+  const handleExpand = (programme: Programme) => {
+    setSelectedProgramme(programme);
+    setShowDetailModal(true);
   };
 
   const handleSignupSuccess = () => {
@@ -363,6 +370,7 @@ export default function CommunityProgrammes() {
               onSignUp={handleSignUp}
               onCancel={handleCancelParticipation}
               onFeedback={handleFeedback}
+              onExpand={handleExpand}
               index={index}
             />
           ))
@@ -429,8 +437,8 @@ export default function CommunityProgrammes() {
                 {/* Public Feedback Display - uses series_id to show all reviews from recurring sessions */}
                 <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={(programme as any).series_id} />
 
-                {/* Leave feedback button - show for any logged-in user who hasn't submitted feedback */}
-                {user && !programme.hasSubmittedFeedback && (
+                {/* Leave feedback button - only for signed-up users */}
+                {programme.isSignedUp && !programme.hasSubmittedFeedback && (
                   <Button
                     variant="outline"
                     size="lg"
@@ -442,7 +450,7 @@ export default function CommunityProgrammes() {
                   </Button>
                 )}
 
-                {user && programme.hasSubmittedFeedback && (
+                {programme.isSignedUp && programme.hasSubmittedFeedback && (
                   <Button
                     variant="outline"
                     size="lg"
@@ -486,6 +494,16 @@ export default function CommunityProgrammes() {
           onSuccess={handleFeedbackSuccess}
         />
       )}
+
+      {/* Programme detail modal */}
+      <ProgrammeDetailModal
+        programme={selectedProgramme}
+        isOpen={showDetailModal}
+        onClose={() => setShowDetailModal(false)}
+        onSignUp={handleSignUp}
+        onCancel={handleCancelParticipation}
+        onFeedback={handleFeedback}
+      />
 
       <AccessibilityBar />
     </div>
