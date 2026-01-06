@@ -31,6 +31,11 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
   };
 
   const handleSubmit = async () => {
+    if (!user?.id) {
+      toast.error('Please scan your card first');
+      return;
+    }
+
     if (!name.trim() || !phone.trim()) {
       toast.error(t('community.fillAllFields'));
       return;
@@ -50,7 +55,7 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
       const { error } = await supabase
         .from('user_programme_signups')
         .insert({
-          kiosk_user_id: user?.id || '',
+          kiosk_user_id: user.id,
           programme_id: programme.id,
           status: 'signed_up',
           participant_name: name.trim(),
