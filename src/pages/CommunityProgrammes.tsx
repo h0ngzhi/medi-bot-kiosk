@@ -429,8 +429,8 @@ export default function CommunityProgrammes() {
                 {/* Public Feedback Display - uses series_id to show all reviews from recurring sessions */}
                 <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={(programme as any).series_id} />
 
-                {/* Leave feedback button for signed-up users */}
-                {programme.isSignedUp && !programme.hasSubmittedFeedback && (
+                {/* Leave feedback button - show for any logged-in user who hasn't submitted feedback */}
+                {user && !programme.hasSubmittedFeedback && (
                   <Button
                     variant="outline"
                     size="lg"
@@ -442,7 +442,7 @@ export default function CommunityProgrammes() {
                   </Button>
                 )}
 
-                {programme.isSignedUp && programme.hasSubmittedFeedback && (
+                {user && programme.hasSubmittedFeedback && (
                   <Button
                     variant="outline"
                     size="lg"
