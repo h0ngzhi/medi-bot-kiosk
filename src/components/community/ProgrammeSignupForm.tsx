@@ -176,8 +176,8 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
             <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-8 h-8 text-success" />
             </div>
-            <p className="text-xl font-bold text-foreground mb-2">{t('community.signupSuccess')}</p>
-            <p className="text-muted-foreground">{t('community.seeYouThere')}</p>
+            <p className="text-xl font-bold text-foreground mb-2">{t('community.thankyouRegistering')}</p>
+            <p className="text-muted-foreground text-base">{t('community.organiserContact')}</p>
           </div>
         )}
       </div>
