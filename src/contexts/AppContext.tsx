@@ -243,6 +243,9 @@ const translations: Record<Language, Record<string, string>> = {
     'community.cancel': 'Cancel',
     'community.cancelSuccess': 'Participation cancelled successfully',
     'community.cancelError': 'Failed to cancel. Please try again.',
+    'community.yourProgrammes': 'Your Programmes',
+    'community.allProgrammes': 'All Programmes',
+    'community.contactOrganiser': 'Contact Organiser',
     
     // Profile
     'profile.title': 'My Profile',
@@ -500,6 +503,9 @@ const translations: Record<Language, Record<string, string>> = {
     'community.cancel': '取消',
     'community.cancelSuccess': '已成功取消参与',
     'community.cancelError': '取消失败。请重试。',
+    'community.yourProgrammes': '您已报名的活动',
+    'community.allProgrammes': '所有活动',
+    'community.contactOrganiser': '联系主办方',
     
     'profile.title': '我的资料',
     'profile.chas': 'CHAS卡类型',
@@ -754,6 +760,9 @@ const translations: Record<Language, Record<string, string>> = {
     'community.cancel': 'Batal',
     'community.cancelSuccess': 'Penyertaan berjaya dibatalkan',
     'community.cancelError': 'Gagal membatalkan. Sila cuba lagi.',
+    'community.yourProgrammes': 'Program Anda',
+    'community.allProgrammes': 'Semua Program',
+    'community.contactOrganiser': 'Hubungi Penganjur',
     
     'profile.title': 'Profil Saya',
     'profile.chas': 'Jenis Kad CHAS',
@@ -1008,6 +1017,9 @@ const translations: Record<Language, Record<string, string>> = {
     'community.cancel': 'ரத்து செய்',
     'community.cancelSuccess': 'பங்கேற்பு வெற்றிகரமாக ரத்து செய்யப்பட்டது',
     'community.cancelError': 'ரத்து செய்ய முடியவில்லை. மீண்டும் முயற்சிக்கவும்.',
+    'community.yourProgrammes': 'உங்கள் நிகழ்ச்சிகள்',
+    'community.allProgrammes': 'அனைத்து நிகழ்ச்சிகள்',
+    'community.contactOrganiser': 'ஒருங்கிணைப்பாளரைத் தொடர்பு கொள்ளவும்',
     
     'profile.title': 'எனது சுயவிவரம்',
     'profile.chas': 'CHAS அட்டை வகை',

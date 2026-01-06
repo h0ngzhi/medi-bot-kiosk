@@ -174,25 +174,28 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, index }: Programm
 
           {/* Admin contact info */}
           {(programme.contact_number || programme.admin_email) && (
-            <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-base mt-2 pt-2 border-t border-border/50">
-              {programme.contact_number && (
-                <a 
-                  href={`tel:${programme.contact_number}`}
-                  className="flex items-center gap-2 hover:text-primary transition-colors"
-                >
-                  <Phone className="w-5 h-5" />
-                  <span>{programme.contact_number}</span>
-                </a>
-              )}
-              {programme.admin_email && (
-                <a 
-                  href={`mailto:${programme.admin_email}`}
-                  className="flex items-center gap-2 hover:text-primary transition-colors"
-                >
-                  <Mail className="w-5 h-5" />
-                  <span>{programme.admin_email}</span>
-                </a>
-              )}
+            <div className="mt-3 pt-3 border-t border-border/50">
+              <p className="text-base font-semibold text-foreground mb-2">{t('community.contactOrganiser')}</p>
+              <div className="flex flex-wrap items-center gap-4 text-muted-foreground text-base">
+                {programme.contact_number && (
+                  <a 
+                    href={`tel:${programme.contact_number}`}
+                    className="flex items-center gap-2 hover:text-primary transition-colors"
+                  >
+                    <Phone className="w-5 h-5" />
+                    <span>{programme.contact_number}</span>
+                  </a>
+                )}
+                {programme.admin_email && (
+                  <a 
+                    href={`mailto:${programme.admin_email}`}
+                    className="flex items-center gap-2 hover:text-primary transition-colors"
+                  >
+                    <Mail className="w-5 h-5" />
+                    <span>{programme.admin_email}</span>
+                  </a>
+                )}
+              </div>
             </div>
           )}
 
