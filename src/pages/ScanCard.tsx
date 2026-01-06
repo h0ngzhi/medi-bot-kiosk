@@ -370,22 +370,7 @@ export default function ScanCard() {
         }
       ]);
 
-      // 4. Add sample programme signups
-      const { data: programmes } = await supabase
-        .from('community_programmes')
-        .select('id')
-        .limit(2);
-
-      if (programmes && programmes.length > 0) {
-        const signups = programmes.map((p, index) => ({
-          kiosk_user_id: kioskUserId,
-          programme_id: p.id,
-          status: index === 0 ? 'attended' : 'signed_up',
-          attended_at: index === 0 ? pastDate1.toISOString() : null
-        }));
-        
-        await supabase.from('user_programme_signups').insert(signups);
-      }
+      // Note: Not auto-signing up to programmes - let users register themselves
 
       console.log('Sample data populated for new user');
     } catch (error) {
