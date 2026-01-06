@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Star, X, Send, Mic, Loader2, Square } from 'lucide-react';
@@ -8,12 +8,19 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useVoiceInput } from '@/hooks/useVoiceInput';
 
+interface EditingFeedback {
+  id: string;
+  rating: number;
+  comment: string | null;
+}
+
 interface ProgrammeFeedbackFormProps {
   isOpen: boolean;
   onClose: () => void;
   programmeId: string;
   programmeName: string;
   onSuccess?: () => void;
+  editingFeedback?: EditingFeedback | null;
 }
 
 export function ProgrammeFeedbackForm({
@@ -21,13 +28,27 @@ export function ProgrammeFeedbackForm({
   onClose,
   programmeId,
   programmeName,
-  onSuccess
+  onSuccess,
+  editingFeedback
 }: ProgrammeFeedbackFormProps) {
   const { t, language, isTtsEnabled, user } = useApp();
   const [rating, setRating] = useState<number>(0);
   const [hoveredRating, setHoveredRating] = useState<number>(0);
   const [comment, setComment] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const isEditing = !!editingFeedback;
+
+  // Initialize form when editing
+  useEffect(() => {
+    if (editingFeedback) {
+      setRating(editingFeedback.rating);
+      setComment(editingFeedback.comment || '');
+    } else {
+      setRating(0);
+      setComment('');
+    }
+  }, [editingFeedback]);
 
   const { isRecording, isProcessing, recordingTime, toggleRecording } = useVoiceInput({
     language,
@@ -49,30 +70,44 @@ export function ProgrammeFeedbackForm({
 
     setSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('programme_feedback')
-        .insert({
-          programme_id: programmeId,
-          kiosk_user_id: user.id,
-          participant_name: user.name,
-          rating,
-          comment: comment.trim() || null
-        });
+      if (isEditing && editingFeedback) {
+        // Update existing feedback
+        const { error } = await supabase
+          .from('programme_feedback')
+          .update({
+            rating,
+            comment: comment.trim() || null
+          })
+          .eq('id', editingFeedback.id);
 
-      if (error) {
-        if (error.code === '23505') {
-          // Unique constraint violation - already submitted
-          toast.error(t('community.feedbackAlreadySubmitted'));
-        } else {
-          throw error;
-        }
+        if (error) throw error;
+        toast.success(t('community.feedbackUpdated') || 'Feedback updated');
       } else {
-        toast.success(t('community.feedbackThanks'));
-        onSuccess?.();
-        onClose();
-        setRating(0);
-        setComment('');
+        // Insert new feedback
+        const { error } = await supabase
+          .from('programme_feedback')
+          .insert({
+            programme_id: programmeId,
+            kiosk_user_id: user.id,
+            participant_name: user.name,
+            rating,
+            comment: comment.trim() || null
+          });
+
+        if (error) {
+          if (error.code === '23505') {
+            toast.error(t('community.feedbackAlreadySubmitted'));
+          } else {
+            throw error;
+          }
+        } else {
+          toast.success(t('community.feedbackThanks'));
+        }
       }
+      onSuccess?.();
+      onClose();
+      setRating(0);
+      setComment('');
     } catch (error) {
       console.error('Error submitting feedback:', error);
       toast.error(t('community.feedbackError'));
@@ -200,7 +235,7 @@ export function ProgrammeFeedbackForm({
           ) : (
             <Send className="w-5 h-5 mr-2" />
           )}
-          {t('community.submitFeedback')}
+          {isEditing ? (t('community.updateFeedback') || 'Update Feedback') : t('community.submitFeedback')}
         </Button>
       </div>
     </div>
