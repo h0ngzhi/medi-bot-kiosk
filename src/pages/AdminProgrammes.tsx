@@ -262,6 +262,7 @@ const AdminProgrammes = () => {
       languages: programme.languages?.join(', ') || "",
       learning_objectives: programme.learning_objectives?.join('\n') || "",
       guest_option: programme.guest_option || "",
+      recurrence_type: (programme as any).recurrence_type || "one_time",
     });
     setDialogOpen(true);
   };
