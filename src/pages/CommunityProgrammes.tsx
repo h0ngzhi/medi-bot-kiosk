@@ -17,7 +17,10 @@ import {
   HandHeart,
   Smartphone,
   X,
-  Loader2
+  Loader2,
+  UserCheck,
+  Calendar,
+  MapPin
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -154,6 +157,9 @@ export default function CommunityProgrammes() {
     ? programmes
     : programmes.filter(p => p.category === activeCategory);
 
+  // Get user's signed up programmes
+  const myProgrammes = programmes.filter(p => p.isSignedUp);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted pb-32">
       {/* Header */}
@@ -205,8 +211,68 @@ export default function CommunityProgrammes() {
         </div>
       </div>
 
-      {/* Programme cards */}
+      {/* Your Programmes Section - Prominent at top */}
+      {!loading && myProgrammes.length > 0 && (
+        <div className="max-w-2xl mx-auto px-6 mb-8">
+          <div className="bg-success/10 border-2 border-success/30 rounded-3xl p-6">
+            <h2 
+              className="text-xl font-bold text-success mb-4 flex items-center gap-3"
+              onMouseEnter={() => handleSpeak(t('community.yourProgrammes'))}
+            >
+              <UserCheck className="w-7 h-7" />
+              {t('community.yourProgrammes')}
+            </h2>
+            <div className="space-y-4">
+              {myProgrammes.map((programme) => (
+                <div 
+                  key={programme.id}
+                  className="bg-card rounded-2xl p-4 shadow-sm"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-foreground mb-1">{programme.title}</h3>
+                      {programme.event_date && (
+                        <p className="text-base text-muted-foreground flex items-center gap-2">
+                          <Calendar className="w-5 h-5 text-primary" />
+                          {new Date(programme.event_date).toLocaleDateString('en-SG', { 
+                            weekday: 'short', 
+                            day: 'numeric', 
+                            month: 'short' 
+                          })}
+                        </p>
+                      )}
+                      {programme.location && (
+                        <p className="text-base text-muted-foreground flex items-center gap-2 mt-1">
+                          <MapPin className="w-5 h-5 text-primary" />
+                          {programme.location}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={() => handleCancelParticipation(programme)}
+                      className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground h-12 px-4"
+                    >
+                      <X className="w-5 h-5 mr-2" />
+                      {t('community.cancel')}
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* All Programme cards */}
       <div className="max-w-2xl mx-auto px-6 space-y-6">
+        <h2 
+          className="text-xl font-bold text-foreground"
+          onMouseEnter={() => handleSpeak(t('community.allProgrammes'))}
+        >
+          {t('community.allProgrammes')}
+        </h2>
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
