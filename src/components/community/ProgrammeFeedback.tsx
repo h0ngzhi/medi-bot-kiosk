@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { ThumbsUp, ThumbsDown, X, Send, Mic, Loader2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, X, Send, Mic, Loader2, Square } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { speakText } from '@/utils/speechUtils';
 import { toast } from 'sonner';
@@ -19,8 +19,9 @@ export function ProgrammeFeedback({ isOpen, onClose, programmeName }: ProgrammeF
   const [comment, setComment] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const { isRecording, isProcessing, toggleRecording } = useVoiceInput({
+  const { isRecording, isProcessing, recordingTime, toggleRecording } = useVoiceInput({
     language,
+    autoStopMs: 15000, // Auto-stop after 15 seconds
     onTranscript: (text) => {
       setComment((prev) => prev ? `${prev} ${text}` : text);
       toast.success(t('community.voiceRecorded') || 'Voice recorded successfully');
@@ -50,14 +51,17 @@ export function ProgrammeFeedback({ isOpen, onClose, programmeName }: ProgrammeF
   };
 
   const handleVoiceClick = async () => {
-    if (isRecording) {
-      await toggleRecording();
-    } else {
-      await toggleRecording();
-      toast.info(t('community.speakNow') || 'Speak now...', {
+    await toggleRecording();
+    if (!isRecording) {
+      // Starting recording
+      toast.info(t('community.speakNow') || 'Speak now... Tap again to stop', {
         duration: 2000,
       });
     }
+  };
+
+  const formatTime = (seconds: number) => {
+    return `0:${seconds.toString().padStart(2, '0')}`;
   };
 
   if (!isOpen) return null;
@@ -126,28 +130,41 @@ export function ProgrammeFeedback({ isOpen, onClose, programmeName }: ProgrammeF
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
                   placeholder={t('community.commentPlaceholder')}
-                  className="min-h-[100px] text-lg pr-14"
+                  className="min-h-[100px] text-lg pr-24"
+                  disabled={isRecording}
                 />
-                <Button
-                  type="button"
-                  variant={isRecording ? 'destructive' : 'outline'}
-                  size="icon"
-                  onClick={handleVoiceClick}
-                  disabled={isProcessing}
-                  className={`absolute right-2 bottom-2 rounded-full h-10 w-10 ${
-                    isRecording ? 'animate-pulse' : ''
-                  }`}
-                  title={t('community.tapToSpeak') || 'Tap to speak'}
-                >
-                  {isProcessing ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <Mic className={`w-5 h-5 ${isRecording ? 'text-white' : ''}`} />
+                <div className="absolute right-2 bottom-2 flex items-center gap-2">
+                  {isRecording && (
+                    <span className="text-sm font-medium text-destructive animate-pulse">
+                      {formatTime(recordingTime)}
+                    </span>
                   )}
-                </Button>
+                  <Button
+                    type="button"
+                    variant={isRecording ? 'destructive' : 'outline'}
+                    size="icon"
+                    onClick={handleVoiceClick}
+                    disabled={isProcessing}
+                    className={`rounded-full h-12 w-12 ${
+                      isRecording ? 'animate-pulse ring-4 ring-destructive/30' : ''
+                    }`}
+                    title={isRecording ? 'Tap to stop' : 'Tap to speak'}
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : isRecording ? (
+                      <Square className="w-5 h-5 fill-current" />
+                    ) : (
+                      <Mic className="w-5 h-5" />
+                    )}
+                  </Button>
+                </div>
               </div>
               <p className="text-sm text-muted-foreground mt-2">
-                {t('community.voiceHint') || 'Tap the microphone to speak your feedback'}
+                {isRecording 
+                  ? t('community.tapToStop') || '🔴 Recording... Tap the button to stop'
+                  : t('community.voiceHint') || 'Tap the microphone to speak your feedback'
+                }
               </p>
             </div>
 
