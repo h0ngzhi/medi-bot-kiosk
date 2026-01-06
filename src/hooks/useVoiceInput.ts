@@ -66,9 +66,9 @@ export function useVoiceInput({
         try {
           const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
           
-          // Check if we have any audio data
-          if (audioBlob.size < 1000) {
-            setError('Recording too short. Please try again.');
+          // Check if we have enough audio data (at least ~2 seconds worth)
+          if (audioBlob.size < 20000) {
+            setError('Recording too short. Please speak for at least 2 seconds.');
             setIsProcessing(false);
             resolve(null);
             return;

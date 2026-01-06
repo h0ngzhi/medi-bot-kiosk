@@ -65,10 +65,11 @@ serve(async (req) => {
     formData.append('file', blob, 'audio.webm');
     formData.append('model', 'whisper-1');
     
+    // Add a prompt to help Whisper understand context - helps with accuracy
+    formData.append('prompt', 'This is feedback about a community health programme in Singapore. The speaker may use English, Chinese (Mandarin), Malay, or Tamil.');
+    
     // Only set language if specifically provided, otherwise let Whisper auto-detect
-    // This allows users to speak in any language
     if (language && language !== 'auto') {
-      // Map language codes to Whisper language codes
       const languageMap: Record<string, string> = {
         'en': 'en',
         'zh': 'zh',
@@ -102,7 +103,7 @@ serve(async (req) => {
     }
 
     const result = await response.json();
-    console.log('Transcription successful:', result.text?.substring(0, 50));
+    console.log('Transcription successful:', result.text);
 
     return new Response(
       JSON.stringify({ text: result.text }),
