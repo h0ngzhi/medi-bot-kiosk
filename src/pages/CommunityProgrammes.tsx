@@ -82,7 +82,7 @@ export default function CommunityProgrammes() {
             signedUpIds = signups.map(s => s.programme_id);
           }
 
-          // Check for submitted feedback
+          // Check for submitted feedback - get programme_ids that have feedback
           const { data: feedbacks } = await supabase
             .from('programme_feedback')
             .select('programme_id')
@@ -93,10 +93,27 @@ export default function CommunityProgrammes() {
           }
         }
 
+        // Build maps of series_id to signup/feedback status
+        // If user has signed up for or submitted feedback for ANY programme in a series, mark all programmes in that series
+        const seriesSignupMap = new Map<string, boolean>();
+        const seriesFeedbackMap = new Map<string, boolean>();
+        
+        // First pass: identify which series have signups and feedback
+        (data || []).forEach(p => {
+          if (signedUpIds.includes(p.id) && p.series_id) {
+            seriesSignupMap.set(p.series_id, true);
+          }
+          if (feedbackSubmittedIds.includes(p.id) && p.series_id) {
+            seriesFeedbackMap.set(p.series_id, true);
+          }
+        });
+
         const programmesWithState = (data || []).map(p => ({
           ...p,
-          isSignedUp: signedUpIds.includes(p.id),
-          hasSubmittedFeedback: feedbackSubmittedIds.includes(p.id)
+          // User is signed up if they signed up for this specific programme OR any programme in the same series
+          isSignedUp: signedUpIds.includes(p.id) || (p.series_id && seriesSignupMap.has(p.series_id)),
+          // User has submitted feedback if they submitted for this specific programme OR any programme in the same series
+          hasSubmittedFeedback: feedbackSubmittedIds.includes(p.id) || (p.series_id && seriesFeedbackMap.has(p.series_id))
         }));
 
         setProgrammes(programmesWithState);
@@ -134,9 +151,11 @@ export default function CommunityProgrammes() {
 
   const handleFeedbackSuccess = () => {
     if (selectedProgramme) {
+      const seriesId = (selectedProgramme as any).series_id;
       setProgrammes(prev =>
         prev.map(p =>
-          p.id === selectedProgramme.id
+          // Mark feedback submitted for this programme AND all programmes in the same series
+          p.id === selectedProgramme.id || (seriesId && (p as any).series_id === seriesId)
             ? { ...p, hasSubmittedFeedback: true }
             : p
         )
