@@ -69,6 +69,9 @@ interface Programme {
   points_reward: number;
   duration: string | null;
   conducted_by: string | null;
+  group_size: string | null;
+  languages: string[] | null;
+  learning_objectives: string[] | null;
   updated_at: string | null;
   created_at: string;
 }
@@ -89,6 +92,9 @@ type ProgrammeForm = {
   points_reward: number;
   duration: string;
   conducted_by: string;
+  group_size: string;
+  languages: string;
+  learning_objectives: string;
 };
 
 const CATEGORIES = [
@@ -117,6 +123,9 @@ const emptyForm: ProgrammeForm = {
   points_reward: 10,
   duration: "2 hours",
   conducted_by: "",
+  group_size: "",
+  languages: "",
+  learning_objectives: "",
 };
 
 const AdminProgrammes = () => {
@@ -181,6 +190,9 @@ const AdminProgrammes = () => {
       points_reward: form.points_reward,
       duration: form.duration || null,
       conducted_by: form.conducted_by || null,
+      group_size: form.group_size || null,
+      languages: form.languages ? form.languages.split(',').map(l => l.trim()).filter(Boolean) : null,
+      learning_objectives: form.learning_objectives ? form.learning_objectives.split('\n').map(l => l.trim()).filter(Boolean) : null,
     };
 
     if (editingId) {
@@ -240,6 +252,9 @@ const AdminProgrammes = () => {
       points_reward: programme.points_reward,
       duration: programme.duration || "",
       conducted_by: programme.conducted_by || "",
+      group_size: programme.group_size || "",
+      languages: programme.languages?.join(', ') || "",
+      learning_objectives: programme.learning_objectives?.join('\n') || "",
     });
     setDialogOpen(true);
   };
@@ -409,8 +424,47 @@ const AdminProgrammes = () => {
                           placeholder="e.g. Health Coach, Volunteer"
                         />
                       </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="group_size">Group Size (e.g. 15-25 pax)</Label>
+                          <Input
+                            id="group_size"
+                            value={form.group_size}
+                            onChange={(e) =>
+                              setForm({ ...form, group_size: e.target.value })
+                            }
+                            placeholder="e.g. 15-25 pax"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="languages">Languages (comma-separated)</Label>
+                          <Input
+                            id="languages"
+                            value={form.languages}
+                            onChange={(e) =>
+                              setForm({ ...form, languages: e.target.value })
+                            }
+                            placeholder="e.g. English, Mandarin, Malay"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label htmlFor="learning_objectives">Learning Objectives (one per line)</Label>
+                        <Textarea
+                          id="learning_objectives"
+                          value={form.learning_objectives}
+                          onChange={(e) =>
+                            setForm({ ...form, learning_objectives: e.target.value })
+                          }
+                          placeholder="Learn basic techniques&#10;Improve balance and coordination&#10;Build strength"
+                          rows={4}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter each objective on a new line. Shows in "More Details" section.
+                        </p>
+                      </div>
                     </div>
-                  </div>
 
                   {/* Schedule & Location */}
                   <div className="space-y-4">
