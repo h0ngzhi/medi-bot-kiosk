@@ -44,6 +44,7 @@ export interface Programme {
 interface ProgrammeCardProps {
   programme: Programme;
   onSignUp: (programme: Programme) => void;
+  onCancel?: (programme: Programme) => void;
   index: number;
 }
 
@@ -55,7 +56,7 @@ const categoryColors: Record<string, { bg: string; text: string; label: string }
   'digital': { bg: 'bg-secondary/10', text: 'text-secondary', label: 'Digital Skills' },
 };
 
-export function ProgrammeCard({ programme, onSignUp, index }: ProgrammeCardProps) {
+export function ProgrammeCard({ programme, onSignUp, onCancel, index }: ProgrammeCardProps) {
   const { t, language, isTtsEnabled } = useApp();
   const [expanded, setExpanded] = useState(false);
 
@@ -221,15 +222,28 @@ export function ProgrammeCard({ programme, onSignUp, index }: ProgrammeCardProps
 
         {/* Sign up button */}
         {programme.isSignedUp ? (
-          <Button
-            variant="success"
-            size="lg"
-            disabled
-            className="w-full h-14 text-lg"
-          >
-            <Award className="w-5 h-5 mr-2" />
-            {t('community.signed')}
-          </Button>
+          <div className="flex gap-3">
+            <Button
+              variant="success"
+              size="lg"
+              disabled
+              className="flex-1 h-14 text-lg"
+            >
+              <Award className="w-5 h-5 mr-2" />
+              {t('community.signed')}
+            </Button>
+            {onCancel && (
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => onCancel(programme)}
+                onMouseEnter={() => handleSpeak(t('community.cancel'))}
+                className="h-14 px-6 text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+              >
+                {t('community.cancel')}
+              </Button>
+            )}
+          </div>
         ) : programme.max_capacity - programme.current_signups <= 0 ? (
           <Button
             variant="outline"
