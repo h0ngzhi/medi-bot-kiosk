@@ -100,7 +100,7 @@ export default function CommunityProgrammes() {
       setProgrammes(prev =>
         prev.map(p =>
           p.id === selectedProgramme.id
-            ? { ...p, isSignedUp: true }
+            ? { ...p, isSignedUp: true, current_signups: p.current_signups + 1 }
             : p
         )
       );
