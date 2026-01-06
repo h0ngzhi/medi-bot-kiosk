@@ -13,8 +13,6 @@ interface ProgrammeSignupFormProps {
   programme: {
     id: string;
     title: string;
-    registrationMethod: 'form' | 'phone' | 'walkin';
-    phoneNumber?: string;
   };
   onSuccess: () => void;
 }
@@ -103,67 +101,44 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: P
 
         {!submitted ? (
           <>
-            {programme.registrationMethod === 'form' && (
-              <>
-                <div className="space-y-4 mb-6">
-                  <div>
-                    <label className="block text-base text-muted-foreground mb-2">
-                      <User className="w-4 h-4 inline mr-2" />
-                      {t('community.yourName')}
-                    </label>
-                    <Input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder={t('community.enterName')}
-                      className="h-14 text-lg"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-base text-muted-foreground mb-2">
-                      <Phone className="w-4 h-4 inline mr-2" />
-                      {t('community.phoneNumber')}
-                    </label>
-                    <Input
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="9123 4567"
-                      className="h-14 text-lg"
-                      type="tel"
-                    />
-                  </div>
-                </div>
-
-                <Button
-                  variant="warm"
-                  size="lg"
-                  onClick={handleSubmit}
-                  onMouseEnter={() => handleSpeak(t('community.confirmSignup'))}
-                  disabled={isSubmitting}
-                  className="w-full h-14 text-lg"
-                >
-                  {isSubmitting ? t('community.submitting') : t('community.confirmSignup')}
-                </Button>
-              </>
-            )}
-
-            {programme.registrationMethod === 'phone' && (
-              <div className="text-center py-4">
-                <p className="text-muted-foreground mb-4">{t('community.callToRegister')}</p>
-                <a 
-                  href={`tel:${programme.phoneNumber}`}
-                  className="inline-flex items-center gap-2 text-2xl font-bold text-primary hover:underline"
-                >
-                  <Phone className="w-6 h-6" />
-                  {programme.phoneNumber}
-                </a>
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-base text-muted-foreground mb-2">
+                  <User className="w-4 h-4 inline mr-2" />
+                  {t('community.yourName')}
+                </label>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder={t('community.enterName')}
+                  className="h-14 text-lg"
+                />
               </div>
-            )}
-
-            {programme.registrationMethod === 'walkin' && (
-              <div className="text-center py-4">
-                <p className="text-lg text-muted-foreground">{t('community.walkinInfo')}</p>
+              <div>
+                <label className="block text-base text-muted-foreground mb-2">
+                  <Phone className="w-4 h-4 inline mr-2" />
+                  {t('community.phoneNumber')}
+                </label>
+                <Input
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="9123 4567"
+                  className="h-14 text-lg"
+                  type="tel"
+                />
               </div>
-            )}
+            </div>
+
+            <Button
+              variant="warm"
+              size="lg"
+              onClick={handleSubmit}
+              onMouseEnter={() => handleSpeak(t('community.confirmSignup'))}
+              disabled={isSubmitting}
+              className="w-full h-14 text-lg"
+            >
+              {isSubmitting ? t('community.submitting') : t('community.confirmSignup')}
+            </Button>
           </>
         ) : (
           <div className="text-center py-8">

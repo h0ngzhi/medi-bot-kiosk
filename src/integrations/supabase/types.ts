@@ -16,31 +16,49 @@ export type Database = {
     Tables: {
       community_programmes: {
         Row: {
+          category: string | null
+          conducted_by: string | null
           created_at: string
           description: string | null
+          duration: string | null
           event_date: string | null
+          group_size: string | null
           id: string
           is_active: boolean
+          languages: string[] | null
+          learning_objectives: string[] | null
           location: string | null
           points_reward: number
           title: string
         }
         Insert: {
+          category?: string | null
+          conducted_by?: string | null
           created_at?: string
           description?: string | null
+          duration?: string | null
           event_date?: string | null
+          group_size?: string | null
           id?: string
           is_active?: boolean
+          languages?: string[] | null
+          learning_objectives?: string[] | null
           location?: string | null
           points_reward?: number
           title: string
         }
         Update: {
+          category?: string | null
+          conducted_by?: string | null
           created_at?: string
           description?: string | null
+          duration?: string | null
           event_date?: string | null
+          group_size?: string | null
           id?: string
           is_active?: boolean
+          languages?: string[] | null
+          learning_objectives?: string[] | null
           location?: string | null
           points_reward?: number
           title?: string
