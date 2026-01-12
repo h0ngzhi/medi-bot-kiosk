@@ -32,6 +32,7 @@ serve(async (req) => {
 
   let openaiSocket: WebSocket | null = null;
   let sessionCreated = false;
+  let responseInProgress = false;
 
   clientSocket.onopen = () => {
     console.log("Client WebSocket connected");
@@ -59,27 +60,26 @@ serve(async (req) => {
         const sessionUpdate = {
           type: "session.update",
           session: {
-            modalities: ["text"], // TEXT ONLY - no audio output
-            instructions: `You are a SILENT navigation assistant for a health kiosk. Your ONLY job is to understand which page the user wants to visit and call the navigate_to function.
+            modalities: ["text"], // TEXT ONLY
+            instructions: `You are a SILENT navigation assistant for a health kiosk. Your ONLY job is to call the navigate_to function based on what the user says. 
 
-IMPORTANT RULES:
-1. ALWAYS call the navigate_to function when you understand the user's intent
-2. NEVER generate text or audio responses
-3. Match user requests to the closest page
+CRITICAL RULES:
+1. ALWAYS call navigate_to - never respond with text
+2. Match the user's request to the best page
 
-Available pages and common phrases:
-- "home" - home, start, beginning, main screen
-- "scan" - scan, card, login, sign in
-- "language" - language, change language
-- "dashboard" - dashboard, my page, overview
-- "health-screenings" - health, screenings, results, blood pressure, checkup
-- "find-care" - find care, clinic, doctor, hospital, nearby
-- "community-programmes" - community, programmes, activities, events, classes
-- "profile" - profile, my profile, rewards, points
-- "admin-programmes" - admin programmes, manage programmes (staff only)
-- "admin-slideshow" - admin slideshow, manage slideshow (staff only)
+Pages:
+- home: main start screen
+- scan: scan card to login  
+- language: change language
+- dashboard: main dashboard
+- health-screenings: health results, blood pressure
+- find-care: find clinic, doctor, hospital
+- community-programmes: community activities, programmes, events
+- profile: my profile, rewards, points
+- admin-programmes: manage programmes (staff)
+- admin-slideshow: manage slideshow (staff)
 
-When user says anything related to navigation, IMMEDIATELY call navigate_to with the best matching page.`,
+Just call navigate_to immediately. No text response.`,
             input_audio_format: "pcm16",
             input_audio_transcription: {
               model: "whisper-1",
@@ -88,14 +88,13 @@ When user says anything related to navigation, IMMEDIATELY call navigate_to with
               type: "server_vad",
               threshold: 0.5,
               prefix_padding_ms: 300,
-              silence_duration_ms: 800,
-              create_response: false, // Don't auto-create response - we'll do it manually
+              silence_duration_ms: 1000,
             },
             tools: [
               {
                 type: "function",
                 name: "navigate_to",
-                description: "Navigate to a page in the health kiosk app. Call this function immediately when you understand the user's intent.",
+                description: "Navigate to a page. Always call this function.",
                 parameters: {
                   type: "object",
                   properties: {
@@ -129,38 +128,20 @@ When user says anything related to navigation, IMMEDIATELY call navigate_to with
         openaiSocket!.send(JSON.stringify(sessionUpdate));
       }
 
-      // When speech stops (VAD detected end of speech), manually create a text-only response
-      if (data.type === "input_audio_buffer.speech_stopped") {
-        console.log("Speech stopped, triggering text-only response");
-        
-        // First commit the audio buffer
-        openaiSocket!.send(JSON.stringify({
-          type: "input_audio_buffer.commit"
-        }));
-        
-        // Then create a response with text-only output (no audio)
-        openaiSocket!.send(JSON.stringify({
-          type: "response.create",
-          response: {
-            modalities: ["text"], // Force text-only output
-            output_audio_format: null, // No audio output
-          }
-        }));
+      // Track response state
+      if (data.type === "response.created") {
+        responseInProgress = true;
+        console.log("Response started");
+      }
+      
+      if (data.type === "response.done") {
+        responseInProgress = false;
+        console.log("Response completed");
       }
 
-      // Forward relevant messages to client (skip audio deltas since we're text-only)
-      if (data.type !== "response.audio.delta" && 
-          data.type !== "response.audio.done" &&
-          data.type !== "response.audio_transcript.delta" &&
-          data.type !== "response.audio_transcript.done") {
-        if (clientSocket.readyState === WebSocket.OPEN) {
-          clientSocket.send(event.data);
-        }
-      } else {
-        // Still forward function calls even if they come with audio events
-        if (clientSocket.readyState === WebSocket.OPEN) {
-          clientSocket.send(event.data);
-        }
+      // Forward all messages to client
+      if (clientSocket.readyState === WebSocket.OPEN) {
+        clientSocket.send(event.data);
       }
     };
 
