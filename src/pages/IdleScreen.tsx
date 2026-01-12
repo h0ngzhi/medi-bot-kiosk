@@ -106,14 +106,6 @@ export default function IdleScreen() {
             />
           )}
 
-          {/* Title overlay */}
-          {currentSlide.title && (
-            <div className="absolute bottom-32 left-0 right-0 text-center px-8">
-              <h2 className="text-3xl md:text-4xl font-bold text-white drop-shadow-lg bg-black/30 inline-block px-6 py-3 rounded-xl">
-                {currentSlide.title}
-              </h2>
-            </div>
-          )}
         </div>
       ) : (
         // Default content when no slides
