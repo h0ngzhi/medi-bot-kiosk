@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { MessageCircle, X, Send, Loader2, Mic, MicOff, Volume2 } from "lucide-react";
+import { X, Send, Loader2, Mic, MicOff, Volume2, HelpCircle, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,40 +18,56 @@ const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/health-chat`
 
 const translations = {
   en: {
-    title: "Health Assistant",
+    title: "CCN Assistant",
     placeholder: "Type or speak your message...",
-    greeting: "Hello! I'm here to help you use this health kiosk. How can I assist you today?",
+    greeting: "Hello! I can help you learn about Community Care Network (CCN) services. What would you like to know?",
     error: "Sorry, something went wrong. Please try again.",
     listening: "Listening...",
     micError: "Could not access microphone. Please allow microphone access.",
     speechNotSupported: "Voice input is not supported in this browser.",
+    notificationTitle: "Need Help?",
+    notificationMessage: "I can help you learn about community care services.",
+    askMe: "Ask Me",
+    dismiss: "Not Now",
   },
   zh: {
-    title: "健康助手",
+    title: "社区关怀助手",
     placeholder: "输入或说出您的消息...",
-    greeting: "您好！我在这里帮助您使用这个健康服务站。今天我能为您做些什么？",
+    greeting: "您好！我可以帮助您了解社区关怀网络 (CCN) 服务。您想了解什么？",
     error: "抱歉，出现了问题。请再试一次。",
     listening: "正在听...",
     micError: "无法访问麦克风。请允许麦克风访问。",
     speechNotSupported: "此浏览器不支持语音输入。",
+    notificationTitle: "需要帮助吗？",
+    notificationMessage: "我可以帮助您了解社区关怀服务。",
+    askMe: "询问我",
+    dismiss: "稍后",
   },
   ms: {
-    title: "Pembantu Kesihatan",
+    title: "Pembantu CCN",
     placeholder: "Taip atau sebut mesej anda...",
-    greeting: "Hai! Saya di sini untuk membantu anda menggunakan kiosk kesihatan ini. Bagaimana saya boleh membantu anda hari ini?",
+    greeting: "Hai! Saya boleh membantu anda mempelajari tentang perkhidmatan Rangkaian Penjagaan Komuniti (CCN). Apa yang anda ingin tahu?",
     error: "Maaf, sesuatu telah berlaku. Sila cuba lagi.",
     listening: "Mendengar...",
     micError: "Tidak dapat mengakses mikrofon. Sila benarkan akses mikrofon.",
     speechNotSupported: "Input suara tidak disokong dalam pelayar ini.",
+    notificationTitle: "Perlukan Bantuan?",
+    notificationMessage: "Saya boleh membantu anda mempelajari tentang perkhidmatan penjagaan komuniti.",
+    askMe: "Tanya Saya",
+    dismiss: "Tidak Sekarang",
   },
   ta: {
-    title: "சுகாதார உதவியாளர்",
+    title: "CCN உதவியாளர்",
     placeholder: "உங்கள் செய்தியை தட்டச்சு செய்க அல்லது பேசுங்கள்...",
-    greeting: "வணக்கம்! இந்த சுகாதார கியோஸ்க்கைப் பயன்படுத்த உங்களுக்கு உதவ நான் இங்கே இருக்கிறேன். இன்று நான் உங்களுக்கு எவ்வாறு உதவ முடியும்?",
+    greeting: "வணக்கம்! சமூக பராமரிப்பு நெட்வொர்க் (CCN) சேவைகளைப் பற்றி அறிய நான் உங்களுக்கு உதவ முடியும். நீங்கள் என்ன அறிய விரும்புகிறீர்கள்?",
     error: "மன்னிக்கவும், ஏதோ தவறு நடந்தது. மீண்டும் முயற்சிக்கவும்.",
     listening: "கேட்கிறது...",
     micError: "மைக்ரோஃபோனை அணுக முடியவில்லை. மைக்ரோஃபோன் அணுகலை அனுமதிக்கவும்.",
     speechNotSupported: "இந்த உலாவியில் குரல் உள்ளீடு ஆதரிக்கப்படவில்லை.",
+    notificationTitle: "உதவி தேவையா?",
+    notificationMessage: "சமூக பராமரிப்பு சேவைகளைப் பற்றி அறிய நான் உங்களுக்கு உதவ முடியும்.",
+    askMe: "என்னிடம் கேளுங்கள்",
+    dismiss: "இப்போது வேண்டாம்",
   },
 };
 
@@ -66,6 +82,7 @@ export function HealthChatBot() {
   const { language } = useApp();
   const t = translations[language];
   
+  const [showNotification, setShowNotification] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: t.greeting }
@@ -108,6 +125,15 @@ export function HealthChatBot() {
       stopSpeaking();
     };
   }, []);
+
+  const handleOpenChat = () => {
+    setShowNotification(false);
+    setIsOpen(true);
+  };
+
+  const handleDismiss = () => {
+    setShowNotification(false);
+  };
 
   const startListening = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -278,16 +304,46 @@ export function HealthChatBot() {
 
   return (
     <>
-      {/* Chat Toggle Button */}
-      {!isOpen && (
-        <Button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50"
-          size="icon"
-          aria-label="Open health assistant chat"
-        >
-          <MessageCircle className="h-8 w-8" />
-        </Button>
+      {/* Notification Prompt */}
+      {showNotification && !isOpen && (
+        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-500">
+          <div className="bg-card border-2 border-primary/20 rounded-2xl shadow-2xl p-5 max-w-sm">
+            <div className="flex items-start gap-4">
+              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <Lottie 
+                  animationData={healthAssistantAnimation} 
+                  loop={true}
+                  className="w-16 h-16"
+                />
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <HelpCircle className="w-5 h-5 text-primary" />
+                  <h3 className="text-xl font-bold text-foreground">{t.notificationTitle}</h3>
+                </div>
+                <p className="text-lg text-muted-foreground leading-relaxed">
+                  {t.notificationMessage}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <Button
+                variant="outline"
+                className="flex-1 h-12 text-lg"
+                onClick={handleDismiss}
+              >
+                {t.dismiss}
+              </Button>
+              <Button
+                className="flex-1 h-12 text-lg"
+                onClick={handleOpenChat}
+              >
+                {t.askMe}
+                <ChevronRight className="w-5 h-5 ml-1" />
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Chat Window */}
