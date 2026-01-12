@@ -51,12 +51,18 @@ serve(async (req) => {
       
       const searchResponse = await fetch(searchUrl);
       const searchData = await searchResponse.json();
+      
+      // Log the full API response for debugging
+      console.log(`API Response status: ${searchData.status}, error_message: ${searchData.error_message || 'none'}`);
 
       if (searchData.status === "OK" && searchData.candidates?.length > 0) {
         placeId = searchData.candidates[0].place_id;
         businessStatus = searchData.candidates[0].business_status;
         console.log(`Found match with query: ${query}`);
         break;
+      } else if (searchData.status === "REQUEST_DENIED") {
+        console.error(`API Error: ${searchData.error_message}`);
+        throw new Error(`Google API Error: ${searchData.error_message}`);
       }
     }
 
