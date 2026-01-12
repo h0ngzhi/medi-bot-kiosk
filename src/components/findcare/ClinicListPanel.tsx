@@ -6,7 +6,6 @@ import {
   Building2,
   Hospital,
   Phone,
-  Clock,
   MapPin,
 } from "lucide-react";
 import type { MapClinic } from "./ClinicMap";
@@ -16,7 +15,6 @@ interface ClinicListPanelProps {
   selectedClinic: MapClinic | null;
   onClinicSelect: (clinic: MapClinic) => void;
   onShowPhone: (phone: string, clinicName: string) => void;
-  onViewHours: (clinic: MapClinic) => void;
   t: (key: string) => string;
   handleSpeak: (text: string) => void;
 }
@@ -26,7 +24,6 @@ export function ClinicListPanel({
   selectedClinic,
   onClinicSelect,
   onShowPhone,
-  onViewHours,
   t,
   handleSpeak,
 }: ClinicListPanelProps) {
@@ -97,53 +94,29 @@ export function ClinicListPanel({
                   {getTypeLabel(clinic.type)} • {clinic.region}
                 </p>
                 
-                <div className="mt-2 space-y-1">
+                <div className="mt-2">
                   <div className="flex items-start gap-1.5 text-muted-foreground">
                     <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
                     <span className="text-xs line-clamp-1">{clinic.address}</span>
                   </div>
-                  {clinic.hours && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onViewHours(clinic);
-                      }}
-                      className="flex items-center gap-1.5 text-primary hover:text-primary/80 transition-colors"
-                    >
-                      <Clock className="w-3 h-3 flex-shrink-0" />
-                      <span className="text-xs font-medium underline">View Hours</span>
-                    </button>
-                  )}
                 </div>
 
-                <div className="flex gap-2 mt-3">
-                  {clinic.phone && (
+                {clinic.phone && (
+                  <div className="mt-3">
                     <Button
                       variant="outline"
                       size="sm"
-                      className="flex-1 h-8 text-xs"
+                      className="w-full h-8 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
                         onShowPhone(clinic.phone, clinic.name);
                       }}
                     >
                       <Phone className="w-3 h-3 mr-1" />
-                      Call
+                      {clinic.phone}
                     </Button>
-                  )}
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="flex-1 h-8 text-xs"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onViewHours(clinic);
-                    }}
-                  >
-                    <Clock className="w-3 h-3 mr-1" />
-                    View Hours
-                  </Button>
-                </div>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
