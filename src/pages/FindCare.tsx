@@ -203,7 +203,7 @@ export default function FindCare() {
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [distanceFilter, setDistanceFilter] = useState<DistanceFilter>(null);
+  const [distanceFilter, setDistanceFilter] = useState<DistanceFilter>(3);
   
   // View mode (map vs list)
   const [viewMode, setViewMode] = useState<ViewMode>("map");
@@ -718,6 +718,24 @@ export default function FindCare() {
                 t={t}
               />
               
+              {/* Recenter button */}
+              {userLocation && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="absolute top-4 right-4 shadow-lg z-10"
+                  onClick={requestLocation}
+                  disabled={isLocating}
+                >
+                  {isLocating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Navigation className="w-4 h-4" />
+                  )}
+                  <span className="ml-2">Recenter</span>
+                </Button>
+              )}
+              
               {/* Legend */}
               <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm p-4 rounded-xl shadow-lg text-sm space-y-2">
                 <div className="font-bold text-foreground mb-3">Clinic Types</div>
@@ -759,7 +777,6 @@ export default function FindCare() {
                 selectedClinic={selectedClinic}
                 onClinicSelect={setSelectedClinic}
                 onShowPhone={handleShowPhone}
-                onViewHours={setSelectedHoursClinic}
                 t={t}
                 handleSpeak={handleSpeak}
               />
@@ -774,7 +791,6 @@ export default function FindCare() {
                 selectedClinic={selectedClinic}
                 onClinicSelect={setSelectedClinic}
                 onShowPhone={handleShowPhone}
-                onViewHours={setSelectedHoursClinic}
                 t={t}
                 handleSpeak={handleSpeak}
               />
