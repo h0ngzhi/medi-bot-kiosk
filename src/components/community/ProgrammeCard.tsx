@@ -74,12 +74,21 @@ interface ProgrammeCardProps {
   index: number;
 }
 
-const categoryColors: Record<string, { bg: string; text: string; label: string }> = {
-  'active_ageing': { bg: 'bg-success/10', text: 'text-success', label: 'Active Ageing' },
-  'health': { bg: 'bg-primary/10', text: 'text-primary', label: 'Health Talk' },
-  'social': { bg: 'bg-warning/10', text: 'text-warning', label: 'Social Activity' },
-  'caregiver': { bg: 'bg-info/10', text: 'text-info', label: 'Caregiver Support' },
-  'digital': { bg: 'bg-secondary/10', text: 'text-secondary', label: 'Digital Skills' },
+const categoryStyles: Record<string, { bg: string; text: string }> = {
+  'Active Ageing': { bg: 'bg-success/10', text: 'text-success' },
+  'Health Education': { bg: 'bg-primary/10', text: 'text-primary' },
+  'Social': { bg: 'bg-warning/10', text: 'text-warning' },
+  'Caregiver': { bg: 'bg-info/10', text: 'text-info' },
+  'Digital Literacy': { bg: 'bg-secondary/10', text: 'text-secondary' },
+};
+
+// Map category to translation key
+const categoryTranslationKeys: Record<string, string> = {
+  'Active Ageing': 'community.categoryActiveAgeing',
+  'Health Education': 'community.categoryHealthEducation',
+  'Social': 'community.categorySocial',
+  'Caregiver': 'community.categoryCaregiver',
+  'Digital Literacy': 'community.categoryDigitalLiteracy',
 };
 
 export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, onExpand, index }: ProgrammeCardProps) {
@@ -98,7 +107,8 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, onExp
     }
   };
 
-  const category = categoryColors[programme.category] || categoryColors['health'];
+  const categoryStyle = categoryStyles[programme.category || ''] || { bg: 'bg-primary/10', text: 'text-primary' };
+  const categoryLabel = programme.category ? t(categoryTranslationKeys[programme.category] || 'community.categoryHealthEducation') : t('community.categoryHealthEducation');
   
   // Calculate programme status
   const status: ProgrammeStatus = getProgrammeStatus(
@@ -132,9 +142,9 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, onExp
       onClick={handleCardClick}
     >
       {/* Header with category and status */}
-      <div className={`${category.bg} px-6 py-3 flex items-center justify-between`}>
+      <div className={`${categoryStyle.bg} px-6 py-3 flex items-center justify-between`}>
         <div className="flex items-center gap-3">
-          <span className={`font-semibold ${category.text}`}>{category.label}</span>
+          <span className={`font-semibold ${categoryStyle.text}`}>{categoryLabel}</span>
           {isCompleted && (
             <Badge variant="secondary" className="bg-muted text-muted-foreground">
               <CheckCircle className="w-3.5 h-3.5 mr-1" />

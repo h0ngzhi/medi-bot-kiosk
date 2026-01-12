@@ -66,7 +66,13 @@ import { getProgrammeStatus } from "@/utils/programmeUtils";
 interface Programme {
   id: string;
   title: string;
+  title_zh: string | null;
+  title_ms: string | null;
+  title_ta: string | null;
   description: string | null;
+  description_zh: string | null;
+  description_ms: string | null;
+  description_ta: string | null;
   category: string | null;
   event_date: string | null;
   event_time: string | null;
@@ -103,7 +109,13 @@ interface ExistingSeries {
 
 type ProgrammeForm = {
   title: string;
+  title_zh: string;
+  title_ms: string;
+  title_ta: string;
   description: string;
+  description_zh: string;
+  description_ms: string;
+  description_ta: string;
   category: string;
   event_date: string;
   event_time: string;
@@ -174,7 +186,13 @@ const REGIONS = ["North", "Central", "East", "West", "North-East"];
 
 const emptyForm: ProgrammeForm = {
   title: "",
+  title_zh: "",
+  title_ms: "",
+  title_ta: "",
   description: "",
+  description_zh: "",
+  description_ms: "",
+  description_ta: "",
   category: "Active Ageing",
   event_date: "",
   event_time: "",
@@ -404,7 +422,13 @@ const AdminProgrammes = () => {
 
     const basePayload = {
       title: form.title,
+      title_zh: form.title_zh || null,
+      title_ms: form.title_ms || null,
+      title_ta: form.title_ta || null,
       description: form.description || null,
+      description_zh: form.description_zh || null,
+      description_ms: form.description_ms || null,
+      description_ta: form.description_ta || null,
       category: form.category,
       event_date: form.event_date || null,
       event_time: form.event_time || null,
@@ -488,7 +512,13 @@ const AdminProgrammes = () => {
     setEditingId(programme.id);
     setForm({
       title: programme.title,
+      title_zh: programme.title_zh || "",
+      title_ms: programme.title_ms || "",
+      title_ta: programme.title_ta || "",
       description: programme.description || "",
+      description_zh: programme.description_zh || "",
+      description_ms: programme.description_ms || "",
+      description_ta: programme.description_ta || "",
       category: programme.category || "Active Ageing",
       event_date: programme.event_date || "",
       event_time: programme.event_time || "",
@@ -738,17 +768,6 @@ const AdminProgrammes = () => {
                       Programme Basics
                     </h3>
                     <div className="grid gap-4">
-                      <div>
-                        <Label htmlFor="title">Programme Title *</Label>
-                        <Input
-                          id="title"
-                          value={form.title}
-                          onChange={(e) =>
-                            setForm({ ...form, title: e.target.value })
-                          }
-                          placeholder="e.g. Morning Tai Chi for Seniors"
-                        />
-                      </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="category">Category</Label>
@@ -786,18 +805,6 @@ const AdminProgrammes = () => {
                         </div>
                       </div>
                       <div>
-                        <Label htmlFor="description">Short Description</Label>
-                        <Textarea
-                          id="description"
-                          value={form.description}
-                          onChange={(e) =>
-                            setForm({ ...form, description: e.target.value })
-                          }
-                          placeholder="Plain language, 1-2 sentences"
-                          rows={2}
-                        />
-                      </div>
-                      <div>
                         <Label htmlFor="conducted_by">Conducted By</Label>
                         <Input
                           id="conducted_by"
@@ -808,70 +815,194 @@ const AdminProgrammes = () => {
                           placeholder="e.g. Health Coach, Volunteer"
                         />
                       </div>
+                    </div>
+
+                    {/* Multilingual Content */}
+                    <div className="mt-6">
+                      <h4 className="font-medium text-foreground mb-4">📝 Programme Content (All Languages)</h4>
+                      <Tabs defaultValue="en" className="w-full">
+                        <TabsList className="grid w-full grid-cols-4">
+                          <TabsTrigger value="en">🇬🇧 English</TabsTrigger>
+                          <TabsTrigger value="zh">🇨🇳 中文</TabsTrigger>
+                          <TabsTrigger value="ms">🇲🇾 Melayu</TabsTrigger>
+                          <TabsTrigger value="ta">🇮🇳 தமிழ்</TabsTrigger>
+                        </TabsList>
+                        
+                        <TabsContent value="en" className="space-y-4 mt-4">
+                          <div>
+                            <Label htmlFor="title">Title (English) *</Label>
+                            <Input
+                              id="title"
+                              value={form.title}
+                              onChange={(e) =>
+                                setForm({ ...form, title: e.target.value })
+                              }
+                              placeholder="e.g. Morning Tai Chi for Seniors"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="description">Description (English)</Label>
+                            <Textarea
+                              id="description"
+                              value={form.description}
+                              onChange={(e) =>
+                                setForm({ ...form, description: e.target.value })
+                              }
+                              placeholder="Plain language, 1-2 sentences"
+                              rows={2}
+                            />
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="zh" className="space-y-4 mt-4">
+                          <div>
+                            <Label htmlFor="title_zh">Title (中文)</Label>
+                            <Input
+                              id="title_zh"
+                              value={form.title_zh}
+                              onChange={(e) =>
+                                setForm({ ...form, title_zh: e.target.value })
+                              }
+                              placeholder="例如：乐龄太极晨练"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="description_zh">Description (中文)</Label>
+                            <Textarea
+                              id="description_zh"
+                              value={form.description_zh}
+                              onChange={(e) =>
+                                setForm({ ...form, description_zh: e.target.value })
+                              }
+                              placeholder="简单语言，1-2句话"
+                              rows={2}
+                            />
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="ms" className="space-y-4 mt-4">
+                          <div>
+                            <Label htmlFor="title_ms">Title (Melayu)</Label>
+                            <Input
+                              id="title_ms"
+                              value={form.title_ms}
+                              onChange={(e) =>
+                                setForm({ ...form, title_ms: e.target.value })
+                              }
+                              placeholder="cth: Tai Chi Pagi untuk Warga Emas"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="description_ms">Description (Melayu)</Label>
+                            <Textarea
+                              id="description_ms"
+                              value={form.description_ms}
+                              onChange={(e) =>
+                                setForm({ ...form, description_ms: e.target.value })
+                              }
+                              placeholder="Bahasa mudah, 1-2 ayat"
+                              rows={2}
+                            />
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="ta" className="space-y-4 mt-4">
+                          <div>
+                            <Label htmlFor="title_ta">Title (தமிழ்)</Label>
+                            <Input
+                              id="title_ta"
+                              value={form.title_ta}
+                              onChange={(e) =>
+                                setForm({ ...form, title_ta: e.target.value })
+                              }
+                              placeholder="எ.கா.: மூத்தோருக்கான காலை தாய்ச்சி"
+                            />
+                          </div>
+                          <div>
+                            <Label htmlFor="description_ta">Description (தமிழ்)</Label>
+                            <Textarea
+                              id="description_ta"
+                              value={form.description_ta}
+                              onChange={(e) =>
+                                setForm({ ...form, description_ta: e.target.value })
+                              }
+                              placeholder="எளிய மொழியில், 1-2 வாக்கியங்கள்"
+                              rows={2}
+                            />
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                    </div>
+                  </div>
+
+                  {/* Additional Details */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-foreground border-b pb-2">
+                      Additional Details
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="group_size">Group Size (e.g. 15-25 pax)</Label>
+                        <Input
+                          id="group_size"
+                          value={form.group_size}
+                          onChange={(e) =>
+                            setForm({ ...form, group_size: e.target.value })
+                          }
+                          placeholder="e.g. 15-25 pax"
+                        />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="group_size">Group Size (e.g. 15-25 pax)</Label>
-                          <Input
-                            id="group_size"
-                            value={form.group_size}
-                            onChange={(e) =>
-                              setForm({ ...form, group_size: e.target.value })
-                            }
-                            placeholder="e.g. 15-25 pax"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="languages">Languages (comma-separated)</Label>
-                          <Input
-                            id="languages"
-                            value={form.languages}
-                            onChange={(e) =>
-                              setForm({ ...form, languages: e.target.value })
-                            }
-                            placeholder="e.g. English, Mandarin, Malay"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="learning_objectives">Learning Objectives (one per line)</Label>
-                          <Textarea
-                            id="learning_objectives"
-                            value={form.learning_objectives}
-                            onChange={(e) =>
-                              setForm({ ...form, learning_objectives: e.target.value })
-                            }
-                            placeholder="Learn basic techniques&#10;Improve balance and coordination&#10;Build strength"
-                            rows={3}
-                          />
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Enter each objective on a new line.
-                          </p>
-                        </div>
-                        <div>
-                          <Label htmlFor="guest_option">Guest Tag (Optional)</Label>
-                          <Select
-                            value={form.guest_option || "none"}
-                            onValueChange={(v) =>
-                              setForm({ ...form, guest_option: v === "none" ? "" : v })
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="No tag" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="none">No tag</SelectItem>
-                              <SelectItem value="caregiver_welcome">👥 Caregiver Welcome</SelectItem>
-                              <SelectItem value="bring_friend">👥 Bring a Friend</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Shows a small tag on the programme card.
-                          </p>
-                        </div>
+                      <div>
+                        <Label htmlFor="languages">Languages (comma-separated)</Label>
+                        <Input
+                          id="languages"
+                          value={form.languages}
+                          onChange={(e) =>
+                            setForm({ ...form, languages: e.target.value })
+                          }
+                          placeholder="e.g. English, Mandarin, Malay"
+                        />
                       </div>
                     </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label htmlFor="learning_objectives">Learning Objectives (one per line)</Label>
+                        <Textarea
+                          id="learning_objectives"
+                          value={form.learning_objectives}
+                          onChange={(e) =>
+                            setForm({ ...form, learning_objectives: e.target.value })
+                          }
+                          placeholder="Learn basic techniques&#10;Improve balance and coordination&#10;Build strength"
+                          rows={3}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Enter each objective on a new line.
+                        </p>
+                      </div>
+                      <div>
+                        <Label htmlFor="guest_option">Guest Tag (Optional)</Label>
+                        <Select
+                          value={form.guest_option || "none"}
+                          onValueChange={(v) =>
+                            setForm({ ...form, guest_option: v === "none" ? "" : v })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="No tag" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">No tag</SelectItem>
+                            <SelectItem value="caregiver_welcome">👥 Caregiver Welcome</SelectItem>
+                            <SelectItem value="bring_friend">👥 Bring a Friend</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Shows a small tag on the programme card.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
 
                   {/* Schedule & Location */}
                   <div className="space-y-4">

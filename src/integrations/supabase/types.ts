@@ -57,6 +57,9 @@ export type Database = {
           created_by_admin_id: string | null
           current_signups: number | null
           description: string | null
+          description_ms: string | null
+          description_ta: string | null
+          description_zh: string | null
           duration: string | null
           event_date: string | null
           event_time: string | null
@@ -76,6 +79,9 @@ export type Database = {
           serial_id: string | null
           series_id: string
           title: string
+          title_ms: string | null
+          title_ta: string | null
+          title_zh: string | null
           updated_at: string | null
         }
         Insert: {
@@ -87,6 +93,9 @@ export type Database = {
           created_by_admin_id?: string | null
           current_signups?: number | null
           description?: string | null
+          description_ms?: string | null
+          description_ta?: string | null
+          description_zh?: string | null
           duration?: string | null
           event_date?: string | null
           event_time?: string | null
@@ -106,6 +115,9 @@ export type Database = {
           serial_id?: string | null
           series_id: string
           title: string
+          title_ms?: string | null
+          title_ta?: string | null
+          title_zh?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -117,6 +129,9 @@ export type Database = {
           created_by_admin_id?: string | null
           current_signups?: number | null
           description?: string | null
+          description_ms?: string | null
+          description_ta?: string | null
+          description_zh?: string | null
           duration?: string | null
           event_date?: string | null
           event_time?: string | null
@@ -136,6 +151,9 @@ export type Database = {
           serial_id?: string | null
           series_id?: string
           title?: string
+          title_ms?: string | null
+          title_ta?: string | null
+          title_zh?: string | null
           updated_at?: string | null
         }
         Relationships: [
