@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      clinic_hours_cache: {
+        Row: {
+          clinic_id: string
+          clinic_name: string
+          fetched_at: string
+          hours: string | null
+          id: string
+          phone: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clinic_id: string
+          clinic_name: string
+          fetched_at?: string
+          hours?: string | null
+          id?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clinic_id?: string
+          clinic_name?: string
+          fetched_at?: string
+          hours?: string | null
+          id?: string
+          phone?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       community_programmes: {
         Row: {
           admin_email: string | null
