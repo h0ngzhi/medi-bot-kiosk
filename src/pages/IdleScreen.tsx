@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Hand } from 'lucide-react';
+import idleBackground from '@/assets/idle-background.jpeg';
 
 interface SlideItem {
   id: string;
@@ -77,13 +78,18 @@ export default function IdleScreen() {
 
   return (
     <div 
-      className="min-h-screen w-full bg-gradient-to-br from-primary/10 via-background to-accent/10 relative overflow-hidden cursor-pointer"
+      className="min-h-screen w-full relative overflow-hidden cursor-pointer"
       onClick={handleTapToStart}
     >
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${idleBackground})` }}
+      />
       {/* Slideshow Content */}
       {slides.length > 0 && currentSlide ? (
         <div 
-          className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 transition-opacity duration-500 ${
+          className={`absolute inset-0 flex items-center justify-center transition-opacity duration-500 ${
             isTransitioning ? 'opacity-0' : 'opacity-100'
           }`}
         >
