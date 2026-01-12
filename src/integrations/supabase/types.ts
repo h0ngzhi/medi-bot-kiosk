@@ -221,6 +221,7 @@ export type Database = {
         Row: {
           chas_card_type: string | null
           created_at: string
+          events_attended: number
           id: string
           name: string
           points: number
@@ -230,6 +231,7 @@ export type Database = {
         Insert: {
           chas_card_type?: string | null
           created_at?: string
+          events_attended?: number
           id?: string
           name: string
           points?: number
@@ -239,6 +241,7 @@ export type Database = {
         Update: {
           chas_card_type?: string | null
           created_at?: string
+          events_attended?: number
           id?: string
           name?: string
           points?: number
@@ -357,6 +360,96 @@ export type Database = {
           },
         ]
       }
+      reward_tier_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          events_required: number
+          id: string
+          tier: number
+          title: string
+          title_ms: string | null
+          title_ta: string | null
+          title_zh: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          events_required: number
+          id?: string
+          tier: number
+          title: string
+          title_ms?: string | null
+          title_ta?: string | null
+          title_zh?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          events_required?: number
+          id?: string
+          tier?: number
+          title?: string
+          title_ms?: string | null
+          title_ta?: string | null
+          title_zh?: string | null
+        }
+        Relationships: []
+      }
+      rewards: {
+        Row: {
+          created_at: string
+          description: string | null
+          description_ms: string | null
+          description_ta: string | null
+          description_zh: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          max_quantity: number
+          points_cost: number
+          tier: number
+          title: string
+          title_ms: string | null
+          title_ta: string | null
+          title_zh: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          description_ms?: string | null
+          description_ta?: string | null
+          description_zh?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          max_quantity?: number
+          points_cost: number
+          tier?: number
+          title: string
+          title_ms?: string | null
+          title_ta?: string | null
+          title_zh?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          description_ms?: string | null
+          description_ta?: string | null
+          description_zh?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          max_quantity?: number
+          points_cost?: number
+          tier?: number
+          title?: string
+          title_ms?: string | null
+          title_ta?: string | null
+          title_zh?: string | null
+        }
+        Relationships: []
+      }
       screening_results: {
         Row: {
           bmi: number | null
@@ -446,6 +539,54 @@ export type Database = {
             columns: ["programme_id"]
             isOneToOne: false
             referencedRelation: "community_programmes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_reward_redemptions: {
+        Row: {
+          delivery_address: Json | null
+          id: string
+          kiosk_user_id: string
+          points_spent: number
+          quantity: number
+          redeemed_at: string
+          reward_id: string
+          status: string
+        }
+        Insert: {
+          delivery_address?: Json | null
+          id?: string
+          kiosk_user_id: string
+          points_spent: number
+          quantity?: number
+          redeemed_at?: string
+          reward_id: string
+          status?: string
+        }
+        Update: {
+          delivery_address?: Json | null
+          id?: string
+          kiosk_user_id?: string
+          points_spent?: number
+          quantity?: number
+          redeemed_at?: string
+          reward_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_reward_redemptions_kiosk_user_id_fkey"
+            columns: ["kiosk_user_id"]
+            isOneToOne: false
+            referencedRelation: "kiosk_users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_reward_redemptions_reward_id_fkey"
+            columns: ["reward_id"]
+            isOneToOne: false
+            referencedRelation: "rewards"
             referencedColumns: ["id"]
           },
         ]
