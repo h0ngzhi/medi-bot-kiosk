@@ -42,6 +42,7 @@ interface Reward {
   points_cost: number;
   tier: number;
   max_quantity: number;
+  image_url: string | null;
 }
 
 interface TierSetting {
@@ -561,17 +562,31 @@ function RewardCard({
 
   return (
     <div className="bg-card rounded-2xl shadow-soft p-5 border-2 border-transparent hover:border-primary/20 transition-colors">
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <h4 className="text-lg font-bold text-foreground">{getLocalizedText(reward, 'title')}</h4>
-          <p className="text-sm text-muted-foreground">{getLocalizedDesc(reward)}</p>
-        </div>
-        <div className="text-right">
-          <div className="flex items-center gap-1 text-warning">
-            <Award className="w-5 h-5" />
-            <span className="font-bold">{reward.points_cost}</span>
+      <div className="flex items-start gap-4 mb-3">
+        {/* Badge Image */}
+        {reward.image_url && (
+          <div className="flex-shrink-0">
+            <img 
+              src={reward.image_url} 
+              alt={getLocalizedText(reward, 'title')}
+              className="w-20 h-20 object-contain rounded-xl bg-muted p-1"
+            />
           </div>
-          <p className="text-xs text-muted-foreground">{t('profile.perVoucher')}</p>
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between">
+            <div>
+              <h4 className="text-lg font-bold text-foreground">{getLocalizedText(reward, 'title')}</h4>
+              <p className="text-sm text-muted-foreground line-clamp-2">{getLocalizedDesc(reward)}</p>
+            </div>
+            <div className="text-right flex-shrink-0 ml-2">
+              <div className="flex items-center gap-1 text-warning">
+                <Award className="w-5 h-5" />
+                <span className="font-bold">{reward.points_cost}</span>
+              </div>
+              <p className="text-xs text-muted-foreground">{t('profile.perVoucher')}</p>
+            </div>
+          </div>
         </div>
       </div>
 

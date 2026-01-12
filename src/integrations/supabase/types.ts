@@ -444,6 +444,7 @@ export type Database = {
           description_zh: string | null
           display_order: number
           id: string
+          image_url: string | null
           is_active: boolean
           max_quantity: number
           points_cost: number
@@ -461,6 +462,7 @@ export type Database = {
           description_zh?: string | null
           display_order?: number
           id?: string
+          image_url?: string | null
           is_active?: boolean
           max_quantity?: number
           points_cost: number
@@ -478,6 +480,7 @@ export type Database = {
           description_zh?: string | null
           display_order?: number
           id?: string
+          image_url?: string | null
           is_active?: boolean
           max_quantity?: number
           points_cost?: number
