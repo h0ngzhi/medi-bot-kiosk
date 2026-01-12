@@ -397,6 +397,9 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.dailyBonusDesc': 'You earned 5 bonus points for logging in today.',
     'profile.showBarcode': 'Show Barcode',
     'profile.hideBarcode': 'Hide',
+    'profile.tierUnlocked': 'Tier Unlocked',
+    'profile.attendEventsToUnlock': 'Attend {count} events to unlock this tier',
+    'profile.noRewardsInTier': 'No rewards available in this tier yet',
     
     // Accessibility
     'access.translate': 'Translate',
@@ -770,6 +773,9 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.dailyBonusDesc': '您今天登录获得了5积分奖励。',
     'profile.showBarcode': '显示条形码',
     'profile.hideBarcode': '隐藏',
+    'profile.tierUnlocked': '等级已解锁',
+    'profile.attendEventsToUnlock': '参加{count}个活动以解锁此等级',
+    'profile.noRewardsInTier': '此等级暂无奖励',
     
     'access.translate': '翻译',
     'access.voice': '语音指南',
@@ -1141,6 +1147,9 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.dailyBonusDesc': 'Anda mendapat 5 mata bonus kerana log masuk hari ini.',
     'profile.showBarcode': 'Tunjuk Kod Bar',
     'profile.hideBarcode': 'Sembunyi',
+    'profile.tierUnlocked': 'Tahap Dibuka',
+    'profile.attendEventsToUnlock': 'Hadiri {count} acara untuk membuka tahap ini',
+    'profile.noRewardsInTier': 'Tiada ganjaran dalam tahap ini lagi',
     
     'access.translate': 'Terjemah',
     'access.voice': 'Panduan Suara',
@@ -1511,6 +1520,9 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.dailyBonusDesc': 'இன்று உள்நுழைந்ததற்கு 5 போனஸ் புள்ளிகள் பெற்றீர்கள்.',
     'profile.showBarcode': 'பார்கோடு காட்டு',
     'profile.hideBarcode': 'மறை',
+    'profile.tierUnlocked': 'நிலை திறக்கப்பட்டது',
+    'profile.attendEventsToUnlock': 'இந்த நிலையைத் திறக்க {count} நிகழ்வுகளில் கலந்துகொள்ளுங்கள்',
+    'profile.noRewardsInTier': 'இந்த நிலையில் இன்னும் வெகுமதிகள் இல்லை',
     
     'access.translate': 'மொழிபெயர்',
     'access.voice': 'குரல் வழிகாட்டி',
