@@ -440,7 +440,8 @@ export default function CommunityProgrammes() {
           {filteredCompletedProgrammes.map((programme) => (
             <div 
               key={programme.id}
-              className="bg-card rounded-3xl shadow-soft overflow-hidden opacity-90"
+              className="bg-card rounded-3xl shadow-soft overflow-hidden opacity-90 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+              onClick={() => handleExpand(programme)}
             >
               {/* Header */}
               <div className="bg-muted/50 px-6 py-3 flex items-center justify-between">
@@ -451,6 +452,7 @@ export default function CommunityProgrammes() {
                     {t('community.completed')}
                   </span>
                 </div>
+                <span className="text-sm text-primary font-medium">{t('community.tapToView')}</span>
               </div>
 
               {/* Content */}
@@ -476,12 +478,16 @@ export default function CommunityProgrammes() {
                   </p>
                 )}
 
-                {/* Public Feedback Display - uses series_id to show all reviews from recurring sessions */}
+                {/* Quick feedback summary */}
                 <ProgrammeFeedbackDisplay 
                   key={feedbackRefreshKey}
                   programmeId={programme.id} 
                   seriesId={(programme as any).series_id}
-                  onEditFeedback={(feedback) => handleEditFeedback(feedback, programme)}
+                  onEditFeedback={(feedback) => {
+                    // Prevent card click when editing
+                    handleEditFeedback(feedback, programme);
+                  }}
+                  compact
                 />
 
                 {/* Leave feedback button - for signed-up users OR admins */}
@@ -489,7 +495,10 @@ export default function CommunityProgrammes() {
                   <Button
                     variant="outline"
                     size="lg"
-                    onClick={() => handleFeedback(programme)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleFeedback(programme);
+                    }}
                     className="w-full h-14 text-lg mt-4 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                   >
                     <Star className="w-5 h-5 mr-2" />
@@ -502,6 +511,7 @@ export default function CommunityProgrammes() {
                     variant="outline"
                     size="lg"
                     disabled
+                    onClick={(e) => e.stopPropagation()}
                     className="w-full h-14 text-lg mt-4"
                   >
                     <CheckCircle className="w-5 h-5 mr-2" />

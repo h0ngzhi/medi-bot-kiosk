@@ -310,17 +310,11 @@ export function ProgrammeDetailModal({
           )}
 
           {/* Reviews section - show for all programmes */}
-          <div className="border-t border-border pt-5">
-            <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-              <Star className="w-5 h-5 text-warning" />
-              {t('community.reviews')}
-            </h3>
-            <ProgrammeFeedbackDisplay 
-              programmeId={programme.id} 
-              seriesId={(programme as any).series_id}
-              onEditFeedback={onEditFeedback}
-            />
-          </div>
+          <ProgrammeFeedbackDisplay 
+            programmeId={programme.id} 
+            seriesId={(programme as any).series_id}
+            onEditFeedback={onEditFeedback}
+          />
 
           {/* Action buttons */}
           <div className="pt-4 border-t border-border">
