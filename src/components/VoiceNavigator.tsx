@@ -12,6 +12,7 @@ interface VoiceNavigatorProps {
   onClose: () => void;
 }
 
+
 const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -27,8 +28,9 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioQueueRef = useRef<AudioQueue | null>(null);
   const isSpeakingRef = useRef(false); // Track speaking state for mic control
+  const pendingNavigationRef = useRef<string | null>(null); // Store pending navigation
 
-  const handleNavigate = useCallback((page: string) => {
+  const executeNavigation = useCallback((page: string) => {
     const routes: Record<string, string> = {
       'home': '/',
       'scan': '/scan',
@@ -44,7 +46,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
     
     const route = routes[page];
     if (route) {
-      console.log('Navigating to:', route);
+      console.log('Executing navigation to:', route);
       navigate(route);
       toast({
         title: 'Navigating',
@@ -52,6 +54,11 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       });
     }
   }, [navigate, toast]);
+
+  const scheduleNavigation = useCallback((page: string) => {
+    console.log('Scheduling navigation to:', page);
+    pendingNavigationRef.current = page;
+  }, []);
 
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
     const data = JSON.parse(event.data);
@@ -95,12 +102,23 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       case 'response.audio.done':
         isSpeakingRef.current = false;
         setIsSpeaking(false);
-        // Resume microphone after AI finishes speaking with a small delay
-        setTimeout(() => {
-          if (recorderRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
-            recorderRef.current.resume();
-          }
-        }, 150);
+        
+        // Execute pending navigation after AI finishes speaking
+        if (pendingNavigationRef.current) {
+          const page = pendingNavigationRef.current;
+          pendingNavigationRef.current = null;
+          // Small delay to let the last audio play
+          setTimeout(() => {
+            executeNavigation(page);
+          }, 300);
+        } else {
+          // Resume microphone after AI finishes speaking
+          setTimeout(() => {
+            if (recorderRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+              recorderRef.current.resume();
+            }
+          }, 150);
+        }
         break;
 
       case 'response.audio_transcript.delta':
@@ -116,10 +134,11 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         try {
           const args = JSON.parse(data.arguments);
           if (args.page) {
-            handleNavigate(args.page);
+            // Schedule navigation for after AI speaks confirmation
+            scheduleNavigation(args.page);
           }
           
-          // Send function result back
+          // Send function result back to trigger voice confirmation
           if (wsRef.current?.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({
               type: 'conversation.item.create',
@@ -145,7 +164,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         });
         break;
     }
-  }, [handleNavigate, toast]);
+  }, [scheduleNavigation, executeNavigation, toast]);
 
   const connect = useCallback(async () => {
     try {
