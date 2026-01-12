@@ -7,6 +7,7 @@ import {
   Hospital,
   Phone,
   MapPin,
+  Clock,
 } from "lucide-react";
 import type { MapClinic } from "./ClinicMap";
 
@@ -94,11 +95,25 @@ export function ClinicListPanel({
                   {getTypeLabel(clinic.type)} • {clinic.region}
                 </p>
                 
-                <div className="mt-2">
+                <div className="mt-2 space-y-1">
                   <div className="flex items-start gap-1.5 text-muted-foreground">
                     <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
                     <span className="text-xs line-clamp-1">{clinic.address}</span>
                   </div>
+                  
+                  {clinic.hours && (
+                    <div className="flex items-start gap-1.5 text-muted-foreground">
+                      <Clock className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-xs line-clamp-2">{clinic.hours}</span>
+                    </div>
+                  )}
+                  
+                  {clinic.phone && (
+                    <div className="flex items-start gap-1.5 text-muted-foreground">
+                      <Phone className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                      <span className="text-xs">{clinic.phone}</span>
+                    </div>
+                  )}
                 </div>
 
                 {clinic.phone && (
@@ -113,7 +128,7 @@ export function ClinicListPanel({
                       }}
                     >
                       <Phone className="w-3 h-3 mr-1" />
-                      {clinic.phone}
+                      {t("findcare.call")}
                     </Button>
                   </div>
                 )}
