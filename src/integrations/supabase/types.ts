@@ -137,6 +137,45 @@ export type Database = {
         }
         Relationships: []
       }
+      dashboard_slideshow: {
+        Row: {
+          created_at: string
+          display_order: number
+          duration_seconds: number
+          id: string
+          is_active: boolean
+          media_type: string
+          media_url: string
+          position: string
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          duration_seconds?: number
+          id?: string
+          is_active?: boolean
+          media_type: string
+          media_url: string
+          position?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          duration_seconds?: number
+          id?: string
+          is_active?: boolean
+          media_type?: string
+          media_url?: string
+          position?: string
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       health_screenings: {
         Row: {
           completed_at: string | null
