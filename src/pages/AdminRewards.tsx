@@ -43,6 +43,9 @@ import {
   Gift,
   Trophy,
   Settings,
+  Upload,
+  X,
+  Image,
 } from "lucide-react";
 
 interface Reward {
@@ -60,6 +63,7 @@ interface Reward {
   max_quantity: number;
   is_active: boolean;
   display_order: number;
+  image_url: string | null;
   created_at: string;
 }
 
@@ -89,6 +93,7 @@ type RewardForm = {
   max_quantity: number;
   is_active: boolean;
   display_order: number;
+  image_url: string;
 };
 
 type TierForm = {
@@ -115,6 +120,7 @@ const emptyRewardForm: RewardForm = {
   max_quantity: 5,
   is_active: true,
   display_order: 0,
+  image_url: "",
 };
 
 const emptyTierForm: TierForm = {
@@ -140,6 +146,7 @@ const AdminRewards = () => {
   const [rewardForm, setRewardForm] = useState<RewardForm>(emptyRewardForm);
   const [tierForm, setTierForm] = useState<TierForm>(emptyTierForm);
   const [activeTab, setActiveTab] = useState<"rewards" | "tiers">("rewards");
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -186,6 +193,65 @@ const AdminRewards = () => {
     }
   };
 
+  // Image upload handler
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file",
+        description: "Please upload an image file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload an image smaller than 5MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `reward-${Date.now()}.${fileExt}`;
+      const filePath = `rewards/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('slideshow-media')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('slideshow-media')
+        .getPublicUrl(filePath);
+
+      setRewardForm({ ...rewardForm, image_url: publicUrl });
+      toast({ title: "Success", description: "Image uploaded" });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to upload image",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setRewardForm({ ...rewardForm, image_url: "" });
+  };
+
   // Reward CRUD
   const handleRewardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,6 +279,7 @@ const AdminRewards = () => {
       max_quantity: rewardForm.max_quantity,
       is_active: rewardForm.is_active,
       display_order: rewardForm.display_order,
+      image_url: rewardForm.image_url || null,
     };
 
     if (editingRewardId) {
@@ -268,6 +335,7 @@ const AdminRewards = () => {
       max_quantity: reward.max_quantity,
       is_active: reward.is_active,
       display_order: reward.display_order,
+      image_url: reward.image_url || "",
     });
     setRewardDialogOpen(true);
   };
@@ -608,6 +676,54 @@ const AdminRewards = () => {
                       </div>
                     </div>
 
+                    {/* Image Upload */}
+                    <div className="space-y-2">
+                      <Label>Badge/Certificate Image (Optional)</Label>
+                      {rewardForm.image_url ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={rewardForm.image_url}
+                            alt="Reward badge"
+                            className="w-24 h-24 object-contain rounded-lg border bg-muted"
+                          />
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="icon"
+                            className="absolute -top-2 -right-2 w-6 h-6"
+                            onClick={handleRemoveImage}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <label className="cursor-pointer">
+                            <div className="flex items-center gap-2 px-4 py-2 border rounded-lg hover:bg-muted transition-colors">
+                              {uploadingImage ? (
+                                <span className="animate-pulse">Uploading...</span>
+                              ) : (
+                                <>
+                                  <Upload className="h-4 w-4" />
+                                  <span>Upload Image</span>
+                                </>
+                              )}
+                            </div>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={handleImageUpload}
+                              disabled={uploadingImage}
+                            />
+                          </label>
+                          <span className="text-sm text-muted-foreground">
+                            or leave empty for certificates
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={rewardForm.is_active}
@@ -639,103 +755,45 @@ const AdminRewards = () => {
               <div className="text-center py-12">Loading...</div>
             ) : (
               <div className="space-y-8">
-                {/* Tier 1 Rewards */}
+                {/* All Rewards */}
                 <div>
                   <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-amber-500" />
-                    Tier 1 Rewards
+                    <Gift className="h-5 w-5 text-primary" />
+                    Certificates & Badges
                   </h2>
-                  {tier1Rewards.length === 0 ? (
-                    <p className="text-muted-foreground">No Tier 1 rewards yet</p>
+                  {rewards.length === 0 ? (
+                    <p className="text-muted-foreground">No rewards yet</p>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {tier1Rewards.map((reward) => (
+                      {rewards.map((reward) => (
                         <Card key={reward.id}>
                           <CardHeader className="pb-2">
-                            <div className="flex items-start justify-between">
-                              <CardTitle className="text-lg">
-                                {reward.title}
-                              </CardTitle>
-                              <Badge variant={reward.is_active ? "default" : "secondary"}>
-                                {reward.is_active ? "Active" : "Inactive"}
-                              </Badge>
+                            <div className="flex items-start gap-3">
+                              {reward.image_url ? (
+                                <img
+                                  src={reward.image_url}
+                                  alt={reward.title}
+                                  className="w-12 h-12 object-contain rounded bg-muted flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-12 h-12 rounded bg-muted flex items-center justify-center flex-shrink-0">
+                                  <Image className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2">
+                                  <CardTitle className="text-lg line-clamp-2">
+                                    {reward.title}
+                                  </CardTitle>
+                                  <Badge variant={reward.is_active ? "default" : "secondary"} className="flex-shrink-0">
+                                    {reward.is_active ? "Active" : "Inactive"}
+                                  </Badge>
+                                </div>
+                              </div>
                             </div>
                           </CardHeader>
                           <CardContent>
-                            <p className="text-sm text-muted-foreground mb-2">
-                              {reward.description || "No description"}
-                            </p>
-                            <div className="flex items-center gap-4 text-sm mb-4">
-                              <span className="font-medium text-primary">
-                                {reward.points_cost} pts
-                              </span>
-                              <span className="text-muted-foreground">
-                                Max: {reward.max_quantity}
-                              </span>
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleEditReward(reward)}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button variant="destructive" size="sm">
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete Reward?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      This will permanently delete "{reward.title}".
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction
-                                      onClick={() => handleDeleteReward(reward.id)}
-                                    >
-                                      Delete
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Tier 2 Rewards */}
-                <div>
-                  <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-                    <Trophy className="h-5 w-5 text-purple-500" />
-                    Tier 2 Rewards
-                  </h2>
-                  {tier2Rewards.length === 0 ? (
-                    <p className="text-muted-foreground">No Tier 2 rewards yet</p>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {tier2Rewards.map((reward) => (
-                        <Card key={reward.id}>
-                          <CardHeader className="pb-2">
-                            <div className="flex items-start justify-between">
-                              <CardTitle className="text-lg">
-                                {reward.title}
-                              </CardTitle>
-                              <Badge variant={reward.is_active ? "default" : "secondary"}>
-                                {reward.is_active ? "Active" : "Inactive"}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent>
-                            <p className="text-sm text-muted-foreground mb-2">
+                            <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                               {reward.description || "No description"}
                             </p>
                             <div className="flex items-center gap-4 text-sm mb-4">
