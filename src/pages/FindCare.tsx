@@ -517,7 +517,7 @@ export default function FindCare() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       {/* Header */}
       <header className="bg-card shadow-soft p-4 flex-shrink-0">
         <div className="max-w-7xl mx-auto flex items-center gap-4">
