@@ -33,6 +33,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ClinicMap, clinicColors, type MapClinic } from "@/components/findcare/ClinicMap";
 import { ClinicListPanel } from "@/components/findcare/ClinicListPanel";
+import { allGovernmentFacilities } from "@/data/governmentHealthFacilities";
 
 interface GeoJSONFeature {
   type: string;
@@ -307,14 +308,12 @@ export default function FindCare() {
           const region = getRegionFromPostal(postalCode);
           const licenceType = parsed["LICENCE_TYPE"] || "";
           
+          // CHAS clinics are only GP or Dental - NOT polyclinics or hospitals
+          // (Real government polyclinics/hospitals are added separately)
           let type: MapClinic["type"] = "gp";
           const name = (parsed["HCI_NAME"] || "").toLowerCase();
           if (name.includes("dental") || licenceType === "DC") {
             type = "dental";
-          } else if (name.includes("polyclinic")) {
-            type = "polyclinic";
-          } else if (name.includes("hospital")) {
-            type = "hospital";
           }
           
           const rawPhone = parsed["HCI_TEL"] || "";
@@ -349,8 +348,10 @@ export default function FindCare() {
           });
         });
         
-        parsedClinics.sort((a, b) => a.name.localeCompare(b.name));
-        setClinics(parsedClinics);
+        // Add real government polyclinics and hospitals
+        const allClinics = [...parsedClinics, ...allGovernmentFacilities];
+        allClinics.sort((a, b) => a.name.localeCompare(b.name));
+        setClinics(allClinics);
       } catch (error) {
         console.error("Failed to load clinics data:", error);
         toast.error("Failed to load clinic data");
