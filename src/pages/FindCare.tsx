@@ -48,6 +48,47 @@ interface GeoJSONData {
   features: GeoJSONFeature[];
 }
 
+interface ClinicHoursData {
+  Name: string;
+  Phone: string;
+  OperationHours: string;
+}
+
+// Parse HTML operation hours to readable format
+const parseOperationHours = (html: string): string => {
+  if (!html) return "";
+  // Remove HTML tags and format nicely
+  const cleaned = html
+    .replace(/<strong>/g, "")
+    .replace(/<\/strong>/g, "")
+    .replace(/<BR>/gi, "\n")
+    .replace(/ : /g, ": ")
+    .trim();
+  
+  // Get unique day entries (some days may have multiple time slots)
+  const lines = cleaned.split("\n").filter(Boolean);
+  const dayMap: Record<string, string[]> = {};
+  
+  lines.forEach(line => {
+    const match = line.match(/^(\w+):\s*(.+)$/);
+    if (match) {
+      const day = match[1];
+      const time = match[2];
+      if (!dayMap[day]) {
+        dayMap[day] = [];
+      }
+      dayMap[day].push(time);
+    }
+  });
+  
+  // Format: combine same-day times with " & "
+  const formatted = Object.entries(dayMap)
+    .map(([day, times]) => `${day}: ${times.join(" & ")}`)
+    .join(" | ");
+  
+  return formatted || "";
+};
+
 // Parse HTML description from GeoJSON to extract clinic data
 const parseDescription = (html: string): Record<string, string> => {
   const result: Record<string, string> = {};
@@ -150,10 +191,28 @@ export default function FindCare() {
   useEffect(() => {
     const loadClinics = async () => {
       try {
-        const response = await fetch("/data/CHASClinics.geojson");
-        const data: GeoJSONData = await response.json();
+        // Load both datasets in parallel
+        const [geoResponse, hoursResponse] = await Promise.all([
+          fetch("/data/CHASClinics.geojson"),
+          fetch("/data/ClinicHours.json")
+        ]);
         
-        const parsedClinics: Clinic[] = data.features.map((feature, index) => {
+        const geoData: GeoJSONData = await geoResponse.json();
+        const hoursData: ClinicHoursData[] = await hoursResponse.json();
+        
+        // Create a map of phone number to operation hours for quick lookup
+        const hoursMap = new Map<string, string>();
+        hoursData.forEach(clinic => {
+          if (clinic.Phone) {
+            const cleanedPhone = clinic.Phone.replace(/\D/g, "");
+            const formattedHours = parseOperationHours(clinic.OperationHours);
+            if (formattedHours) {
+              hoursMap.set(cleanedPhone, formattedHours);
+            }
+          }
+        });
+        
+        const parsedClinics: Clinic[] = geoData.features.map((feature, index) => {
           const parsed = parseDescription(feature.properties.Description);
           const postalCode = parsed["POSTAL_CD"] || "";
           const region = getRegionFromPostal(postalCode);
@@ -171,14 +230,19 @@ export default function FindCare() {
             type = "hospital";
           }
           
+          // Get phone and match with hours data
+          const rawPhone = parsed["HCI_TEL"] || "";
+          const cleanedPhone = rawPhone.replace(/\D/g, "");
+          const matchedHours = hoursMap.get(cleanedPhone) || "";
+          
           return {
             id: parsed["HCI_CODE"] || `clinic-${index}`,
             name: parsed["HCI_NAME"] || "Unknown Clinic",
             type,
             address: formatAddress(parsed),
             postalCode,
-            phone: formatPhone(parsed["HCI_TEL"] || ""),
-            hours: "Mon-Fri: 9AM-5PM", // Default hours since not in dataset
+            phone: formatPhone(rawPhone),
+            hours: matchedHours,
             region,
             programmes,
           };
@@ -410,10 +474,12 @@ export default function FindCare() {
                         {clinic.address}, Singapore {clinic.postalCode}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="w-4 h-4 flex-shrink-0" />
-                      <span>{clinic.hours}</span>
-                    </div>
+                    {clinic.hours && (
+                      <div className="flex items-start gap-2 text-muted-foreground">
+                        <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <span className="text-xs leading-relaxed">{clinic.hours}</span>
+                      </div>
+                    )}
                     {clinic.phone && (
                       <div className="flex items-center gap-2 text-muted-foreground">
                         <Phone className="w-4 h-4 flex-shrink-0" />
