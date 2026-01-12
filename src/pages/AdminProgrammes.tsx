@@ -1463,6 +1463,7 @@ const AdminProgrammes = () => {
             programmeId={selectedProgramme.id}
             programmeTitle={selectedProgramme.title}
             pointsReward={selectedProgramme.points_reward}
+            createdByAdminId={selectedProgramme.created_by_admin_id}
             onAttendanceMarked={fetchProgrammes}
           />
         )}
@@ -1475,6 +1476,7 @@ const AdminProgrammes = () => {
             programmeId={selectedProgramme.id}
             programmeName={selectedProgramme.title}
             seriesId={selectedProgramme.series_id}
+            createdByAdminId={selectedProgramme.created_by_admin_id}
             onFeedbackDeleted={() => fetchExistingSeriesWithReviews(programmes)}
           />
         )}
