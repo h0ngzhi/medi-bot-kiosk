@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { X, Send, Loader2, Mic, MicOff, Volume2, HelpCircle, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,7 +81,11 @@ const languageToSpeechCode: Record<Language, string> = {
 
 export function HealthChatBot() {
   const { language } = useApp();
+  const location = useLocation();
   const t = translations[language];
+  
+  // Hide on admin pages
+  const isAdminPage = location.pathname.startsWith('/admin');
   
   const [isMinimized, setIsMinimized] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -316,6 +321,11 @@ export function HealthChatBot() {
       handleSend();
     }
   };
+
+  // Don't render on admin pages
+  if (isAdminPage) {
+    return null;
+  }
 
   return (
     <>
