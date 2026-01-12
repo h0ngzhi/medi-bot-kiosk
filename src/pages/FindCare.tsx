@@ -411,8 +411,11 @@ export default function FindCare() {
     window.open(`https://maps.google.com/?q=${query}`, "_blank", "noopener,noreferrer");
   };
 
-  const handleCall = (phone: string) => {
-    window.location.href = `tel:${phone.replace(/\s/g, "")}`;
+  // Phone popup state
+  const [phonePopup, setPhonePopup] = useState<{ phone: string; name: string } | null>(null);
+
+  const handleShowPhone = (phone: string, clinicName: string) => {
+    setPhonePopup({ phone, name: clinicName });
   };
 
   // Fetch missing hours from Google Places API
@@ -710,8 +713,8 @@ export default function FindCare() {
                 userLocation={userLocation}
                 distanceFilter={distanceFilter}
                 onClinicSelect={setSelectedClinic}
-                onCall={handleCall}
-                onDirections={handleOpenMaps}
+                onShowPhone={handleShowPhone}
+                onViewHours={setSelectedHoursClinic}
                 t={t}
               />
               
@@ -755,8 +758,7 @@ export default function FindCare() {
                 clinics={filteredClinics.slice(0, 100)}
                 selectedClinic={selectedClinic}
                 onClinicSelect={setSelectedClinic}
-                onCall={handleCall}
-                onDirections={handleOpenMaps}
+                onShowPhone={handleShowPhone}
                 onViewHours={setSelectedHoursClinic}
                 t={t}
                 handleSpeak={handleSpeak}
@@ -771,8 +773,7 @@ export default function FindCare() {
                 clinics={filteredClinics.slice(0, 100)}
                 selectedClinic={selectedClinic}
                 onClinicSelect={setSelectedClinic}
-                onCall={handleCall}
-                onDirections={handleOpenMaps}
+                onShowPhone={handleShowPhone}
                 onViewHours={setSelectedHoursClinic}
                 t={t}
                 handleSpeak={handleSpeak}
@@ -791,7 +792,7 @@ export default function FindCare() {
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => handleCall("995")}
+            onClick={() => window.location.href = "tel:995"}
           >
             <Phone className="w-4 h-4 mr-2" />
             Call 995
@@ -826,6 +827,37 @@ export default function FindCare() {
                   );
                 })}
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Phone Number Popup Dialog */}
+      <Dialog open={!!phonePopup} onOpenChange={() => setPhonePopup(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Phone className="w-6 h-6 text-primary" />
+              Contact Number
+            </DialogTitle>
+          </DialogHeader>
+          {phonePopup && (
+            <div className="space-y-4 text-center">
+              <p className="font-medium text-foreground">
+                {phonePopup.name}
+              </p>
+              <p className="text-3xl font-bold text-primary tracking-wide">
+                {phonePopup.phone}
+              </p>
+              <Button
+                variant="default"
+                size="lg"
+                className="w-full text-lg h-14"
+                onClick={() => window.location.href = `tel:${phonePopup.phone.replace(/\s/g, "")}`}
+              >
+                <Phone className="w-5 h-5 mr-2" />
+                Call Now
+              </Button>
             </div>
           )}
         </DialogContent>

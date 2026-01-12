@@ -6,7 +6,6 @@ import {
   Building2,
   Hospital,
   Phone,
-  Navigation,
   Clock,
   MapPin,
 } from "lucide-react";
@@ -16,8 +15,7 @@ interface ClinicListPanelProps {
   clinics: MapClinic[];
   selectedClinic: MapClinic | null;
   onClinicSelect: (clinic: MapClinic) => void;
-  onCall: (phone: string) => void;
-  onDirections: (address: string, postalCode: string) => void;
+  onShowPhone: (phone: string, clinicName: string) => void;
   onViewHours: (clinic: MapClinic) => void;
   t: (key: string) => string;
   handleSpeak: (text: string) => void;
@@ -27,8 +25,7 @@ export function ClinicListPanel({
   clinics,
   selectedClinic,
   onClinicSelect,
-  onCall,
-  onDirections,
+  onShowPhone,
   onViewHours,
   t,
   handleSpeak,
@@ -127,7 +124,7 @@ export function ClinicListPanel({
                       className="flex-1 h-8 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onCall(clinic.phone);
+                        onShowPhone(clinic.phone, clinic.name);
                       }}
                     >
                       <Phone className="w-3 h-3 mr-1" />
@@ -140,11 +137,11 @@ export function ClinicListPanel({
                     className="flex-1 h-8 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onDirections(clinic.address, clinic.postalCode);
+                      onViewHours(clinic);
                     }}
                   >
-                    <Navigation className="w-3 h-3 mr-1" />
-                    Directions
+                    <Clock className="w-3 h-3 mr-1" />
+                    View Hours
                   </Button>
                 </div>
               </div>
