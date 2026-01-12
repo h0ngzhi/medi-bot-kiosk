@@ -323,56 +323,56 @@ export function HealthChatBot() {
       {isMinimized && !isOpen && (
         <button
           onClick={handleExpand}
-          className="fixed bottom-6 right-0 z-50 bg-primary text-primary-foreground rounded-l-2xl shadow-lg px-3 py-4 flex items-center gap-2 hover:pr-5 transition-all duration-300 group"
+          className="fixed bottom-8 right-0 z-50 bg-primary text-primary-foreground rounded-l-3xl shadow-xl px-4 py-5 flex items-center gap-3 hover:pr-6 transition-all duration-300 group"
           aria-label="Expand help assistant"
         >
-          <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center overflow-hidden">
+          <div className="w-14 h-14 rounded-full bg-primary-foreground/20 flex items-center justify-center overflow-hidden">
             <Lottie 
               animationData={healthAssistantAnimation} 
               loop={true}
-              className="w-12 h-12"
+              className="w-16 h-16"
             />
           </div>
-          <HelpCircle className="w-5 h-5 opacity-80 group-hover:opacity-100" />
+          <HelpCircle className="w-7 h-7 opacity-80 group-hover:opacity-100" />
         </button>
       )}
 
       {/* Notification Prompt */}
       {!isMinimized && !isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-500">
-          <div className="bg-card border-2 border-primary/20 rounded-2xl shadow-2xl p-5 max-w-sm">
-            <div className="flex items-start gap-4">
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="fixed bottom-8 right-8 z-50 animate-in slide-in-from-bottom-4 fade-in duration-500">
+          <div className="bg-card border-3 border-primary/30 rounded-3xl shadow-2xl p-8 max-w-md">
+            <div className="flex items-start gap-5">
+              <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                 <Lottie 
                   animationData={healthAssistantAnimation} 
                   loop={true}
-                  className="w-16 h-16"
+                  className="w-24 h-24"
                 />
               </div>
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <HelpCircle className="w-5 h-5 text-primary" />
-                  <h3 className="text-xl font-bold text-foreground">{t.notificationTitle}</h3>
+                <div className="flex items-center gap-3 mb-2">
+                  <HelpCircle className="w-7 h-7 text-primary" />
+                  <h3 className="text-2xl font-bold text-foreground">{t.notificationTitle}</h3>
                 </div>
-                <p className="text-lg text-muted-foreground leading-relaxed">
+                <p className="text-xl text-muted-foreground leading-relaxed">
                   {t.notificationMessage}
                 </p>
               </div>
             </div>
-            <div className="flex gap-3 mt-4">
+            <div className="flex gap-4 mt-6">
               <Button
                 variant="outline"
-                className="flex-1 h-12 text-lg"
+                className="flex-1 h-16 text-xl"
                 onClick={handleMinimize}
               >
                 {t.dismiss}
               </Button>
               <Button
-                className="flex-1 h-12 text-lg"
+                className="flex-1 h-16 text-xl"
                 onClick={handleOpenChat}
               >
                 {t.askMe}
-                <ChevronRight className="w-5 h-5 ml-1" />
+                <ChevronRight className="w-6 h-6 ml-2" />
               </Button>
             </div>
           </div>
