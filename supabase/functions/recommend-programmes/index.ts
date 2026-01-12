@@ -81,7 +81,19 @@ Guidelines:
 - Maximum 3 recommendations
 - Be encouraging and positive in your reasoning
 
-Respond in ${getLanguageName(language)}.`;
+Respond in ${getLanguageName(language)}.
+
+IMPORTANT: You MUST respond with ONLY valid JSON in this exact format, no other text:
+{
+  "recommendations": [
+    {
+      "programme_id": "the-programme-uuid",
+      "reason": "A short, encouraging explanation of why this programme is recommended (1-2 sentences)",
+      "priority": 1
+    }
+  ],
+  "summary": "A brief encouraging summary about the user's health and the recommendations (1-2 sentences)"
+}`;
 
     const userPrompt = `User's Latest Health Screening Results:
 ${healthContext}
@@ -99,87 +111,87 @@ ${JSON.stringify(programmes.map(p => ({
 
 Please recommend the most suitable programmes and explain why each is beneficial for this user.`;
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY is not configured");
     }
 
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "recommend_programmes",
-              description: "Return recommended programmes with reasons",
-              parameters: {
-                type: "object",
-                properties: {
-                  recommendations: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        programme_id: { type: "string", description: "The ID of the recommended programme" },
-                        reason: { type: "string", description: "A short, encouraging explanation of why this programme is recommended (1-2 sentences)" },
-                        priority: { type: "number", description: "Priority ranking 1-3, where 1 is most relevant" }
-                      },
-                      required: ["programme_id", "reason", "priority"],
-                      additionalProperties: false
-                    },
-                    maxItems: 3
-                  },
-                  summary: { type: "string", description: "A brief encouraging summary about the user's health and the recommendations (1-2 sentences)" }
-                },
-                required: ["recommendations", "summary"],
-                additionalProperties: false
-              }
+    console.log("Calling Gemini API...");
+
+    const aiResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: systemPrompt + "\n\n" + userPrompt }
+              ]
             }
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024,
           }
-        ],
-        tool_choice: { type: "function", function: { name: "recommend_programmes" } }
-      }),
-    });
+        }),
+      }
+    );
 
     if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error("Gemini API error:", aiResponse.status, errorText);
+      
       if (aiResponse.status === 429) {
         return new Response(
           JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      if (aiResponse.status === 402) {
-        return new Response(
-          JSON.stringify({ error: "AI credits exhausted. Please contact support." }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-      const errorText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errorText);
-      throw new Error("AI recommendation failed");
+      throw new Error(`Gemini API error: ${aiResponse.status}`);
     }
 
     const aiResult = await aiResponse.json();
-    const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
+    console.log("Gemini response received");
+
+    // Extract the text content from Gemini response
+    const responseText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!toolCall || toolCall.function.name !== "recommend_programmes") {
-      throw new Error("Invalid AI response format");
+    if (!responseText) {
+      throw new Error("No response from Gemini");
     }
 
-    const aiRecommendations = JSON.parse(toolCall.function.arguments);
+    // Parse the JSON from the response (might be wrapped in markdown code blocks)
+    let aiRecommendations;
+    try {
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        aiRecommendations = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error("No JSON found in response");
+      }
+    } catch (parseError) {
+      console.error("Failed to parse AI response:", responseText);
+      // Return default recommendations if parsing fails
+      const defaultRecs = programmes.slice(0, 3).map((p, i) => ({
+        ...p,
+        reason: "Recommended for general wellness and community engagement.",
+        priority: i + 1
+      }));
+      return new Response(
+        JSON.stringify({
+          recommendations: defaultRecs,
+          summary: "Based on your health screening, we recommend staying active with community programmes."
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
     
     // Enrich recommendations with full programme data
-    const enrichedRecommendations = aiRecommendations.recommendations
+    const enrichedRecommendations = (aiRecommendations.recommendations || [])
       .map((rec: { programme_id: string; reason: string; priority: number }) => {
         const programme = programmes.find(p => p.id === rec.programme_id);
         if (!programme) return null;
@@ -191,6 +203,22 @@ Please recommend the most suitable programmes and explain why each is beneficial
       })
       .filter(Boolean)
       .sort((a: { priority: number }, b: { priority: number }) => a.priority - b.priority);
+
+    // If no valid recommendations found, return defaults
+    if (enrichedRecommendations.length === 0) {
+      const defaultRecs = programmes.slice(0, 3).map((p, i) => ({
+        ...p,
+        reason: "Recommended for general wellness and community engagement.",
+        priority: i + 1
+      }));
+      return new Response(
+        JSON.stringify({
+          recommendations: defaultRecs,
+          summary: aiRecommendations.summary || "Based on your health screening, we recommend staying active with community programmes."
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     return new Response(
       JSON.stringify({
