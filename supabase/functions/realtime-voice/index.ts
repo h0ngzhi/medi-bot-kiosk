@@ -60,21 +60,26 @@ serve(async (req) => {
           type: "session.update",
           session: {
             modalities: ["text"], // TEXT ONLY - no audio output
-            instructions: `You are a SILENT navigation assistant. When the user asks to go somewhere, ONLY call the navigate_to function. Do NOT generate any text or audio response. Just call the function.
+            instructions: `You are a SILENT navigation assistant for a health kiosk. Your ONLY job is to understand which page the user wants to visit and call the navigate_to function.
 
-Available pages:
-- home: Starting slideshow screen
-- scan: Scan card to login
-- language: Choose language
-- dashboard: Main home page
-- health-screenings: Health screening results
-- find-care: Find clinics on map
-- community-programmes: Community programmes
-- profile: User profile and rewards
-- admin-programmes: Staff programme management
-- admin-slideshow: Staff slideshow management
+IMPORTANT RULES:
+1. ALWAYS call the navigate_to function when you understand the user's intent
+2. NEVER generate text or audio responses
+3. Match user requests to the closest page
 
-CRITICAL: Never speak. Never respond with text. Just call navigate_to immediately.`,
+Available pages and common phrases:
+- "home" - home, start, beginning, main screen
+- "scan" - scan, card, login, sign in
+- "language" - language, change language
+- "dashboard" - dashboard, my page, overview
+- "health-screenings" - health, screenings, results, blood pressure, checkup
+- "find-care" - find care, clinic, doctor, hospital, nearby
+- "community-programmes" - community, programmes, activities, events, classes
+- "profile" - profile, my profile, rewards, points
+- "admin-programmes" - admin programmes, manage programmes (staff only)
+- "admin-slideshow" - admin slideshow, manage slideshow (staff only)
+
+When user says anything related to navigation, IMMEDIATELY call navigate_to with the best matching page.`,
             input_audio_format: "pcm16",
             input_audio_transcription: {
               model: "whisper-1",
@@ -84,12 +89,13 @@ CRITICAL: Never speak. Never respond with text. Just call navigate_to immediatel
               threshold: 0.5,
               prefix_padding_ms: 300,
               silence_duration_ms: 800,
+              create_response: false, // Don't auto-create response - we'll do it manually
             },
             tools: [
               {
                 type: "function",
                 name: "navigate_to",
-                description: "Navigate to a page. Call this immediately without any response.",
+                description: "Navigate to a page in the health kiosk app. Call this function immediately when you understand the user's intent.",
                 parameters: {
                   type: "object",
                   properties: {
@@ -116,16 +122,45 @@ CRITICAL: Never speak. Never respond with text. Just call navigate_to immediatel
             ],
             tool_choice: "required",
             temperature: 0.1,
-            max_response_output_tokens: 1,
+            max_response_output_tokens: 50,
           },
         };
 
         openaiSocket!.send(JSON.stringify(sessionUpdate));
       }
 
-      // Forward all messages to client
-      if (clientSocket.readyState === WebSocket.OPEN) {
-        clientSocket.send(event.data);
+      // When speech stops (VAD detected end of speech), manually create a text-only response
+      if (data.type === "input_audio_buffer.speech_stopped") {
+        console.log("Speech stopped, triggering text-only response");
+        
+        // First commit the audio buffer
+        openaiSocket!.send(JSON.stringify({
+          type: "input_audio_buffer.commit"
+        }));
+        
+        // Then create a response with text-only output (no audio)
+        openaiSocket!.send(JSON.stringify({
+          type: "response.create",
+          response: {
+            modalities: ["text"], // Force text-only output
+            output_audio_format: null, // No audio output
+          }
+        }));
+      }
+
+      // Forward relevant messages to client (skip audio deltas since we're text-only)
+      if (data.type !== "response.audio.delta" && 
+          data.type !== "response.audio.done" &&
+          data.type !== "response.audio_transcript.delta" &&
+          data.type !== "response.audio_transcript.done") {
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(event.data);
+        }
+      } else {
+        // Still forward function calls even if they come with audio events
+        if (clientSocket.readyState === WebSocket.OPEN) {
+          clientSocket.send(event.data);
+        }
       }
     };
 
