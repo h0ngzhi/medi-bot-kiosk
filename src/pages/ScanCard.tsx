@@ -463,15 +463,19 @@ export default function ScanCard() {
       ? user.chas_card_type.charAt(0).toUpperCase() + user.chas_card_type.slice(1)
       : 'Blue';
     
-    // Update points and events_attended if custom values are entered
+    // Only update points/events if user explicitly changed from defaults
     const customPoints = parseInt(manualPoints);
     const customEvents = parseInt(manualEventsAttended);
     const updates: Record<string, number> = {};
     
-    if (!isNaN(customPoints) && customPoints >= 0) {
+    // Only apply custom values if they differ from defaults (50 points, 0 events)
+    const isCustomPoints = !isNaN(customPoints) && customPoints !== 50;
+    const isCustomEvents = !isNaN(customEvents) && customEvents !== 0;
+    
+    if (isCustomPoints) {
       updates.points = customPoints;
     }
-    if (!isNaN(customEvents) && customEvents >= 0) {
+    if (isCustomEvents) {
       updates.events_attended = customEvents;
     }
     
