@@ -31,16 +31,36 @@ serve(async (req) => {
       throw new Error("Google Places API key not configured");
     }
 
-    // Search for the clinic using name and address
-    const searchQuery = encodeURIComponent(`${clinicName} ${address} Singapore`);
-    const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${searchQuery}&inputtype=textquery&fields=place_id,name,business_status&key=${apiKey}`;
+    // Try multiple search strategies for better match rate
+    const searchStrategies = [
+      // Strategy 1: Phone number search (most reliable)
+      phone ? `${phone.replace(/\s/g, "")} Singapore clinic` : null,
+      // Strategy 2: Clinic name + postal code
+      `${clinicName} Singapore`,
+      // Strategy 3: Just the clinic name
+      clinicName,
+    ].filter(Boolean);
 
-    console.log(`Searching for: ${clinicName}`);
-    
-    const searchResponse = await fetch(searchUrl);
-    const searchData = await searchResponse.json();
+    let placeId: string | null = null;
+    let businessStatus: string | null = null;
 
-    if (searchData.status !== "OK" || !searchData.candidates?.length) {
+    for (const query of searchStrategies) {
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(query as string)}&inputtype=textquery&fields=place_id,name,business_status&key=${apiKey}`;
+
+      console.log(`Searching with query: ${query}`);
+      
+      const searchResponse = await fetch(searchUrl);
+      const searchData = await searchResponse.json();
+
+      if (searchData.status === "OK" && searchData.candidates?.length > 0) {
+        placeId = searchData.candidates[0].place_id;
+        businessStatus = searchData.candidates[0].business_status;
+        console.log(`Found match with query: ${query}`);
+        break;
+      }
+    }
+
+    if (!placeId) {
       console.log(`No results found for: ${clinicName}`);
       return new Response(
         JSON.stringify({ 
@@ -51,9 +71,6 @@ serve(async (req) => {
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const placeId = searchData.candidates[0].place_id;
-    const businessStatus = searchData.candidates[0].business_status;
 
     // Check if permanently closed
     if (businessStatus === "CLOSED_PERMANENTLY") {
