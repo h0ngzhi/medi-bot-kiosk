@@ -15,9 +15,22 @@ import {
   Video,
   Plus,
   Eye,
-  Loader2
+  Loader2,
+  Monitor
 } from 'lucide-react';
 import { toast } from 'sonner';
+
+// Helper to convert seconds to minutes and seconds
+const secondsToMinSec = (totalSeconds: number) => {
+  const mins = Math.floor(totalSeconds / 60);
+  const secs = totalSeconds % 60;
+  return { mins, secs };
+};
+
+// Helper to convert minutes and seconds to total seconds
+const minSecToSeconds = (mins: number, secs: number) => {
+  return mins * 60 + secs;
+};
 
 interface SlideItem {
   id: string;
@@ -34,7 +47,21 @@ export default function AdminSlideshow() {
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
+  const [screenSize, setScreenSize] = useState({ width: 0, height: 0 });
   const navigate = useNavigate();
+
+  // Get current screen dimensions
+  useEffect(() => {
+    const updateScreenSize = () => {
+      setScreenSize({
+        width: window.screen.width,
+        height: window.screen.height
+      });
+    };
+    updateScreenSize();
+    window.addEventListener('resize', updateScreenSize);
+    return () => window.removeEventListener('resize', updateScreenSize);
+  }, []);
 
   // Fetch all slides
   const fetchSlides = useCallback(async () => {
@@ -293,9 +320,15 @@ export default function AdminSlideshow() {
                   <p className="text-lg font-medium text-foreground mb-2">
                     Drag and drop images or videos here
                   </p>
-                  <p className="text-muted-foreground mb-4">
+                  <p className="text-muted-foreground mb-2">
                     or click to select files
                   </p>
+                  <div className="flex items-center justify-center gap-2 mb-4 text-sm bg-muted/50 px-4 py-2 rounded-lg">
+                    <Monitor className="w-4 h-4 text-primary" />
+                    <span className="text-muted-foreground">
+                      Suggested minimum size: <strong className="text-foreground">{screenSize.width} × {screenSize.height}px</strong>
+                    </span>
+                  </div>
                   <label>
                     <input
                       type="file"
@@ -383,15 +416,35 @@ export default function AdminSlideshow() {
                         </div>
                         <div className="flex items-center gap-4">
                           <div className="flex items-center gap-2">
-                            <Label className="text-xs text-muted-foreground">Duration (sec)</Label>
-                            <Input
-                              type="number"
-                              value={slide.duration_seconds}
-                              onChange={(e) => updateDuration(slide.id, parseInt(e.target.value) || 5)}
-                              min={1}
-                              max={120}
-                              className="w-16 h-7 text-sm"
-                            />
+                            <Label className="text-xs text-muted-foreground">Duration</Label>
+                            <div className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                value={secondsToMinSec(slide.duration_seconds).mins}
+                                onChange={(e) => {
+                                  const mins = parseInt(e.target.value) || 0;
+                                  const secs = secondsToMinSec(slide.duration_seconds).secs;
+                                  updateDuration(slide.id, minSecToSeconds(mins, secs));
+                                }}
+                                min={0}
+                                max={59}
+                                className="w-14 h-7 text-sm text-center"
+                              />
+                              <span className="text-xs text-muted-foreground">m</span>
+                              <Input
+                                type="number"
+                                value={secondsToMinSec(slide.duration_seconds).secs}
+                                onChange={(e) => {
+                                  const mins = secondsToMinSec(slide.duration_seconds).mins;
+                                  const secs = Math.min(59, Math.max(0, parseInt(e.target.value) || 0));
+                                  updateDuration(slide.id, minSecToSeconds(mins, secs));
+                                }}
+                                min={0}
+                                max={59}
+                                className="w-14 h-7 text-sm text-center"
+                              />
+                              <span className="text-xs text-muted-foreground">s</span>
+                            </div>
                           </div>
                         </div>
                       </div>
