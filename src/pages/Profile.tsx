@@ -9,10 +9,12 @@ import {
   Gift,
   History,
   CheckCircle2,
-  Star,
   Plus,
   Minus,
-  MapPin
+  MapPin,
+  Lock,
+  Unlock,
+  Trophy
 } from 'lucide-react';
 import {
   Dialog,
@@ -24,107 +26,43 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { speakText } from '@/utils/speechUtils';
-
-// CHAS Card images
-import chasBlue from '@/assets/chas-blue.png';
-import chasOrange from '@/assets/chas-orange.png';
-import chasGreen from '@/assets/chas-green.png';
-import chasMerdeka from '@/assets/chas-merdeka.png';
-import chasPioneer from '@/assets/chas-pioneer.png';
 import { toast } from '@/hooks/use-toast';
+import { Progress } from '@/components/ui/progress';
 
 interface Reward {
   id: string;
-  titleKey: string;
-  titleEn: string;
-  points: number;
-  descriptionKey: string;
-  descriptionEn: string;
-  maxQuantity: number;
+  title: string;
+  title_zh: string | null;
+  title_ms: string | null;
+  title_ta: string | null;
+  description: string | null;
+  description_zh: string | null;
+  description_ms: string | null;
+  description_ta: string | null;
+  points_cost: number;
+  tier: number;
+  max_quantity: number;
 }
 
-const availableRewards: Reward[] = [
-  {
-    id: '1',
-    titleKey: 'rewards.ntucVoucher',
-    titleEn: '$5 NTUC Voucher',
-    points: 200,
-    descriptionKey: 'rewards.ntucDesc',
-    descriptionEn: 'Use at any NTUC FairPrice outlet',
-    maxQuantity: 5,
-  },
-  {
-    id: '2',
-    titleKey: 'rewards.guardianVoucher',
-    titleEn: '$10 Guardian Voucher',
-    points: 400,
-    descriptionKey: 'rewards.guardianDesc',
-    descriptionEn: 'Use at any Guardian pharmacy',
-    maxQuantity: 3,
-  },
-  {
-    id: '3',
-    titleKey: 'rewards.healthScreening',
-    titleEn: 'Free Health Screening',
-    points: 500,
-    descriptionKey: 'rewards.screeningDesc',
-    descriptionEn: 'One free comprehensive health check',
-    maxQuantity: 2,
-  },
-];
-
-// Reward translations
-const rewardTranslations: Record<string, Record<string, string>> = {
-  en: {
-    'rewards.ntucVoucher': '$5 NTUC Voucher',
-    'rewards.ntucDesc': 'Use at any NTUC FairPrice outlet',
-    'rewards.guardianVoucher': '$10 Guardian Voucher',
-    'rewards.guardianDesc': 'Use at any Guardian pharmacy',
-    'rewards.healthScreening': 'Free Health Screening',
-    'rewards.screeningDesc': 'One free comprehensive health check',
-  },
-  zh: {
-    'rewards.ntucVoucher': '$5 职总礼券',
-    'rewards.ntucDesc': '可在任何职总平价超市使用',
-    'rewards.guardianVoucher': '$10 Guardian礼券',
-    'rewards.guardianDesc': '可在任何Guardian药房使用',
-    'rewards.healthScreening': '免费健康检查',
-    'rewards.screeningDesc': '一次全面健康检查',
-  },
-  ms: {
-    'rewards.ntucVoucher': 'Baucar NTUC $5',
-    'rewards.ntucDesc': 'Guna di mana-mana cawangan NTUC FairPrice',
-    'rewards.guardianVoucher': 'Baucar Guardian $10',
-    'rewards.guardianDesc': 'Guna di mana-mana farmasi Guardian',
-    'rewards.healthScreening': 'Pemeriksaan Kesihatan Percuma',
-    'rewards.screeningDesc': 'Satu pemeriksaan kesihatan menyeluruh percuma',
-  },
-  ta: {
-    'rewards.ntucVoucher': '$5 NTUC வவுச்சர்',
-    'rewards.ntucDesc': 'எந்த NTUC FairPrice கடையிலும் பயன்படுத்தலாம்',
-    'rewards.guardianVoucher': '$10 Guardian வவுச்சர்',
-    'rewards.guardianDesc': 'எந்த Guardian மருந்தகத்திலும் பயன்படுத்தலாம்',
-    'rewards.healthScreening': 'இலவச சுகாதார பரிசோதனை',
-    'rewards.screeningDesc': 'ஒரு முழுமையான சுகாதார பரிசோதனை',
-  },
-};
-
-const chasCardImages: Record<string, string> = {
-  Blue: chasBlue,
-  Orange: chasOrange,
-  Green: chasGreen,
-  'Merdeka generation': chasMerdeka,
-  'Pioneer generation': chasPioneer,
-};
+interface TierSetting {
+  tier: number;
+  events_required: number;
+  title: string;
+  title_zh: string | null;
+  title_ms: string | null;
+  title_ta: string | null;
+}
 
 export default function Profile() {
   const { user, t, setUser, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
-  const [showRewards, setShowRewards] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [showAddressDialog, setShowAddressDialog] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [rewards, setRewards] = useState<Reward[]>([]);
+  const [tierSettings, setTierSettings] = useState<TierSetting[]>([]);
+  const [eventsAttended, setEventsAttended] = useState(0);
   const [address, setAddress] = useState({
     blockNo: '',
     unitNo: '',
@@ -132,36 +70,115 @@ export default function Profile() {
     postalCode: '',
   });
 
-  // Helper to get reward text in current language
-  const getRewardText = (key: string) => {
-    return rewardTranslations[language]?.[key] || rewardTranslations['en'][key] || key;
+  // Fetch rewards, tier settings, and user events attended
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch rewards
+      const { data: rewardsData } = await supabase
+        .from('rewards')
+        .select('*')
+        .eq('is_active', true)
+        .order('tier', { ascending: true })
+        .order('display_order', { ascending: true });
+      
+      if (rewardsData) setRewards(rewardsData);
+
+      // Fetch tier settings
+      const { data: tierData } = await supabase
+        .from('reward_tier_settings')
+        .select('*')
+        .order('tier', { ascending: true });
+      
+      if (tierData) setTierSettings(tierData);
+
+      // Fetch user's events attended
+      if (user?.id) {
+        const { data: userData } = await supabase
+          .from('kiosk_users')
+          .select('events_attended')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData) setEventsAttended(userData.events_attended || 0);
+      }
+    };
+
+    fetchData();
+  }, [user?.id]);
+
+  // Get localized text
+  const getLocalizedText = (item: { title?: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null }, field: 'title') => {
+    const langKey = field + '_' + (language === 'en' ? '' : language);
+    if (language === 'en') return item[field] || '';
+    const localizedField = item[langKey as keyof typeof item] as string | null;
+    return localizedField || item[field] || '';
   };
 
-  // Speak button text on hover (controlled by TTS toggle)
+  const getLocalizedDesc = (item: { description?: string | null; description_zh?: string | null; description_ms?: string | null; description_ta?: string | null }) => {
+    if (language === 'en') return item.description || '';
+    const langKey = 'description_' + language;
+    const localizedField = item[langKey as keyof typeof item] as string | null;
+    return localizedField || item.description || '';
+  };
+
+  const getTierTitle = (tier: TierSetting) => {
+    if (language === 'en') return tier.title;
+    const langKey = 'title_' + language;
+    const localizedField = tier[langKey as keyof typeof tier] as string | null;
+    return localizedField || tier.title;
+  };
+
+  // Check if user has unlocked a tier
+  const isTierUnlocked = (tier: number) => {
+    const setting = tierSettings.find(t => t.tier === tier);
+    if (!setting) return false;
+    return eventsAttended >= setting.events_required;
+  };
+
+  // Get progress to next tier
+  const getNextTierProgress = () => {
+    for (const tier of tierSettings) {
+      if (eventsAttended < tier.events_required) {
+        return {
+          tier: tier.tier,
+          current: eventsAttended,
+          required: tier.events_required,
+          percentage: (eventsAttended / tier.events_required) * 100
+        };
+      }
+    }
+    return null; // All tiers unlocked
+  };
+
   const handleButtonSpeak = (text: string) => {
     if (isTtsEnabled) {
       speakText(text, language);
     }
   };
 
-  const handleQuantityChange = (rewardId: string, delta: number) => {
-    const reward = availableRewards.find(r => r.id === rewardId);
-    if (!reward) return;
-    
+  const handleQuantityChange = (rewardId: string, delta: number, maxQty: number) => {
     setQuantities(prev => {
       const current = prev[rewardId] || 1;
-      const newQty = Math.max(1, Math.min(reward.maxQuantity, current + delta));
+      const newQty = Math.max(1, Math.min(maxQty, current + delta));
       return { ...prev, [rewardId]: newQty };
     });
   };
 
   const getQuantity = (rewardId: string) => quantities[rewardId] || 1;
 
-  const getTotalPoints = (reward: Reward) => reward.points * getQuantity(reward.id);
+  const getTotalPoints = (reward: Reward) => reward.points_cost * getQuantity(reward.id);
 
   const canAfford = (reward: Reward) => user && user.points >= getTotalPoints(reward);
 
   const handleRedeemClick = (reward: Reward) => {
+    if (!isTierUnlocked(reward.tier)) {
+      toast({
+        title: t('profile.tierLocked'),
+        description: `${t('profile.attendMoreEvents')} ${tierSettings.find(t => t.tier === reward.tier)?.events_required || 0}`,
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!canAfford(reward)) {
       toast({
         title: t('profile.notEnoughPoints'),
@@ -177,7 +194,6 @@ export default function Profile() {
   const handleConfirmRedeem = async () => {
     if (!selectedReward || !user) return;
     
-    // Validate address
     if (!address.blockNo || !address.street || !address.postalCode) {
       toast({
         title: t('profile.fillAddress'),
@@ -192,7 +208,16 @@ export default function Profile() {
     const newPoints = user.points - totalPointsToDeduct;
 
     try {
-      // Update points in database
+      // Create redemption record
+      await supabase.from('user_reward_redemptions').insert({
+        kiosk_user_id: user.id,
+        reward_id: selectedReward.id,
+        quantity: getQuantity(selectedReward.id),
+        points_spent: totalPointsToDeduct,
+        delivery_address: address,
+      });
+
+      // Update points
       const { error } = await supabase
         .from('kiosk_users')
         .update({ points: newPoints })
@@ -200,22 +225,16 @@ export default function Profile() {
 
       if (error) throw error;
 
-      // Update local user state
-      setUser({
-        ...user,
-        points: newPoints,
-      });
+      setUser({ ...user, points: newPoints });
 
-      const rewardTitle = getRewardText(selectedReward.titleKey);
       toast({
         title: t('profile.rewardRedeemed'),
-        description: `${getQuantity(selectedReward.id)}x ${rewardTitle} ${t('profile.willBeSent')}`,
+        description: `${getQuantity(selectedReward.id)}x ${getLocalizedText(selectedReward, 'title')} ${t('profile.willBeSent')}`,
       });
 
       setShowAddressDialog(false);
       setSelectedReward(null);
       setAddress({ blockNo: '', unitNo: '', street: '', postalCode: '' });
-      // Reset quantity for this reward
       setQuantities(prev => ({ ...prev, [selectedReward.id]: 1 }));
     } catch (error) {
       console.error('Failed to redeem reward:', error);
@@ -235,9 +254,11 @@ export default function Profile() {
     }
   }, [user, navigate]);
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
+
+  const tier1Rewards = rewards.filter(r => r.tier === 1);
+  const tier2Rewards = rewards.filter(r => r.tier === 2);
+  const nextTier = getNextTierProgress();
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted pb-32">
@@ -258,22 +279,9 @@ export default function Profile() {
       </header>
 
       <main className="max-w-2xl mx-auto px-6">
-        {/* CHAS Card */}
-        <div className="relative rounded-3xl overflow-hidden shadow-medium mb-6 animate-fade-in aspect-[1.586/1]">
-          <img 
-            src={chasCardImages[user.chasType] || chasBlue}
-            alt={`${user.chasType} CHAS Card`}
-            className="w-full h-full object-cover"
-          />
-          {/* Overlay with user info */}
-          <div className="absolute bottom-4 left-4 right-4">
-            <p className="text-lg font-bold text-gray-800 drop-shadow-sm">{user.name}</p>
-          </div>
-        </div>
-
-        {/* Points card */}
-        <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <div className="flex items-center justify-between">
+        {/* Points & Progress Card */}
+        <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in">
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center">
                 <Award className="w-8 h-8 text-warning" />
@@ -283,139 +291,140 @@ export default function Profile() {
                 <p className="text-4xl font-bold text-foreground cursor-default">{user.points}</p>
               </div>
             </div>
-            <div className="flex">
-              {[1, 2, 3].map((i) => (
-                <Star key={i} className="w-6 h-6 text-warning fill-warning" />
-              ))}
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">{t('profile.eventsAttended')}</p>
+              <p className="text-2xl font-bold text-primary">{eventsAttended}</p>
             </div>
           </div>
+
+          {/* Progress to next tier */}
+          {nextTier && (
+            <div className="bg-muted rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-foreground">
+                  {t('profile.progressToTier')} {nextTier.tier}
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  {nextTier.current} / {nextTier.required}
+                </span>
+              </div>
+              <Progress value={nextTier.percentage} className="h-3" />
+            </div>
+          )}
+          {!nextTier && (
+            <div className="bg-success/10 rounded-xl p-4 flex items-center gap-3">
+              <Trophy className="w-6 h-6 text-success" />
+              <span className="font-medium text-success">{t('profile.allTiersUnlocked')}</span>
+            </div>
+          )}
         </div>
 
-        {/* Participation history */}
-        <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+        {/* Participation History */}
+        <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
           <div className="flex items-center gap-3 mb-4" onMouseEnter={() => handleButtonSpeak(t('profile.history'))}>
             <History className="w-6 h-6 text-primary" />
             <h2 className="text-xl font-bold text-foreground cursor-default">{t('profile.history')}</h2>
           </div>
           <div className="space-y-3">
             {user.participationHistory.length > 0 ? (
-              user.participationHistory.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-3 p-3 bg-muted rounded-xl cursor-default"
-                  onMouseEnter={() => handleButtonSpeak(item)}
-                >
+              user.participationHistory.slice(0, 3).map((item, index) => (
+                <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-xl cursor-default">
                   <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
                   <span className="text-foreground">{item}</span>
                 </div>
               ))
             ) : (
-              <div 
-                className="text-center py-6 text-muted-foreground cursor-default"
-                onMouseEnter={() => handleButtonSpeak(`${t('profile.noHistory')}. ${t('profile.joinProgrammes')}`)}
-              >
-                <p className="text-lg">{t('profile.noHistory')}</p>
-                <p className="text-sm mt-1">{t('profile.joinProgrammes')}</p>
+              <div className="text-center py-4 text-muted-foreground">
+                <p>{t('profile.noHistory')}</p>
               </div>
             )}
           </div>
         </div>
 
-        {/* Rewards section */}
-        <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
-          <Button
-            variant={showRewards ? 'default' : 'outline'}
-            size="xl"
-            onClick={() => setShowRewards(!showRewards)}
-            onMouseEnter={() => handleButtonSpeak(t('profile.rewards'))}
-            className="w-full mb-4"
-          >
-            <Gift className="w-6 h-6" />
-            {t('profile.rewards')}
-          </Button>
+        {/* Rewards Section */}
+        <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
+          <div className="flex items-center gap-3 mb-6">
+            <Gift className="w-8 h-8 text-primary" />
+            <h2 className="text-2xl font-bold text-foreground">{t('profile.redeemRewards')}</h2>
+          </div>
 
-          {showRewards && (
-            <div className="space-y-4 animate-fade-in">
-              {availableRewards.map((reward) => {
-                const quantity = getQuantity(reward.id);
-                const totalPoints = getTotalPoints(reward);
-                const affordable = canAfford(reward);
-                const rewardTitle = getRewardText(reward.titleKey);
-                const rewardDesc = getRewardText(reward.descriptionKey);
-                const needMorePoints = totalPoints - user.points;
-
-                return (
-                  <div
-                    key={reward.id}
-                    className="bg-card rounded-2xl shadow-soft p-5 border-2 border-transparent"
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <h3 className="text-lg font-bold text-foreground">{rewardTitle}</h3>
-                        <p className="text-sm text-muted-foreground">{rewardDesc}</p>
-                      </div>
-                      <div className="text-right">
-                        <div className="flex items-center gap-1 text-warning">
-                          <Award className="w-5 h-5" />
-                          <span className="font-bold">{reward.points}</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">{t('profile.perVoucher')}</p>
-                      </div>
-                    </div>
-
-                    {/* Quantity selector */}
-                    <div className="flex items-center justify-between mb-4 p-3 bg-muted rounded-xl">
-                      <span className="text-foreground font-medium">{t('profile.quantity')}</span>
-                      <div className="flex items-center gap-3">
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="w-10 h-10 rounded-full"
-                          onClick={() => handleQuantityChange(reward.id, -1)}
-                          onMouseEnter={() => handleButtonSpeak(t('common.back'))}
-                          disabled={quantity <= 1}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </Button>
-                        <span className="text-xl font-bold w-8 text-center">{quantity}</span>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          className="w-10 h-10 rounded-full"
-                          onClick={() => handleQuantityChange(reward.id, 1)}
-                          onMouseEnter={() => handleButtonSpeak(t('common.next'))}
-                          disabled={quantity >= reward.maxQuantity}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Total and redeem button */}
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-muted-foreground">{t('profile.totalPoints')}:</span>
-                      <span className="text-lg font-bold text-warning">{totalPoints} pts</span>
-                    </div>
-                    
-                    <Button
-                      variant={affordable ? 'warm' : 'outline'}
-                      size="lg"
-                      onClick={() => handleRedeemClick(reward)}
-                      onMouseEnter={() => handleButtonSpeak(affordable ? t('profile.redeem') : t('profile.needMorePoints').replace('{points}', String(needMorePoints)))}
-                      disabled={!affordable}
-                      className="w-full"
-                    >
-                      {affordable ? (
-                        t('profile.redeem')
-                      ) : (
-                        t('profile.needMorePoints').replace('{points}', String(needMorePoints))
-                      )}
-                    </Button>
-                  </div>
-                );
-              })}
+          {/* Tier 1 Rewards */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              {isTierUnlocked(1) ? (
+                <Unlock className="w-6 h-6 text-success" />
+              ) : (
+                <Lock className="w-6 h-6 text-muted-foreground" />
+              )}
+              <h3 className="text-xl font-bold text-foreground">
+                {tierSettings.find(t => t.tier === 1) ? getTierTitle(tierSettings.find(t => t.tier === 1)!) : 'Tier 1'}
+              </h3>
+              {!isTierUnlocked(1) && (
+                <span className="text-sm text-muted-foreground">
+                  ({tierSettings.find(t => t.tier === 1)?.events_required} {t('profile.eventsRequired')})
+                </span>
+              )}
             </div>
-          )}
+            
+            <div className={`space-y-4 ${!isTierUnlocked(1) ? 'opacity-50' : ''}`}>
+              {tier1Rewards.map((reward) => (
+                <RewardCard
+                  key={reward.id}
+                  reward={reward}
+                  quantity={getQuantity(reward.id)}
+                  onQuantityChange={(delta) => handleQuantityChange(reward.id, delta, reward.max_quantity)}
+                  onRedeem={() => handleRedeemClick(reward)}
+                  canAfford={canAfford(reward)}
+                  isLocked={!isTierUnlocked(1)}
+                  userPoints={user.points}
+                  language={language}
+                  t={t}
+                  getLocalizedText={getLocalizedText}
+                  getLocalizedDesc={getLocalizedDesc}
+                  handleButtonSpeak={handleButtonSpeak}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Tier 2 Rewards */}
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-4">
+              {isTierUnlocked(2) ? (
+                <Unlock className="w-6 h-6 text-success" />
+              ) : (
+                <Lock className="w-6 h-6 text-muted-foreground" />
+              )}
+              <h3 className="text-xl font-bold text-foreground">
+                {tierSettings.find(t => t.tier === 2) ? getTierTitle(tierSettings.find(t => t.tier === 2)!) : 'Tier 2'}
+              </h3>
+              {!isTierUnlocked(2) && (
+                <span className="text-sm text-muted-foreground">
+                  ({tierSettings.find(t => t.tier === 2)?.events_required} {t('profile.eventsRequired')})
+                </span>
+              )}
+            </div>
+            
+            <div className={`space-y-4 ${!isTierUnlocked(2) ? 'opacity-50' : ''}`}>
+              {tier2Rewards.map((reward) => (
+                <RewardCard
+                  key={reward.id}
+                  reward={reward}
+                  quantity={getQuantity(reward.id)}
+                  onQuantityChange={(delta) => handleQuantityChange(reward.id, delta, reward.max_quantity)}
+                  onRedeem={() => handleRedeemClick(reward)}
+                  canAfford={canAfford(reward)}
+                  isLocked={!isTierUnlocked(2)}
+                  userPoints={user.points}
+                  language={language}
+                  t={t}
+                  getLocalizedText={getLocalizedText}
+                  getLocalizedDesc={getLocalizedDesc}
+                  handleButtonSpeak={handleButtonSpeak}
+                />
+              ))}
+            </div>
+          </div>
         </div>
       </main>
 
@@ -430,15 +439,13 @@ export default function Profile() {
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
-            <p className="text-muted-foreground">
-              {t('profile.enterAddress')}
-            </p>
+            <p className="text-muted-foreground">{t('profile.enterAddress')}</p>
 
             {selectedReward && (
               <div className="bg-muted rounded-xl p-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="font-bold">{getQuantity(selectedReward.id)}x {getRewardText(selectedReward.titleKey)}</p>
+                    <p className="font-bold">{getQuantity(selectedReward.id)}x {getLocalizedText(selectedReward, 'title')}</p>
                     <p className="text-sm text-muted-foreground">{t('profile.pointsDeduct')}: {getTotalPoints(selectedReward)}</p>
                   </div>
                 </div>
@@ -452,7 +459,6 @@ export default function Profile() {
                   id="blockNo"
                   value={address.blockNo}
                   onChange={(e) => setAddress(prev => ({ ...prev, blockNo: e.target.value }))}
-                  onFocus={() => handleButtonSpeak(t('meds.blockNo'))}
                   placeholder="123"
                   className="h-14 text-lg"
                 />
@@ -463,7 +469,6 @@ export default function Profile() {
                   id="unitNo"
                   value={address.unitNo}
                   onChange={(e) => setAddress(prev => ({ ...prev, unitNo: e.target.value }))}
-                  onFocus={() => handleButtonSpeak(t('meds.unitNo'))}
                   placeholder="#01-01"
                   className="h-14 text-lg"
                 />
@@ -476,7 +481,6 @@ export default function Profile() {
                 id="street"
                 value={address.street}
                 onChange={(e) => setAddress(prev => ({ ...prev, street: e.target.value }))}
-                onFocus={() => handleButtonSpeak(t('meds.street'))}
                 placeholder="Bedok North Avenue 1"
                 className="h-14 text-lg"
               />
@@ -488,7 +492,6 @@ export default function Profile() {
                 id="postalCode"
                 value={address.postalCode}
                 onChange={(e) => setAddress(prev => ({ ...prev, postalCode: e.target.value }))}
-                onFocus={() => handleButtonSpeak(t('meds.postalCode'))}
                 placeholder="460123"
                 className="h-14 text-lg"
                 maxLength={6}
@@ -500,7 +503,6 @@ export default function Profile() {
                 variant="outline"
                 size="lg"
                 onClick={() => setShowAddressDialog(false)}
-                onMouseEnter={() => handleButtonSpeak(t('common.cancel'))}
                 className="flex-1"
                 disabled={isProcessing}
               >
@@ -510,7 +512,6 @@ export default function Profile() {
                 variant="warm"
                 size="lg"
                 onClick={handleConfirmRedeem}
-                onMouseEnter={() => handleButtonSpeak(isProcessing ? t('profile.processing') : t('profile.confirmRedeem'))}
                 className="flex-1"
                 disabled={isProcessing}
               >
@@ -522,6 +523,106 @@ export default function Profile() {
       </Dialog>
 
       <AccessibilityBar />
+    </div>
+  );
+}
+
+// Reward Card Component
+interface RewardCardProps {
+  reward: Reward;
+  quantity: number;
+  onQuantityChange: (delta: number) => void;
+  onRedeem: () => void;
+  canAfford: boolean;
+  isLocked: boolean;
+  userPoints: number;
+  language: string;
+  t: (key: string) => string;
+  getLocalizedText: (item: Reward, field: 'title') => string;
+  getLocalizedDesc: (item: Reward) => string;
+  handleButtonSpeak: (text: string) => void;
+}
+
+function RewardCard({
+  reward,
+  quantity,
+  onQuantityChange,
+  onRedeem,
+  canAfford,
+  isLocked,
+  userPoints,
+  t,
+  getLocalizedText,
+  getLocalizedDesc,
+  handleButtonSpeak,
+}: RewardCardProps) {
+  const totalPoints = reward.points_cost * quantity;
+  const needMorePoints = totalPoints - userPoints;
+
+  return (
+    <div className="bg-card rounded-2xl shadow-soft p-5 border-2 border-transparent hover:border-primary/20 transition-colors">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <h4 className="text-lg font-bold text-foreground">{getLocalizedText(reward, 'title')}</h4>
+          <p className="text-sm text-muted-foreground">{getLocalizedDesc(reward)}</p>
+        </div>
+        <div className="text-right">
+          <div className="flex items-center gap-1 text-warning">
+            <Award className="w-5 h-5" />
+            <span className="font-bold">{reward.points_cost}</span>
+          </div>
+          <p className="text-xs text-muted-foreground">{t('profile.perVoucher')}</p>
+        </div>
+      </div>
+
+      {/* Quantity selector */}
+      <div className="flex items-center justify-between mb-4 p-3 bg-muted rounded-xl">
+        <span className="text-foreground font-medium">{t('profile.quantity')}</span>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-10 h-10 rounded-full"
+            onClick={() => onQuantityChange(-1)}
+            disabled={quantity <= 1 || isLocked}
+          >
+            <Minus className="w-4 h-4" />
+          </Button>
+          <span className="text-xl font-bold w-8 text-center">{quantity}</span>
+          <Button
+            variant="outline"
+            size="icon"
+            className="w-10 h-10 rounded-full"
+            onClick={() => onQuantityChange(1)}
+            disabled={quantity >= reward.max_quantity || isLocked}
+          >
+            <Plus className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Total and redeem */}
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-muted-foreground">{t('profile.totalPoints')}:</span>
+        <span className="text-lg font-bold text-warning">{totalPoints} pts</span>
+      </div>
+      
+      <Button
+        variant={isLocked ? 'outline' : canAfford ? 'warm' : 'outline'}
+        size="lg"
+        onClick={onRedeem}
+        onMouseEnter={() => handleButtonSpeak(isLocked ? t('profile.tierLocked') : canAfford ? t('profile.redeem') : t('profile.needMorePoints').replace('{points}', String(needMorePoints)))}
+        disabled={isLocked || !canAfford}
+        className="w-full"
+      >
+        {isLocked ? (
+          <><Lock className="w-4 h-4 mr-2" /> {t('profile.tierLocked')}</>
+        ) : canAfford ? (
+          t('profile.redeem')
+        ) : (
+          t('profile.needMorePoints').replace('{points}', String(needMorePoints))
+        )}
+      </Button>
     </div>
   );
 }
