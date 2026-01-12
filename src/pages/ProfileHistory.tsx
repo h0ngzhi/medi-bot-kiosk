@@ -4,7 +4,7 @@ import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
 import { supabase } from '@/integrations/supabase/client';
-import { speakText } from '@/utils/speechUtils';
+import { useDebouncedSpeak } from '@/hooks/useDebouncedSpeak';
 import { 
   ArrowLeft, 
   History,
@@ -34,11 +34,7 @@ export default function ProfileHistory() {
   const [signups, setSignups] = useState<ProgrammeSignup[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const handleSpeak = (text: string) => {
-    if (isTtsEnabled) {
-      speakText(text, language);
-    }
-  };
+  const { handleMouseEnter, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
 
   useEffect(() => {
     if (!user) {
@@ -98,7 +94,8 @@ export default function ProfileHistory() {
             variant="ghost"
             size="icon"
             onClick={() => navigate('/profile')}
-            onMouseEnter={() => handleSpeak(t('common.back'))}
+            onMouseEnter={() => handleMouseEnter(t('common.back'))}
+            onMouseLeave={handleMouseLeave}
             className="w-14 h-14 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -106,7 +103,8 @@ export default function ProfileHistory() {
           <div>
             <h1 
               className="text-heading text-foreground cursor-default" 
-              onMouseEnter={() => handleSpeak(t('profile.history'))}
+              onMouseEnter={() => handleMouseEnter(t('profile.history'))}
+              onMouseLeave={handleMouseLeave}
             >
               {t('profile.history')}
             </h1>

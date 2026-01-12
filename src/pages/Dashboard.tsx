@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { AccessibilityBar } from "@/components/AccessibilityBar";
-import { speakText } from "@/utils/speechUtils";
+import { useDebouncedSpeak } from "@/hooks/useDebouncedSpeak";
 import { Heart, MapPin, Users, User, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -166,11 +166,7 @@ export default function Dashboard() {
     };
   }, []);
 
-  const handleSpeak = (text: string) => {
-    if (isTtsEnabled) {
-      speakText(text, language);
-    }
-  };
+  const { handleMouseEnter, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
 
   const handleLogout = () => {
     setUser(null);
@@ -185,13 +181,15 @@ export default function Dashboard() {
           <div className="animate-fade-in">
             <p
               className="text-base text-muted-foreground cursor-default"
-              onMouseEnter={() => handleSpeak(t("dashboard.welcome"))}
+              onMouseEnter={() => handleMouseEnter(t("dashboard.welcome"))}
+              onMouseLeave={handleMouseLeave}
             >
               {t("dashboard.welcome")}
             </p>
             <h1
               className="text-2xl font-bold text-foreground cursor-default"
-              onMouseEnter={() => handleSpeak(user?.name || "Guest")}
+              onMouseEnter={() => handleMouseEnter(user?.name || "Guest")}
+              onMouseLeave={handleMouseLeave}
             >
               {user?.name || "Guest"}
             </h1>
@@ -200,7 +198,8 @@ export default function Dashboard() {
             variant="ghost"
             size="icon"
             onClick={handleLogout}
-            onMouseEnter={() => handleSpeak(t("common.logout"))}
+            onMouseEnter={() => handleMouseEnter(t("common.logout"))}
+            onMouseLeave={handleMouseLeave}
             className="w-12 h-12 rounded-full"
           >
             <LogOut className="w-5 h-5 text-muted-foreground" />
@@ -219,7 +218,8 @@ export default function Dashboard() {
         <div className="flex-1 flex flex-col">
           <h2
             className="text-xl font-bold text-foreground mb-3 animate-fade-in cursor-default text-center"
-            onMouseEnter={() => handleSpeak(t("dashboard.title"))}
+            onMouseEnter={() => handleMouseEnter(t("dashboard.title"))}
+            onMouseLeave={handleMouseLeave}
           >
             {t("dashboard.title")}
           </h2>
@@ -231,7 +231,8 @@ export default function Dashboard() {
                 key={item.id}
                 variant="outline"
                 onClick={() => navigate(item.path)}
-                onMouseEnter={() => handleSpeak(t(item.titleKey))}
+                onMouseEnter={() => handleMouseEnter(t(item.titleKey))}
+                onMouseLeave={handleMouseLeave}
                 className="h-full min-h-[140px] flex flex-col items-center justify-center gap-3 p-6 rounded-3xl border-2 hover:border-primary hover:bg-primary/5 transition-all duration-300 animate-slide-up"
                 style={{ animationDelay: `${(index + 2) * 0.1}s` }}
               >
@@ -240,7 +241,8 @@ export default function Dashboard() {
                 </div>
                 <div
                   className="text-center"
-                  onMouseEnter={() => handleSpeak(`${t(item.titleKey)}. ${t(item.descKey)}`)}
+                  onMouseEnter={() => handleMouseEnter(`${t(item.titleKey)}. ${t(item.descKey)}`)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <h3 className="text-lg font-bold text-foreground mb-1">{t(item.titleKey)}</h3>
                   <p className="text-sm text-muted-foreground line-clamp-2">{t(item.descKey)}</p>

@@ -20,7 +20,7 @@ import {
   QrCode
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { speakText } from '@/utils/speechUtils';
+import { useDebouncedSpeak } from '@/hooks/useDebouncedSpeak';
 import { toast } from '@/hooks/use-toast';
 import { Progress } from '@/components/ui/progress';
 
@@ -223,11 +223,7 @@ export default function Profile() {
     return null;
   };
 
-  const handleButtonSpeak = (text: string) => {
-    if (isTtsEnabled) {
-      speakText(text, language);
-    }
-  };
+  const { handleMouseEnter: handleButtonSpeak, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
 
   // Get redeemed quantity for a reward
   const getRedeemedQuantity = (rewardId: string) => {

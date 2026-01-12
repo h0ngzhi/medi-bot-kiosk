@@ -1,9 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import { useRef, useCallback } from 'react';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import { speakText } from '@/utils/speechUtils';
+import { speakText, stopSpeaking } from '@/utils/speechUtils';
 
 type Language = 'en' | 'zh' | 'ms' | 'ta';
+
+const SPEAK_DELAY_MS = 400;
 
 const languages: { code: Language; name: string; nativeName: string }[] = [
   { code: 'en', name: 'English', nativeName: 'English' },
@@ -15,12 +18,28 @@ const languages: { code: Language; name: string; nativeName: string }[] = [
 export default function LanguageSelection() {
   const { setLanguage, t, isTtsEnabled } = useApp();
   const navigate = useNavigate();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleSpeak = (text: string, lang: Language) => {
-    if (isTtsEnabled) {
-      speakText(text, lang);
+  const cancelPendingSpeech = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
-  };
+    stopSpeaking();
+  }, []);
+
+  const handleMouseEnter = useCallback((text: string, lang: Language) => {
+    if (!isTtsEnabled) return;
+    cancelPendingSpeech();
+    timeoutRef.current = setTimeout(() => {
+      speakText(text, lang);
+      timeoutRef.current = null;
+    }, SPEAK_DELAY_MS);
+  }, [isTtsEnabled, cancelPendingSpeech]);
+
+  const handleMouseLeave = useCallback(() => {
+    cancelPendingSpeech();
+  }, [cancelPendingSpeech]);
 
   const handleLanguageSelect = (lang: Language) => {
     setLanguage(lang);
@@ -41,13 +60,15 @@ export default function LanguageSelection() {
       <div className="text-center mb-12 animate-fade-in">
         <h1 
           className="text-display text-primary mb-4 cursor-default"
-          onMouseEnter={() => handleSpeak(t('lang.title'), 'en')}
+          onMouseEnter={() => handleMouseEnter(t('lang.title'), 'en')}
+          onMouseLeave={handleMouseLeave}
         >
           {t('lang.title')}
         </h1>
         <p 
           className="text-body-large text-muted-foreground cursor-default"
-          onMouseEnter={() => handleSpeak(t('lang.subtitle'), 'en')}
+          onMouseEnter={() => handleMouseEnter(t('lang.subtitle'), 'en')}
+          onMouseLeave={handleMouseLeave}
         >
           {t('lang.subtitle')}
         </p>
@@ -61,7 +82,8 @@ export default function LanguageSelection() {
             variant="language"
             size="language"
             onClick={() => handleLanguageSelect(lang.code)}
-            onMouseEnter={() => handleSpeak(lang.nativeName, lang.code)}
+            onMouseEnter={() => handleMouseEnter(lang.nativeName, lang.code)}
+            onMouseLeave={handleMouseLeave}
             className="animate-fade-in"
             style={{ animationDelay: `${index * 0.1}s` }}
           >

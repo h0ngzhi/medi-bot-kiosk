@@ -17,7 +17,8 @@ interface ClinicListPanelProps {
   onClinicSelect: (clinic: MapClinic) => void;
   onShowPhone: (phone: string, clinicName: string) => void;
   t: (key: string) => string;
-  handleSpeak: (text: string) => void;
+  handleMouseEnter: (text: string) => void;
+  handleMouseLeave: () => void;
 }
 
 export function ClinicListPanel({
@@ -26,7 +27,8 @@ export function ClinicListPanel({
   onClinicSelect,
   onShowPhone,
   t,
-  handleSpeak,
+  handleMouseEnter,
+  handleMouseLeave,
 }: ClinicListPanelProps) {
   const getClinicIcon = (type: MapClinic["type"]) => {
     switch (type) {
@@ -81,7 +83,8 @@ export function ClinicListPanel({
                 <div className="flex items-start justify-between gap-2">
                   <h3
                     className="font-semibold text-foreground text-sm leading-tight line-clamp-2"
-                    onMouseEnter={() => handleSpeak(clinic.name)}
+                    onMouseEnter={() => handleMouseEnter(clinic.name)}
+                    onMouseLeave={handleMouseLeave}
                   >
                     {clinic.name}
                   </h3>
