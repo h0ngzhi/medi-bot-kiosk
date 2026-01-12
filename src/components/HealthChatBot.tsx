@@ -82,7 +82,7 @@ export function HealthChatBot() {
   const { language } = useApp();
   const t = translations[language];
   
-  const [showNotification, setShowNotification] = useState(true);
+  const [isMinimized, setIsMinimized] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { role: "assistant", content: t.greeting }
@@ -127,12 +127,16 @@ export function HealthChatBot() {
   }, []);
 
   const handleOpenChat = () => {
-    setShowNotification(false);
+    setIsMinimized(false);
     setIsOpen(true);
   };
 
-  const handleDismiss = () => {
-    setShowNotification(false);
+  const handleMinimize = () => {
+    setIsMinimized(true);
+  };
+
+  const handleExpand = () => {
+    setIsMinimized(false);
   };
 
   const startListening = useCallback(() => {
@@ -304,8 +308,26 @@ export function HealthChatBot() {
 
   return (
     <>
+      {/* Minimized Bookmark Tab */}
+      {isMinimized && !isOpen && (
+        <button
+          onClick={handleExpand}
+          className="fixed bottom-6 right-0 z-50 bg-primary text-primary-foreground rounded-l-2xl shadow-lg px-3 py-4 flex items-center gap-2 hover:pr-5 transition-all duration-300 group"
+          aria-label="Expand help assistant"
+        >
+          <div className="w-10 h-10 rounded-full bg-primary-foreground/20 flex items-center justify-center overflow-hidden">
+            <Lottie 
+              animationData={healthAssistantAnimation} 
+              loop={true}
+              className="w-12 h-12"
+            />
+          </div>
+          <HelpCircle className="w-5 h-5 opacity-80 group-hover:opacity-100" />
+        </button>
+      )}
+
       {/* Notification Prompt */}
-      {showNotification && !isOpen && (
+      {!isMinimized && !isOpen && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom-4 fade-in duration-500">
           <div className="bg-card border-2 border-primary/20 rounded-2xl shadow-2xl p-5 max-w-sm">
             <div className="flex items-start gap-4">
@@ -330,7 +352,7 @@ export function HealthChatBot() {
               <Button
                 variant="outline"
                 className="flex-1 h-12 text-lg"
-                onClick={handleDismiss}
+                onClick={handleMinimize}
               >
                 {t.dismiss}
               </Button>
