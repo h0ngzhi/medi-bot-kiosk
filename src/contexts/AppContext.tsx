@@ -110,6 +110,12 @@ const translations: Record<Language, Record<string, string>> = {
     'findcare.dental': 'Dental',
     'findcare.contactNumber': 'Contact Number',
     'findcare.callNow': 'Call Now',
+    'findcare.locationFound': 'Location found! Showing clinics near you.',
+    'findcare.locationDenied': 'Location access denied. Please enable location in your browser settings.',
+    'findcare.locationUnavailable': 'Location information unavailable',
+    'findcare.locationTimeout': 'Location request timed out',
+    'findcare.locationError': 'Unable to get your location',
+    'findcare.loadFailed': 'Failed to load clinic data',
     
     // Medications
     'meds.title': 'Your Medications',
@@ -500,6 +506,12 @@ const translations: Record<Language, Record<string, string>> = {
     'findcare.dental': '牙科',
     'findcare.contactNumber': '联系电话',
     'findcare.callNow': '立即拨打',
+    'findcare.locationFound': '已找到位置！显示您附近的诊所。',
+    'findcare.locationDenied': '位置访问被拒绝。请在浏览器设置中启用位置。',
+    'findcare.locationUnavailable': '位置信息不可用',
+    'findcare.locationTimeout': '位置请求超时',
+    'findcare.locationError': '无法获取您的位置',
+    'findcare.loadFailed': '加载诊所数据失败',
     
     // Medications
     'meds.title': '您的药物',
@@ -874,6 +886,12 @@ const translations: Record<Language, Record<string, string>> = {
     'findcare.dental': 'Pergigian',
     'findcare.contactNumber': 'Nombor Hubungan',
     'findcare.callNow': 'Hubungi Sekarang',
+    'findcare.locationFound': 'Lokasi ditemui! Menunjukkan klinik berhampiran anda.',
+    'findcare.locationDenied': 'Akses lokasi ditolak. Sila aktifkan lokasi dalam tetapan pelayar anda.',
+    'findcare.locationUnavailable': 'Maklumat lokasi tidak tersedia',
+    'findcare.locationTimeout': 'Permintaan lokasi tamat masa',
+    'findcare.locationError': 'Tidak dapat mendapatkan lokasi anda',
+    'findcare.loadFailed': 'Gagal memuatkan data klinik',
     
     // Medications
     'meds.title': 'Ubat Anda',
@@ -1248,6 +1266,12 @@ const translations: Record<Language, Record<string, string>> = {
     'findcare.dental': 'பல்',
     'findcare.contactNumber': 'தொடர்பு எண்',
     'findcare.callNow': 'இப்போது அழைக்கவும்',
+    'findcare.locationFound': 'இடம் கண்டறியப்பட்டது! உங்களுக்கு அருகிலுள்ள கிளினிக்குகளைக் காட்டுகிறது.',
+    'findcare.locationDenied': 'இட அணுகல் மறுக்கப்பட்டது. உலாவி அமைப்புகளில் இருப்பிடத்தை இயக்கவும்.',
+    'findcare.locationUnavailable': 'இட தகவல் கிடைக்கவில்லை',
+    'findcare.locationTimeout': 'இட கோரிக்கை நேரம் முடிந்தது',
+    'findcare.locationError': 'உங்கள் இருப்பிடத்தைப் பெற இயலவில்லை',
+    'findcare.loadFailed': 'கிளினிக் தரவை ஏற்ற முடியவில்லை',
     
     // Medications
     'meds.title': 'உங்கள் மருந்துகள்',

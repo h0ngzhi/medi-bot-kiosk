@@ -234,20 +234,20 @@ export default function FindCare() {
         });
         setIsLocating(false);
         setDistanceFilter(3); // Default to 3km when location is available
-        toast.success("Location found! Showing clinics near you.", { duration: 5000 });
+        toast.success(t("findcare.locationFound"), { duration: 5000 });
       },
       (error) => {
         setIsLocating(false);
-        let errorMsg = "Unable to get your location";
+        let errorMsg = t("findcare.locationError");
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMsg = "Location access denied. Please enable location in your browser settings.";
+            errorMsg = t("findcare.locationDenied");
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMsg = "Location information unavailable";
+            errorMsg = t("findcare.locationUnavailable");
             break;
           case error.TIMEOUT:
-            errorMsg = "Location request timed out";
+            errorMsg = t("findcare.locationTimeout");
             break;
         }
         setLocationError(errorMsg);
@@ -354,7 +354,7 @@ export default function FindCare() {
         setClinics(allClinics);
       } catch (error) {
         console.error("Failed to load clinics data:", error);
-        toast.error("Failed to load clinic data");
+        toast.error(t("findcare.loadFailed"));
       } finally {
         setIsLoading(false);
       }
