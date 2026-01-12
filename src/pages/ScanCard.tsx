@@ -30,6 +30,7 @@ export default function ScanCard() {
   const [manualNric, setManualNric] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualChasType, setManualChasType] = useState('Blue');
+  const [manualPoints, setManualPoints] = useState('50');
   const [existingUsers, setExistingUsers] = useState<ExistingUser[]>([]);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
@@ -197,13 +198,15 @@ export default function ScanCard() {
       // If not found, create new user with scanned CHAS type
       if (!kioskUser) {
         isNewUser = true;
+        // Use custom points if set via manual entry, otherwise default to 50
+        const startingPoints = parseInt(manualPoints) || 50;
         const { data: newUser, error: insertError } = await supabase
           .from('kiosk_users')
           .insert({
             user_id: nric,
             name: name,
             chas_card_type: chasType.toLowerCase(),
-            points: 50, // Starting points for new users
+            points: startingPoints,
           })
           .select()
           .single();
@@ -407,10 +410,20 @@ export default function ScanCard() {
     window.location.reload();
   };
 
-  const handleQuickSelect = (user: ExistingUser) => {
+  const handleQuickSelect = async (user: ExistingUser) => {
     const chasType = user.chas_card_type 
       ? user.chas_card_type.charAt(0).toUpperCase() + user.chas_card_type.slice(1)
       : 'Blue';
+    
+    // Update points if a custom value is entered
+    const customPoints = parseInt(manualPoints);
+    if (!isNaN(customPoints) && customPoints >= 0) {
+      await supabase
+        .from('kiosk_users')
+        .update({ points: customPoints })
+        .eq('id', user.id);
+    }
+    
     const qrData = `${user.user_id}:${user.name}:${chasType}`;
     setShowManualEntry(false);
     handleQRCodeScanned(qrData);
@@ -602,6 +615,21 @@ export default function ScanCard() {
                 <option value="Merdeka generation">Merdeka Generation</option>
                 <option value="Pioneer generation">Pioneer Generation</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Starting Points (For Testing)</label>
+              <Input
+                type="number"
+                value={manualPoints}
+                onChange={(e) => setManualPoints(e.target.value)}
+                placeholder="50"
+                min="0"
+                className="h-12 text-lg"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Set custom points for new users or update existing users on Quick Select
+              </p>
             </div>
             
             <Button
