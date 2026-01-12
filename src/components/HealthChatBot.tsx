@@ -214,13 +214,24 @@ export function HealthChatBot() {
   }, [language, speakingIndex]);
 
   const streamChat = useCallback(async (userMessages: Message[]) => {
+    const languageNames: Record<Language, string> = {
+      en: "English",
+      zh: "Chinese (Simplified)",
+      ms: "Malay",
+      ta: "Tamil",
+    };
+
     const resp = await fetch(CHAT_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-      body: JSON.stringify({ messages: userMessages }),
+      body: JSON.stringify({ 
+        messages: userMessages,
+        language: language,
+        languageName: languageNames[language],
+      }),
     });
 
     if (!resp.ok) {
@@ -274,7 +285,7 @@ export function HealthChatBot() {
         }
       }
     }
-  }, []);
+  }, [language]);
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
