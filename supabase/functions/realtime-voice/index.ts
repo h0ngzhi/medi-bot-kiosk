@@ -59,41 +59,37 @@ serve(async (req) => {
         const sessionUpdate = {
           type: "session.update",
           session: {
-            modalities: ["text"], // No audio output - just listen and act
-            instructions: `You are a silent navigation assistant. Your ONLY job is to understand what page the user wants to go to and call the navigate_to function. 
-            
-            NEVER respond with text or speech. Just call the function silently.
-            
-            Available pages:
-            - home: Starting screen with slideshow
-            - scan: Scan NRIC/CHAS card to login
-            - language: Choose preferred language
-            - dashboard: Main home page
-            - health-screenings: Health screening results
-            - find-care: Find nearby clinics on a map
-            - community-programmes: Community health programmes
-            - profile: User profile and rewards
-            - admin-programmes: Staff programme management
-            - admin-slideshow: Staff slideshow management
-            
-            Listen for navigation requests and immediately call navigate_to. Do not speak or respond with text.`,
-            voice: "alloy",
+            modalities: ["text"], // TEXT ONLY - no audio output
+            instructions: `You are a SILENT navigation assistant. When the user asks to go somewhere, ONLY call the navigate_to function. Do NOT generate any text or audio response. Just call the function.
+
+Available pages:
+- home: Starting slideshow screen
+- scan: Scan card to login
+- language: Choose language
+- dashboard: Main home page
+- health-screenings: Health screening results
+- find-care: Find clinics on map
+- community-programmes: Community programmes
+- profile: User profile and rewards
+- admin-programmes: Staff programme management
+- admin-slideshow: Staff slideshow management
+
+CRITICAL: Never speak. Never respond with text. Just call navigate_to immediately.`,
             input_audio_format: "pcm16",
-            output_audio_format: "pcm16",
             input_audio_transcription: {
               model: "whisper-1",
             },
             turn_detection: {
               type: "server_vad",
-              threshold: 0.6,
-              prefix_padding_ms: 500,
-              silence_duration_ms: 1500,
+              threshold: 0.5,
+              prefix_padding_ms: 300,
+              silence_duration_ms: 800,
             },
             tools: [
               {
                 type: "function",
                 name: "navigate_to",
-                description: "Navigate to a specific page in the health kiosk app",
+                description: "Navigate to a page. Call this immediately without any response.",
                 parameters: {
                   type: "object",
                   properties: {
@@ -118,9 +114,9 @@ serve(async (req) => {
                 },
               },
             ],
-            tool_choice: "required", // Always use the tool
-            temperature: 0.3,
-            max_response_output_tokens: 50, // Minimal tokens since we don't need text
+            tool_choice: "required",
+            temperature: 0.1,
+            max_response_output_tokens: 1,
           },
         };
 

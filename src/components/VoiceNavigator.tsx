@@ -1,9 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, Check, Navigation } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { AudioRecorder, encodeAudioForAPI, AudioQueue } from '@/utils/audioUtils';
+import { AudioRecorder, encodeAudioForAPI } from '@/utils/audioUtils';
 import Lottie from 'lottie-react';
 import robotAnimation from '@/assets/robot-assistant.json';
 
@@ -12,22 +12,31 @@ interface VoiceNavigatorProps {
   onClose: () => void;
 }
 
-
 const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [response, setResponse] = useState('');
+  const [commandRecognized, setCommandRecognized] = useState<string | null>(null);
   
   const wsRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-  const audioQueueRef = useRef<AudioQueue | null>(null);
-  const isSpeakingRef = useRef(false);
+
+  const pageLabels: Record<string, string> = {
+    'home': 'Home',
+    'scan': 'Scan Card',
+    'language': 'Language',
+    'dashboard': 'Dashboard',
+    'health-screenings': 'Health Screenings',
+    'find-care': 'Find Care',
+    'community-programmes': 'Community Programmes',
+    'profile': 'Profile',
+    'admin-programmes': 'Admin Programmes',
+    'admin-slideshow': 'Admin Slideshow'
+  };
 
   const executeNavigation = useCallback((page: string) => {
     const routes: Record<string, string> = {
@@ -46,14 +55,17 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
     const route = routes[page];
     if (route) {
       console.log('Executing navigation to:', route);
-      navigate(route);
-      toast({
-        title: 'Navigating',
-        description: `Going to ${page.replace(/-/g, ' ')}`,
-      });
+      
+      // Show visual feedback
+      setCommandRecognized(page);
+      
+      // Navigate after brief visual feedback
+      setTimeout(() => {
+        navigate(route);
+        setCommandRecognized(null);
+      }, 800);
     }
-  }, [navigate, toast]);
-
+  }, [navigate]);
 
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
     const data = JSON.parse(event.data);
@@ -78,43 +90,8 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         setTranscript(data.transcript || '');
         break;
 
-      case 'response.audio.delta':
-        if (!isSpeakingRef.current) {
-          isSpeakingRef.current = true;
-          setIsSpeaking(true);
-          // Pause microphone while AI is speaking to prevent echo
-          recorderRef.current?.pause();
-        }
-        // Decode base64 audio and play
-        const binaryString = atob(data.delta);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        audioQueueRef.current?.addToQueue(bytes);
-        break;
-
-      case 'response.audio.done':
-        isSpeakingRef.current = false;
-        setIsSpeaking(false);
-        // Resume microphone
-        setTimeout(() => {
-          if (recorderRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
-            recorderRef.current.resume();
-          }
-        }, 150);
-        break;
-
-      case 'response.audio_transcript.delta':
-        // Ignore text responses - we're in silent mode
-        break;
-
-      case 'response.audio_transcript.done':
-        // Response complete
-        break;
-
       case 'response.function_call_arguments.done':
-        // Handle navigation tool call - navigate immediately (no voice to wait for)
+        // Handle navigation tool call - navigate immediately
         try {
           const args = JSON.parse(data.arguments);
           if (args.page) {
@@ -138,9 +115,8 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
 
   const connect = useCallback(async () => {
     try {
-      // Initialize audio context
+      // Initialize audio context for microphone
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
-      audioQueueRef.current = new AudioQueue(audioContextRef.current);
 
       // Connect to edge function
       const wsUrl = `wss://yvvnbmsbsrklajmoybwx.supabase.co/functions/v1/realtime-voice`;
@@ -166,8 +142,8 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         try {
           await recorderRef.current.start();
           toast({
-            title: 'Voice Assistant Ready',
-            description: 'Speak to navigate the app',
+            title: 'Voice Guide Ready',
+            description: 'Say where you want to go',
           });
         } catch (error) {
           console.error('Microphone error:', error);
@@ -194,7 +170,6 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         console.log('WebSocket closed');
         setIsConnected(false);
         setIsListening(false);
-        setIsSpeaking(false);
       };
     } catch (error) {
       console.error('Connection error:', error);
@@ -213,15 +188,13 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
     wsRef.current?.close();
     wsRef.current = null;
     
-    audioQueueRef.current?.clear();
     audioContextRef.current?.close();
     audioContextRef.current = null;
     
     setIsConnected(false);
     setIsListening(false);
-    setIsSpeaking(false);
     setTranscript('');
-    setResponse('');
+    setCommandRecognized(null);
   }, []);
 
   // Connect when opened, disconnect when closed
@@ -231,7 +204,6 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         connect();
       }
     } else {
-      // Always disconnect when not open
       disconnect();
     }
   }, [isOpen]);
@@ -252,16 +224,31 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
 
   return (
     <div className="fixed inset-0 z-50 pointer-events-none">
-      {/* Subtle backdrop - no blur, allows interaction with page behind */}
+      {/* Subtle backdrop */}
       <div className="absolute inset-0 bg-background/10" />
+      
+      {/* Command Recognized Overlay - Full Screen Visual Feedback */}
+      {commandRecognized && (
+        <div className="absolute inset-0 flex items-center justify-center bg-primary/20 backdrop-blur-sm pointer-events-auto animate-in fade-in duration-200">
+          <div className="bg-card rounded-3xl p-8 shadow-2xl border-4 border-primary flex flex-col items-center gap-4 animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center">
+              <Check className="w-12 h-12 text-primary-foreground" strokeWidth={3} />
+            </div>
+            <div className="text-center">
+              <p className="text-lg text-muted-foreground mb-1">Navigating to</p>
+              <p className="text-3xl font-bold text-card-foreground">{pageLabels[commandRecognized]}</p>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Floating Robot Animation - Bottom Right */}
       <div className="absolute bottom-24 right-4 pointer-events-auto">
-        <div className={`relative transition-all duration-500 ${isSpeaking ? 'scale-110' : isListening ? 'scale-105' : 'scale-100'}`}>
+        <div className={`relative transition-all duration-500 ${commandRecognized ? 'scale-110' : isListening ? 'scale-105' : 'scale-100'}`}>
           {/* Glow effect behind robot */}
           <div className={`absolute inset-0 rounded-full blur-2xl transition-all duration-300 ${
-            isSpeaking 
-              ? 'bg-primary/40 scale-150' 
+            commandRecognized
+              ? 'bg-primary/60 scale-150' 
               : isListening 
                 ? 'bg-green-500/30 scale-125' 
                 : 'bg-primary/20 scale-100'
@@ -272,13 +259,13 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
             <Lottie 
               animationData={robotAnimation} 
               loop={true}
-              className={`w-full h-full drop-shadow-2xl ${isSpeaking || isListening ? '' : 'opacity-80'}`}
+              className={`w-full h-full drop-shadow-2xl ${commandRecognized || isListening ? '' : 'opacity-80'}`}
             />
           </div>
           
           {/* Status indicator ring */}
           <div className={`absolute -inset-2 rounded-full border-4 transition-all duration-300 ${
-            isSpeaking 
+            commandRecognized 
               ? 'border-primary animate-pulse' 
               : isListening 
                 ? 'border-green-500 animate-pulse' 
@@ -296,7 +283,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3">
               <div className={`w-3 h-3 rounded-full ${
-                isSpeaking 
+                commandRecognized 
                   ? 'bg-primary animate-pulse' 
                   : isListening 
                     ? 'bg-green-500 animate-pulse' 
@@ -305,8 +292,8 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
                       : 'bg-muted-foreground'
               }`} />
               <span className="text-sm font-medium text-card-foreground">
-                {isSpeaking 
-                  ? 'Speaking...' 
+                {commandRecognized 
+                  ? `Going to ${pageLabels[commandRecognized]}...`
                   : isListening 
                     ? 'Listening...' 
                     : isConnected 
@@ -324,25 +311,15 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
             </Button>
           </div>
 
-          {/* Transcript/Response area - compact */}
-          {(transcript || response) ? (
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {transcript && (
-                <div className="bg-muted/50 rounded-lg p-2">
-                  <p className="text-xs text-muted-foreground">You:</p>
-                  <p className="text-sm text-card-foreground">{transcript}</p>
-                </div>
-              )}
-              {response && (
-                <div className="bg-primary/10 rounded-lg p-2">
-                  <p className="text-xs text-primary">Assistant:</p>
-                  <p className="text-sm text-card-foreground">{response}</p>
-                </div>
-              )}
+          {/* Transcript area */}
+          {transcript ? (
+            <div className="bg-muted/50 rounded-lg p-2">
+              <p className="text-xs text-muted-foreground">You said:</p>
+              <p className="text-sm text-card-foreground">{transcript}</p>
             </div>
           ) : (
             <p className="text-xs text-muted-foreground text-center">
-              Try: "Show health screenings" or "Find a clinic near me"
+              Try: "Go to community programmes" or "Show me health screenings"
             </p>
           )}
         </div>
