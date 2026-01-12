@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Hand } from 'lucide-react';
-import idleBackground from '@/assets/idle-background.jpeg';
+import idleBackground from '@/assets/idle-background.png';
 
 interface SlideItem {
   id: string;
