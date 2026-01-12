@@ -260,6 +260,7 @@ export type Database = {
         Row: {
           chas_card_type: string | null
           created_at: string
+          equipped_medal_id: string | null
           events_attended: number
           id: string
           name: string
@@ -270,6 +271,7 @@ export type Database = {
         Insert: {
           chas_card_type?: string | null
           created_at?: string
+          equipped_medal_id?: string | null
           events_attended?: number
           id?: string
           name: string
@@ -280,6 +282,7 @@ export type Database = {
         Update: {
           chas_card_type?: string | null
           created_at?: string
+          equipped_medal_id?: string | null
           events_attended?: number
           id?: string
           name?: string
@@ -287,7 +290,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "kiosk_users_equipped_medal_id_fkey"
+            columns: ["equipped_medal_id"]
+            isOneToOne: false
+            referencedRelation: "user_reward_redemptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       medications: {
         Row: {

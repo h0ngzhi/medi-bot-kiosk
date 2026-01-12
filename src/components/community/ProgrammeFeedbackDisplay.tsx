@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, User, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Star, User, Pencil, Trash2, Loader2, Trophy } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface Feedback {
   id: string;
@@ -25,6 +30,11 @@ interface Feedback {
   kiosk_user_id: string;
 }
 
+interface EquippedMedalInfo {
+  title: string;
+  image_url: string | null;
+}
+
 interface ProgrammeFeedbackDisplayProps {
   programmeId: string;
   seriesId?: string;
@@ -32,13 +42,21 @@ interface ProgrammeFeedbackDisplayProps {
 }
 
 export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback }: ProgrammeFeedbackDisplayProps) {
-  const { t, user } = useApp();
+  const { t, user, language } = useApp();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [userMedals, setUserMedals] = useState<Record<string, EquippedMedalInfo>>({});
+
+  const getLocalizedTitle = (reward: { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null }) => {
+    if (language === 'en') return reward.title;
+    const langKey = `title_${language}` as keyof typeof reward;
+    return (reward[langKey] as string | null) || reward.title;
+  };
 
   const fetchFeedbacks = async () => {
     setLoading(true);
+    let feedbackData: Feedback[] = [];
     
     if (seriesId) {
       const { data: seriesProgrammes } = await supabase
@@ -55,7 +73,7 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          setFeedbacks(data);
+          feedbackData = data;
         }
       }
     } else {
@@ -66,9 +84,58 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
         .order('created_at', { ascending: false });
 
       if (!error && data) {
-        setFeedbacks(data);
+        feedbackData = data;
       }
     }
+    
+    setFeedbacks(feedbackData);
+
+    // Fetch equipped medals for all feedback authors
+    if (feedbackData.length > 0) {
+      const userIds = [...new Set(feedbackData.map(f => f.kiosk_user_id))];
+      
+      const { data: usersData } = await supabase
+        .from('kiosk_users')
+        .select('id, equipped_medal_id')
+        .in('id', userIds)
+        .not('equipped_medal_id', 'is', null);
+
+      if (usersData && usersData.length > 0) {
+        const medalIds = usersData
+          .map(u => u.equipped_medal_id)
+          .filter((id): id is string => id !== null);
+
+        if (medalIds.length > 0) {
+          const { data: redemptionsData } = await supabase
+            .from('user_reward_redemptions')
+            .select(`
+              id,
+              rewards (title, title_zh, title_ms, title_ta, image_url)
+            `)
+            .in('id', medalIds);
+
+          if (redemptionsData) {
+            const medalsMap: Record<string, EquippedMedalInfo> = {};
+            
+            usersData.forEach(userData => {
+              if (userData.equipped_medal_id) {
+                const redemption = redemptionsData.find(r => r.id === userData.equipped_medal_id);
+                if (redemption?.rewards) {
+                  const reward = redemption.rewards as unknown as { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null; image_url: string | null };
+                  medalsMap[userData.id] = {
+                    title: getLocalizedTitle(reward),
+                    image_url: reward.image_url
+                  };
+                }
+              }
+            });
+            
+            setUserMedals(medalsMap);
+          }
+        }
+      }
+    }
+    
     setLoading(false);
   };
 
@@ -129,6 +196,7 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
       <div className="space-y-3 max-h-48 overflow-y-auto">
         {feedbacks.slice(0, 5).map((feedback) => {
           const isOwner = user?.id === feedback.kiosk_user_id;
+          const equippedMedal = userMedals[feedback.kiosk_user_id];
           
           return (
             <div key={feedback.id} className="bg-muted/50 rounded-xl p-3">
@@ -136,7 +204,28 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-primary" />
+                      {equippedMedal ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="flex-shrink-0">
+                              {equippedMedal.image_url ? (
+                                <img 
+                                  src={equippedMedal.image_url} 
+                                  alt={equippedMedal.title}
+                                  className="w-5 h-5 object-contain rounded"
+                                />
+                              ) : (
+                                <Trophy className="w-4 h-4 text-amber-500" />
+                              )}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>{equippedMedal.title}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <User className="w-4 h-4 text-primary" />
+                      )}
                       <span className="text-sm font-medium text-foreground">
                         {feedback.participant_name}
                         {isOwner && (

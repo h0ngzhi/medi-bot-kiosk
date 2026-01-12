@@ -71,6 +71,8 @@ export default function Profile() {
   const [eventsAttended, setEventsAttended] = useState(0);
   const [redeemedRewards, setRedeemedRewards] = useState<RedeemedReward[]>([]);
   const [printingCertId, setPrintingCertId] = useState<string | null>(null);
+  const [equippedMedalId, setEquippedMedalId] = useState<string | null>(null);
+  const [equippingMedalId, setEquippingMedalId] = useState<string | null>(null);
 
   // Generate a random voucher code
   const generateVoucherCode = () => {
@@ -108,11 +110,14 @@ export default function Profile() {
       if (user?.id) {
         const { data: userData } = await supabase
           .from('kiosk_users')
-          .select('events_attended')
+          .select('events_attended, equipped_medal_id')
           .eq('id', user.id)
           .single();
         
-        if (userData) setEventsAttended(userData.events_attended || 0);
+        if (userData) {
+          setEventsAttended(userData.events_attended || 0);
+          setEquippedMedalId(userData.equipped_medal_id || null);
+        }
 
         // Fetch redeemed rewards
         const { data: redemptions } = await supabase
@@ -322,6 +327,44 @@ export default function Profile() {
     });
   };
 
+  // Handle equipping/unequipping a medal
+  const handleEquipMedal = async (redemptionId: string | null) => {
+    if (!user) return;
+    
+    setEquippingMedalId(redemptionId || 'unequip');
+    
+    try {
+      const { error } = await supabase
+        .from('kiosk_users')
+        .update({ equipped_medal_id: redemptionId })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setEquippedMedalId(redemptionId);
+      
+      if (redemptionId) {
+        const medal = redeemedRewards.find(r => r.id === redemptionId);
+        toast({
+          title: t('profile.medalEquipped'),
+          description: medal?.reward ? getLocalizedText(medal.reward, 'title') : '',
+        });
+      } else {
+        toast({
+          title: t('profile.medalUnequipped'),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to equip medal:', error);
+      toast({
+        title: t('profile.equipFailed'),
+        variant: 'destructive',
+      });
+    } finally {
+      setEquippingMedalId(null);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -413,33 +456,70 @@ export default function Profile() {
         {/* Trophy Rack - Medals */}
         {redeemedMedals.length > 0 && (
           <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-3xl shadow-soft p-6 mb-6 animate-fade-in">
-            <div className="flex items-center gap-3 mb-4">
-              <Trophy className="w-7 h-7 text-amber-500" />
-              <h2 className="text-xl font-bold text-foreground">{t('profile.trophyRack')}</h2>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <Trophy className="w-7 h-7 text-amber-500" />
+                <h2 className="text-xl font-bold text-foreground">{t('profile.trophyRack')}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground">{t('profile.tapToEquip')}</p>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
-              {redeemedMedals.map((redemption) => (
-                <div key={redemption.id} className="text-center">
-                  {redemption.reward?.image_url ? (
-                    <img 
-                      src={redemption.reward.image_url}
-                      alt={getLocalizedText(redemption.reward, 'title')}
-                      className="w-20 h-20 mx-auto object-contain rounded-xl bg-white/50 p-2 shadow-sm"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 mx-auto rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                      <Trophy className="w-10 h-10 text-amber-500" />
-                    </div>
-                  )}
-                  <p className="text-sm font-medium text-foreground mt-2 line-clamp-2">
-                    {redemption.reward ? getLocalizedText(redemption.reward, 'title') : 'Medal'}
-                  </p>
-                  {redemption.quantity > 1 && (
-                    <span className="text-xs text-muted-foreground">x{redemption.quantity}</span>
-                  )}
-                </div>
-              ))}
+              {redeemedMedals.map((redemption) => {
+                const isEquipped = equippedMedalId === redemption.id;
+                const isEquipping = equippingMedalId === redemption.id;
+                
+                return (
+                  <button
+                    key={redemption.id}
+                    onClick={() => handleEquipMedal(redemption.id)}
+                    disabled={isEquipping}
+                    className={`text-center p-2 rounded-xl transition-all ${
+                      isEquipped 
+                        ? 'ring-4 ring-amber-500 bg-amber-100 dark:bg-amber-900/50 scale-105' 
+                        : 'hover:bg-white/50 dark:hover:bg-white/10'
+                    }`}
+                  >
+                    {isEquipping ? (
+                      <div className="w-20 h-20 mx-auto rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+                      </div>
+                    ) : redemption.reward?.image_url ? (
+                      <img 
+                        src={redemption.reward.image_url}
+                        alt={getLocalizedText(redemption.reward, 'title')}
+                        className="w-20 h-20 mx-auto object-contain rounded-xl bg-white/50 p-2 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 mx-auto rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                        <Trophy className="w-10 h-10 text-amber-500" />
+                      </div>
+                    )}
+                    <p className="text-sm font-medium text-foreground mt-2 line-clamp-2">
+                      {redemption.reward ? getLocalizedText(redemption.reward, 'title') : 'Medal'}
+                    </p>
+                    {isEquipped && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 mt-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        {t('profile.equipped')}
+                      </span>
+                    )}
+                    {redemption.quantity > 1 && !isEquipped && (
+                      <span className="text-xs text-muted-foreground">x{redemption.quantity}</span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
+            {equippedMedalId && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleEquipMedal(null)}
+                className="mt-4 text-muted-foreground"
+              >
+                {t('profile.unequipMedal')}
+              </Button>
+            )}
           </div>
         )}
 
