@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { ClinicMap, type MapClinic } from "@/components/findcare/ClinicMap";
+import { ClinicMap, clinicColors, type MapClinic } from "@/components/findcare/ClinicMap";
 import { ClinicListPanel } from "@/components/findcare/ClinicListPanel";
 
 interface GeoJSONFeature {
@@ -715,28 +715,28 @@ export default function FindCare() {
               />
               
               {/* Legend */}
-              <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm p-3 rounded-lg shadow-lg text-xs space-y-1.5">
-                <div className="font-semibold text-foreground mb-2">Clinic Types</div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-teal-500"></div>
-                  <span>GP Clinic</span>
+              <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm p-4 rounded-xl shadow-lg text-sm space-y-2">
+                <div className="font-bold text-foreground mb-3">Clinic Types</div>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.gp }}></div>
+                  <span className="font-medium">GP Clinic</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
-                  <span>Dental</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.dental }}></div>
+                  <span className="font-medium">Dental</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
-                  <span>Polyclinic</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.polyclinic }}></div>
+                  <span className="font-medium">Polyclinic</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
-                  <span>Hospital</span>
+                <div className="flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.hospital }}></div>
+                  <span className="font-medium">Hospital</span>
                 </div>
                 {userLocation && (
-                  <div className="flex items-center gap-2 pt-1 border-t mt-1">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <span>Your Location</span>
+                  <div className="flex items-center gap-3 pt-2 border-t mt-2">
+                    <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                    <span className="font-medium">Your Location</span>
                   </div>
                 )}
               </div>

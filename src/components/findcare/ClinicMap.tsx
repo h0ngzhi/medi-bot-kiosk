@@ -2,56 +2,87 @@ import { useEffect, useRef, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-// Fix default marker icons
-const DefaultIcon = L.icon({
-  iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-  iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-  shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  shadowSize: [41, 41],
-});
-L.Marker.prototype.options.icon = DefaultIcon;
-
-// Custom marker icons
-const createClinicIcon = (color: string) => {
+// Custom marker icons with distinct colors per category
+const createClinicIcon = (color: string, borderColor: string) => {
   return L.divIcon({
-    html: `<div style="
-      background-color: ${color};
-      width: 28px;
-      height: 28px;
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      border: 3px solid white;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    "></div>`,
-    className: "custom-marker",
-    iconSize: [28, 28],
-    iconAnchor: [14, 28],
-    popupAnchor: [0, -28],
+    html: `
+      <div style="
+        position: relative;
+        width: 36px;
+        height: 36px;
+      ">
+        <div style="
+          background-color: ${color};
+          width: 32px;
+          height: 32px;
+          border-radius: 50% 50% 50% 0;
+          transform: rotate(-45deg);
+          border: 3px solid ${borderColor};
+          box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+          position: absolute;
+          top: 0;
+          left: 2px;
+        "></div>
+        <div style="
+          position: absolute;
+          top: 6px;
+          left: 10px;
+          width: 16px;
+          height: 16px;
+          background: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        "></div>
+      </div>
+    `,
+    className: "custom-clinic-marker",
+    iconSize: [36, 36],
+    iconAnchor: [18, 36],
+    popupAnchor: [0, -36],
   });
 };
 
 const userIcon = L.divIcon({
-  html: `<div style="
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    border: 3px solid white;
-    box-shadow: 0 0 0 3px #3b82f6, 0 4px 10px rgba(0,0,0,0.3);
-  "></div>`,
-  className: "user-marker",
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  html: `
+    <div style="
+      position: relative;
+      width: 28px;
+      height: 28px;
+    ">
+      <div style="
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 4px solid white;
+        box-shadow: 0 0 0 3px #3b82f6, 0 4px 12px rgba(0,0,0,0.4);
+        position: absolute;
+        top: 2px;
+        left: 2px;
+      "></div>
+    </div>
+  `,
+  className: "user-location-marker",
+  iconSize: [28, 28],
+  iconAnchor: [14, 14],
 });
 
+// Distinct colors for each clinic type
 const clinicIcons = {
-  gp: createClinicIcon("#14b8a6"),
-  dental: createClinicIcon("#f97316"),
-  polyclinic: createClinicIcon("#8b5cf6"),
-  hospital: createClinicIcon("#ef4444"),
+  gp: createClinicIcon("#10b981", "#059669"),        // Emerald/Green for GP
+  dental: createClinicIcon("#f59e0b", "#d97706"),    // Amber/Orange for Dental
+  polyclinic: createClinicIcon("#8b5cf6", "#7c3aed"), // Purple for Polyclinic
+  hospital: createClinicIcon("#ef4444", "#dc2626"),  // Red for Hospital
+};
+
+// Color mapping for legend
+export const clinicColors = {
+  gp: "#10b981",
+  dental: "#f59e0b",
+  polyclinic: "#8b5cf6",
+  hospital: "#ef4444",
 };
 
 export interface MapClinic {
@@ -102,14 +133,6 @@ export function ClinicMap({
     return clinics.filter(c => c.distance && c.distance <= distanceFilter);
   }, [clinics, userLocation, distanceFilter]);
 
-  // Calculate zoom based on distance filter
-  const zoom = useMemo(() => {
-    if (!distanceFilter) return 12;
-    if (distanceFilter <= 1) return 15;
-    if (distanceFilter <= 3) return 14;
-    return 12;
-  }, [distanceFilter]);
-
   const getTypeLabel = (type: MapClinic["type"]) => {
     switch (type) {
       case "gp": return t("findcare.gpClinic");
@@ -117,6 +140,10 @@ export function ClinicMap({
       case "polyclinic": return t("findcare.polyclinic");
       case "hospital": return t("findcare.hospital");
     }
+  };
+
+  const getTypeColor = (type: MapClinic["type"]) => {
+    return clinicColors[type];
   };
 
   // Initialize map
@@ -142,18 +169,7 @@ export function ClinicMap({
     };
   }, []);
 
-  // Update map center and zoom when user location or filter changes
-  useEffect(() => {
-    if (!mapRef.current) return;
-
-    const center: [number, number] = userLocation 
-      ? [userLocation.lat, userLocation.lng] 
-      : defaultCenter;
-
-    mapRef.current.setView(center, zoom);
-  }, [userLocation, zoom]);
-
-  // Update user location marker and circle
+  // Update user location marker, circle, and auto-fit bounds
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -167,22 +183,44 @@ export function ClinicMap({
       circleRef.current = null;
     }
 
-    // Add new user marker and circle
+    // Add new user marker and circle, then fit bounds
     if (userLocation) {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
         .addTo(mapRef.current)
-        .bindPopup("<strong class='text-blue-600'>📍 You are here</strong>");
+        .bindPopup("<div style='text-align: center; font-weight: bold; color: #3b82f6;'>📍 You are here</div>");
 
       if (distanceFilter) {
+        // Create circle for distance radius
         circleRef.current = L.circle([userLocation.lat, userLocation.lng], {
           radius: distanceFilter * 1000,
           color: "#3b82f6",
           fillColor: "#3b82f6",
-          fillOpacity: 0.1,
-          weight: 2,
-          dashArray: "5, 5",
+          fillOpacity: 0.08,
+          weight: 3,
+          dashArray: "8, 8",
         }).addTo(mapRef.current);
+
+        // Auto-fit map to circle bounds with padding
+        const circleBounds = circleRef.current.getBounds();
+        mapRef.current.fitBounds(circleBounds, {
+          padding: [30, 30],
+          maxZoom: 16,
+          animate: true,
+          duration: 0.5,
+        });
+      } else {
+        // No distance filter - just center on user location
+        mapRef.current.setView([userLocation.lat, userLocation.lng], 13, {
+          animate: true,
+          duration: 0.5,
+        });
       }
+    } else {
+      // No user location - show all of Singapore
+      mapRef.current.setView(defaultCenter, 12, {
+        animate: true,
+        duration: 0.5,
+      });
     }
   }, [userLocation, distanceFilter]);
 
@@ -199,35 +237,82 @@ export function ClinicMap({
         icon: clinicIcons[clinic.type],
       });
 
+      const typeColor = getTypeColor(clinic.type);
       const popupContent = `
-        <div style="min-width: 200px; padding: 4px;">
-          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
-            <span style="font-size: 11px; background: #f3f4f6; padding: 2px 8px; border-radius: 9999px;">
+        <div style="min-width: 220px; padding: 8px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+            <span style="
+              font-size: 11px; 
+              background: ${typeColor}20; 
+              color: ${typeColor}; 
+              padding: 3px 10px; 
+              border-radius: 9999px;
+              font-weight: 600;
+              border: 1px solid ${typeColor}40;
+            ">
               ${getTypeLabel(clinic.type)}
             </span>
             ${clinic.distance !== undefined ? `
-              <span style="font-size: 11px; background: #dbeafe; color: #1d4ed8; padding: 2px 8px; border-radius: 9999px;">
-                ${clinic.distance.toFixed(1)} km
+              <span style="
+                font-size: 11px; 
+                background: #dbeafe; 
+                color: #1d4ed8; 
+                padding: 3px 10px; 
+                border-radius: 9999px;
+                font-weight: 600;
+              ">
+                ${clinic.distance.toFixed(1)} km away
               </span>
             ` : ''}
           </div>
-          <h3 style="font-weight: bold; font-size: 14px; margin-bottom: 8px; line-height: 1.3;">${clinic.name}</h3>
-          <div style="font-size: 12px; color: #6b7280; margin-bottom: 12px;">
-            <div style="margin-bottom: 4px;">📍 ${clinic.address}</div>
-            ${clinic.phone ? `<div>📞 ${clinic.phone}</div>` : ''}
+          <h3 style="font-weight: bold; font-size: 15px; margin-bottom: 10px; line-height: 1.4; color: #1f2937;">${clinic.name}</h3>
+          <div style="font-size: 13px; color: #6b7280; margin-bottom: 14px;">
+            <div style="margin-bottom: 6px; display: flex; align-items: flex-start; gap: 6px;">
+              <span>📍</span>
+              <span>${clinic.address}</span>
+            </div>
+            ${clinic.phone ? `
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span>📞</span>
+                <span>${clinic.phone}</span>
+              </div>
+            ` : ''}
           </div>
           <div style="display: flex; gap: 8px;">
             ${clinic.phone ? `
               <button 
                 onclick="window.location.href='tel:${clinic.phone.replace(/\s/g, '')}'"
-                style="flex: 1; padding: 6px 12px; font-size: 12px; background: white; border: 1px solid #e5e7eb; border-radius: 6px; cursor: pointer;"
+                style="
+                  flex: 1; 
+                  padding: 10px 12px; 
+                  font-size: 13px; 
+                  font-weight: 600;
+                  background: white; 
+                  border: 2px solid #e5e7eb; 
+                  border-radius: 8px; 
+                  cursor: pointer;
+                  transition: all 0.2s;
+                "
+                onmouseover="this.style.borderColor='#3b82f6'; this.style.color='#3b82f6';"
+                onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='inherit';"
               >
                 📞 Call
               </button>
             ` : ''}
             <button 
               onclick="window.open('https://maps.google.com/?q=${encodeURIComponent(clinic.address + ', Singapore ' + clinic.postalCode)}', '_blank')"
-              style="flex: 1; padding: 6px 12px; font-size: 12px; background: #14b8a6; color: white; border: none; border-radius: 6px; cursor: pointer;"
+              style="
+                flex: 1; 
+                padding: 10px 12px; 
+                font-size: 13px; 
+                font-weight: 600;
+                background: ${typeColor}; 
+                color: white; 
+                border: none; 
+                border-radius: 8px; 
+                cursor: pointer;
+                transition: all 0.2s;
+              "
             >
               🧭 Directions
             </button>
@@ -235,7 +320,7 @@ export function ClinicMap({
         </div>
       `;
 
-      marker.bindPopup(popupContent, { maxWidth: 280 });
+      marker.bindPopup(popupContent, { maxWidth: 300 });
       marker.on("click", () => onClinicSelect(clinic));
       marker.addTo(markersRef.current!);
     });
