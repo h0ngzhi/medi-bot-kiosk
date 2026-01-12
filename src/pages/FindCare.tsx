@@ -725,15 +725,6 @@ export default function FindCare() {
               <p className="text-3xl font-bold text-primary tracking-wide">
                 {phonePopup.phone}
               </p>
-              <Button
-                variant="default"
-                size="lg"
-                className="w-full text-lg h-14"
-                onClick={() => window.location.href = `tel:${phonePopup.phone.replace(/\s/g, "")}`}
-              >
-                <Phone className="w-5 h-5 mr-2" />
-                {t("findcare.callNow")}
-              </Button>
             </div>
           )}
         </DialogContent>
