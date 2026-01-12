@@ -2,13 +2,30 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Lock } from 'lucide-react';
+import { Lock, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
-const PROTOTYPE_PASSWORD = 'proidteam3healthhustlers123';
-const AUTH_KEY = 'prototype_authenticated';
+const AUTH_KEY = 'prototype_auth_token';
+const TOKEN_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 interface PrototypeGateProps {
   children: React.ReactNode;
+}
+
+function isValidToken(token: string | null): boolean {
+  if (!token) return false;
+  
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
+  
+  const timestamp = parseInt(parts[0], 10);
+  if (isNaN(timestamp)) return false;
+  
+  // Check if token has expired (24 hours)
+  const age = Date.now() - timestamp;
+  if (age > TOKEN_MAX_AGE_MS || age < 0) return false;
+  
+  return true;
 }
 
 export const PrototypeGate = ({ children }: PrototypeGateProps) => {
@@ -16,25 +33,52 @@ export const PrototypeGate = ({ children }: PrototypeGateProps) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
-    const auth = sessionStorage.getItem(AUTH_KEY);
-    if (auth === 'true') {
+    const token = sessionStorage.getItem(AUTH_KEY);
+    if (isValidToken(token)) {
       setIsAuthenticated(true);
+    } else {
+      // Clear invalid token
+      sessionStorage.removeItem(AUTH_KEY);
     }
     setIsLoading(false);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsVerifying(true);
 
-    if (password === PROTOTYPE_PASSWORD) {
-      sessionStorage.setItem(AUTH_KEY, 'true');
-      setIsAuthenticated(true);
-    } else {
-      setError('Incorrect password');
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('verify-prototype-access', {
+        body: { password }
+      });
+
+      if (fnError) {
+        throw fnError;
+      }
+
+      if (data?.success && data?.token) {
+        sessionStorage.setItem(AUTH_KEY, data.token);
+        setIsAuthenticated(true);
+      } else {
+        setError(data?.error || 'Incorrect password');
+        setPassword('');
+      }
+    } catch (err: any) {
+      console.error('Verification error:', err);
+      
+      // Handle rate limiting
+      if (err?.message?.includes('429') || err?.status === 429) {
+        setError('Too many attempts. Please wait a minute.');
+      } else {
+        setError('Verification failed. Please try again.');
+      }
       setPassword('');
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -72,13 +116,26 @@ export const PrototypeGate = ({ children }: PrototypeGateProps) => {
                 onChange={(e) => setPassword(e.target.value)}
                 className="text-center text-lg"
                 autoFocus
+                disabled={isVerifying}
               />
               {error && (
                 <p className="text-destructive text-sm text-center">{error}</p>
               )}
             </div>
-            <Button type="submit" className="w-full" size="lg">
-              Access Prototype
+            <Button 
+              type="submit" 
+              className="w-full" 
+              size="lg"
+              disabled={isVerifying || !password}
+            >
+              {isVerifying ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Access Prototype'
+              )}
             </Button>
           </form>
         </CardContent>
