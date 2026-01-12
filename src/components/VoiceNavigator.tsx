@@ -30,11 +30,16 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
 
   const handleNavigate = useCallback((page: string) => {
     const routes: Record<string, string> = {
+      'home': '/',
+      'scan': '/scan',
+      'language': '/language',
       'dashboard': '/dashboard',
       'health-screenings': '/health',
+      'find-care': '/findcare',
       'community-programmes': '/community',
-      'find-care': '/find-care',
-      'profile': '/profile'
+      'profile': '/profile',
+      'admin-programmes': '/admin/programmes',
+      'admin-slideshow': '/admin/slideshow'
     };
     
     const route = routes[page];
