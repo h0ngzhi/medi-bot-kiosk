@@ -26,6 +26,10 @@ import {
   Map,
   List,
   AlertCircle,
+  Info,
+  Heart,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -203,6 +207,10 @@ export default function FindCare() {
   
   // View mode (map vs list)
   const [viewMode, setViewMode] = useState<ViewMode>("map");
+  
+  // CCN Info expanded state
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [showWhyMatters, setShowWhyMatters] = useState(false);
 
   // Request user location on mount
   useEffect(() => {
@@ -425,8 +433,11 @@ export default function FindCare() {
             <ArrowLeft className="w-6 h-6" />
           </Button>
           <div className="flex-1" onMouseEnter={() => handleSpeak(`${t("findcare.title")}. ${t("findcare.subtitle")}`)}>
-            <h1 className="text-xl font-bold text-foreground">{t("findcare.title")}</h1>
-            <p className="text-sm text-muted-foreground">{t("findcare.subtitle")}</p>
+            <div className="flex items-center gap-2">
+              <Heart className="w-6 h-6 text-primary" />
+              <h1 className="text-xl font-bold text-foreground">{t("findcare.title")}</h1>
+            </div>
+            <p className="text-sm text-muted-foreground">{t("findcare.titleSubtext")}</p>
           </div>
           
           {/* View toggle */}
@@ -452,6 +463,74 @@ export default function FindCare() {
           </div>
         </div>
       </header>
+
+      {/* CCN Intro Section */}
+      <div className="bg-primary/5 border-b border-primary/20 px-4 py-3 flex-shrink-0">
+        <div className="max-w-7xl mx-auto space-y-3">
+          {/* Intro text */}
+          <div className="text-base text-foreground leading-relaxed" onMouseEnter={() => handleSpeak(`${t("findcare.ccnIntro1")} ${t("findcare.ccnIntro2")}`)}>
+            <p>{t("findcare.ccnIntro1")}</p>
+            <p className="text-muted-foreground mt-1">{t("findcare.ccnIntro2")}</p>
+          </div>
+          
+          {/* How It Works - Collapsible */}
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 gap-2"
+              onClick={() => setShowHowItWorks(!showHowItWorks)}
+            >
+              <Info className="w-4 h-4 text-primary" />
+              {t("findcare.howItWorks")}
+              {showHowItWorks ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-9 gap-2"
+              onClick={() => setShowWhyMatters(!showWhyMatters)}
+            >
+              <Heart className="w-4 h-4 text-primary" />
+              {t("findcare.whyMatters")}
+              {showWhyMatters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
+            
+            {/* Gentle nudge */}
+            <span className="text-sm text-primary font-medium flex items-center gap-1 ml-auto">
+              💡 {t("findcare.ccnNudge")}
+            </span>
+          </div>
+          
+          {/* How It Works expanded content */}
+          {showHowItWorks && (
+            <div className="bg-card rounded-xl p-4 border shadow-sm space-y-2" onMouseEnter={() => handleSpeak(`${t("findcare.howItWorks1")}. ${t("findcare.howItWorks2")}. ${t("findcare.howItWorks3")}`)}>
+              <ul className="space-y-2 text-base">
+                <li className="flex items-start gap-3">
+                  <Stethoscope className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+                  <span>{t("findcare.howItWorks1")}</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Hospital className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                  <span>{t("findcare.howItWorks2")}</span>
+                </li>
+                <li className="flex items-start gap-3">
+                  <Heart className="w-5 h-5 text-primary mt-0.5 flex-shrink-0" />
+                  <span>{t("findcare.howItWorks3")}</span>
+                </li>
+              </ul>
+            </div>
+          )}
+          
+          {/* Why It Matters expanded content */}
+          {showWhyMatters && (
+            <div className="bg-card rounded-xl p-4 border shadow-sm" onMouseEnter={() => handleSpeak(t("findcare.whyMattersText"))}>
+              <p className="text-base text-foreground">{t("findcare.whyMattersText")}</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Filters Bar */}
       <div className="bg-card border-b p-4 flex-shrink-0">
@@ -600,20 +679,26 @@ export default function FindCare() {
                 </Button>
               )}
               
-              {/* Legend */}
+              {/* Legend with CCN labels */}
               <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm p-4 rounded-xl shadow-lg text-sm space-y-2">
                 <div className="font-bold text-foreground mb-3">{t("findcare.clinicTypes")}</div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.gp }}></div>
-                  <span className="font-medium">{t("findcare.gpClinic")}</span>
+                  <div>
+                    <span className="font-medium">{t("findcare.gpLabel")}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.polyclinic }}></div>
-                  <span className="font-medium">{t("findcare.polyclinic")}</span>
+                  <div>
+                    <span className="font-medium">{t("findcare.polyclinicLabel")}</span>
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.hospital }}></div>
-                  <span className="font-medium">{t("findcare.hospital")}</span>
+                  <div>
+                    <span className="font-medium">{t("findcare.hospitalLabel")}</span>
+                  </div>
                 </div>
                 {userLocation && (
                   <div className="flex items-center gap-3 pt-2 border-t mt-2">
@@ -621,6 +706,7 @@ export default function FindCare() {
                     <span className="font-medium">{t("findcare.yourLocation")}</span>
                   </div>
                 )}
+                <p className="text-xs text-muted-foreground pt-2 border-t mt-2">{t("findcare.partOfCommunity")}</p>
               </div>
             </div>
 
@@ -658,6 +744,13 @@ export default function FindCare() {
           </div>
         )}
       </main>
+
+      {/* CCN Awareness Footer */}
+      <div className="flex-shrink-0 bg-muted/50 border-t px-4 py-2">
+        <p className="text-xs text-muted-foreground text-center max-w-4xl mx-auto">
+          {t("findcare.ccnFooter")}
+        </p>
+      </div>
 
       {/* Emergency notice */}
       <div className="flex-shrink-0 bg-destructive/10 border-t border-destructive/20 p-3">
