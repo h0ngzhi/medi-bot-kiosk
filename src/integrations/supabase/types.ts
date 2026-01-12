@@ -448,6 +448,7 @@ export type Database = {
           is_active: boolean
           max_quantity: number
           points_cost: number
+          reward_type: string | null
           tier: number
           title: string
           title_ms: string | null
@@ -466,6 +467,7 @@ export type Database = {
           is_active?: boolean
           max_quantity?: number
           points_cost: number
+          reward_type?: string | null
           tier?: number
           title: string
           title_ms?: string | null
@@ -484,6 +486,7 @@ export type Database = {
           is_active?: boolean
           max_quantity?: number
           points_cost?: number
+          reward_type?: string | null
           tier?: number
           title?: string
           title_ms?: string | null
@@ -595,6 +598,7 @@ export type Database = {
           redeemed_at: string
           reward_id: string
           status: string
+          voucher_code: string | null
         }
         Insert: {
           delivery_address?: Json | null
@@ -605,6 +609,7 @@ export type Database = {
           redeemed_at?: string
           reward_id: string
           status?: string
+          voucher_code?: string | null
         }
         Update: {
           delivery_address?: Json | null
@@ -615,6 +620,7 @@ export type Database = {
           redeemed_at?: string
           reward_id?: string
           status?: string
+          voucher_code?: string | null
         }
         Relationships: [
           {
