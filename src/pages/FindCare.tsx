@@ -19,11 +19,9 @@ import {
   Phone,
   MapPin,
   Clock,
-  Navigation,
   Search,
   Stethoscope,
   Loader2,
-  RefreshCw,
   Locate,
   Map,
   List,
@@ -181,7 +179,7 @@ const formatPhone = (phone: string): string => {
   return phone;
 };
 
-type FilterType = "all" | "gp" | "dental" | "polyclinic" | "hospital";
+type FilterType = "all" | "gp" | "polyclinic" | "hospital";
 type DistanceFilter = 1 | 3 | 5 | null;
 type ViewMode = "map" | "list";
 
@@ -194,8 +192,6 @@ export default function FindCare() {
   const [searchQuery, setSearchQuery] = useState("");
   const [clinics, setClinics] = useState<MapClinic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isFetchingHours, setIsFetchingHours] = useState(false);
-  const [fetchProgress, setFetchProgress] = useState({ current: 0, total: 0 });
   const [selectedHoursClinic, setSelectedHoursClinic] = useState<MapClinic | null>(null);
   const [selectedClinic, setSelectedClinic] = useState<MapClinic | null>(null);
   
@@ -308,13 +304,9 @@ export default function FindCare() {
           const region = getRegionFromPostal(postalCode);
           const licenceType = parsed["LICENCE_TYPE"] || "";
           
-          // CHAS clinics are only GP or Dental - NOT polyclinics or hospitals
-          // (Real government polyclinics/hospitals are added separately)
-          let type: MapClinic["type"] = "gp";
-          const name = (parsed["HCI_NAME"] || "").toLowerCase();
-          if (name.includes("dental") || licenceType === "DC") {
-            type = "dental";
-          }
+          // CHAS clinics are categorized as GP clinics (including dental)
+          // Real government polyclinics/hospitals are added separately
+          const type: MapClinic["type"] = "gp";
           
           const rawPhone = parsed["HCI_TEL"] || "";
           const cleanedPhone = rawPhone.replace(/\D/g, "");
@@ -416,104 +408,6 @@ export default function FindCare() {
 
   const handleShowPhone = (phone: string, clinicName: string) => {
     setPhonePopup({ phone, name: clinicName });
-  };
-
-  // Fetch missing hours from Google Places API
-  const fetchMissingHours = async () => {
-    const { data: cachedData } = await supabase
-      .from("clinic_hours_cache")
-      .select("clinic_id, status, hours");
-    
-    const cachedIds = new Set(cachedData?.map(c => c.clinic_id) || []);
-    const clinicsToFetch = clinics.filter(c => !c.hours && !cachedIds.has(c.id));
-    
-    if (clinicsToFetch.length === 0) {
-      toast.success("All clinics already have opening hours or have been checked!");
-      return;
-    }
-
-    setIsFetchingHours(true);
-    setFetchProgress({ current: 0, total: clinicsToFetch.length });
-
-    const updatedClinics = [...clinics];
-    const closedClinicIds: string[] = [];
-    let successCount = 0;
-    let closedCount = 0;
-
-    for (let i = 0; i < clinicsToFetch.length; i++) {
-      const clinic = clinicsToFetch[i];
-      setFetchProgress({ current: i + 1, total: clinicsToFetch.length });
-
-      try {
-        const { data, error } = await supabase.functions.invoke("fetch-clinic-hours", {
-          body: {
-            clinicName: clinic.name,
-            address: `${clinic.address}, Singapore ${clinic.postalCode}`,
-            phone: clinic.phone,
-          },
-        });
-
-        if (error) {
-          console.error(`Error fetching hours for ${clinic.name}:`, error);
-          continue;
-        }
-
-        if (data.status === "closed") {
-          await supabase.from("clinic_hours_cache").upsert({
-            clinic_id: clinic.id,
-            clinic_name: clinic.name,
-            status: "closed",
-            hours: null,
-            phone: clinic.phone,
-          }, { onConflict: "clinic_id" });
-          
-          closedClinicIds.push(clinic.id);
-          closedCount++;
-        } else if (data.status === "open") {
-          await supabase.from("clinic_hours_cache").upsert({
-            clinic_id: clinic.id,
-            clinic_name: data.data?.name || clinic.name,
-            status: "open",
-            hours: data.data?.hours || null,
-            phone: data.data?.phone || clinic.phone,
-          }, { onConflict: "clinic_id" });
-
-          if (data.data?.hours) {
-            const clinicIndex = updatedClinics.findIndex(c => c.id === clinic.id);
-            if (clinicIndex !== -1) {
-              updatedClinics[clinicIndex] = {
-                ...updatedClinics[clinicIndex],
-                hours: data.data.hours,
-                phone: data.data.phone || updatedClinics[clinicIndex].phone,
-                name: data.data.name || updatedClinics[clinicIndex].name,
-              };
-              successCount++;
-            }
-          }
-        } else if (data.status === "not_found") {
-          await supabase.from("clinic_hours_cache").upsert({
-            clinic_id: clinic.id,
-            clinic_name: clinic.name,
-            status: "not_found",
-            hours: null,
-            phone: clinic.phone,
-          }, { onConflict: "clinic_id" });
-        }
-
-        await new Promise(resolve => setTimeout(resolve, 200));
-      } catch (err) {
-        console.error(`Failed to fetch hours for ${clinic.name}:`, err);
-      }
-    }
-
-    const finalClinics = updatedClinics.filter(c => !closedClinicIds.includes(c.id));
-    setClinics(finalClinics);
-    setIsFetchingHours(false);
-
-    toast.success(
-      `Done! Updated ${successCount} clinics, removed ${closedCount} closed clinics.`,
-      { duration: 8000 }
-    );
   };
 
   return (
@@ -637,15 +531,6 @@ export default function FindCare() {
               {t("findcare.gp")}
             </Button>
             <Button
-              variant={filterType === "dental" ? "default" : "outline"}
-              onClick={() => setFilterType("dental")}
-              size="sm"
-              className="h-8"
-            >
-              <Building2 className="w-3.5 h-3.5 mr-1.5" />
-              {t("findcare.dental")}
-            </Button>
-            <Button
               variant={filterType === "polyclinic" ? "default" : "outline"}
               onClick={() => setFilterType("polyclinic")}
               size="sm"
@@ -664,32 +549,11 @@ export default function FindCare() {
               {t("findcare.hospital")}
             </Button>
             
-            {/* Results count and fetch button */}
-            <div className="flex-1 flex items-center justify-end gap-2">
+            {/* Results count */}
+            <div className="flex-1 flex items-center justify-end">
               <span className="text-sm text-muted-foreground">
                 {isLoading ? t("findcare.loading") : `${filteredClinics.length} ${t("findcare.clinicsFound")}`}
               </span>
-              {!isLoading && clinics.filter(c => !c.hours).length > 0 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchMissingHours}
-                  disabled={isFetchingHours}
-                  className="h-8"
-                >
-                  {isFetchingHours ? (
-                    <>
-                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                      {fetchProgress.current}/{fetchProgress.total}
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="w-3 h-3 mr-1.5" />
-                      {t("findcare.fetchHours")}
-                    </>
-                  )}
-                </Button>
-              )}
             </div>
           </div>
         </div>
@@ -730,7 +594,7 @@ export default function FindCare() {
                   {isLocating ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <Navigation className="w-4 h-4" />
+                    <Locate className="w-4 h-4" />
                   )}
                   <span className="ml-2">{t("findcare.recenter")}</span>
                 </Button>
@@ -742,10 +606,6 @@ export default function FindCare() {
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.gp }}></div>
                   <span className="font-medium">{t("findcare.gpClinic")}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.dental }}></div>
-                  <span className="font-medium">{t("findcare.dentalClinic")}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.polyclinic }}></div>
