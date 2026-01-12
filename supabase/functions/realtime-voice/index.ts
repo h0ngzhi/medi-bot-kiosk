@@ -59,26 +59,24 @@ serve(async (req) => {
         const sessionUpdate = {
           type: "session.update",
           session: {
-            modalities: ["text", "audio"],
-            instructions: `You are a helpful voice assistant for a health kiosk application in Singapore. 
-            You help elderly users navigate the app using voice commands.
+            modalities: ["text"], // No audio output - just listen and act
+            instructions: `You are a silent navigation assistant. Your ONLY job is to understand what page the user wants to go to and call the navigate_to function. 
             
-            Available pages you can navigate to:
-            - Home / Idle Screen: The starting screen with slideshow (route: home)
-            - Scan Card: Scan NRIC/CHAS card to login (route: scan)
-            - Language Selection: Choose preferred language (route: language)
-            - Dashboard: Main home page with quick actions and overview (route: dashboard)
-            - Health Screenings: View health screening results like blood pressure and weight, with AI-powered programme recommendations (route: health-screenings)
-            - Find Care / Clinics: Find nearby CHAS clinics, polyclinics, and hospitals on a map with opening hours (route: find-care)
-            - Community Programmes: Browse and sign up for community health programmes and activities (route: community-programmes)
-            - Profile / Rewards: View user profile, CHAS card, points and redeem rewards (route: profile)
-            - Admin Programmes: Staff page to manage community programmes (route: admin-programmes)
-            - Admin Slideshow: Staff page to manage idle screen slideshow (route: admin-slideshow)
+            NEVER respond with text or speech. Just call the function silently.
             
-            When users want to go somewhere, use the navigate_to tool with the appropriate route.
-            Keep your responses brief and clear, suitable for elderly users.
-            Speak in a warm, friendly, and patient tone.
-            Speak slightly slower than normal for better comprehension.`,
+            Available pages:
+            - home: Starting screen with slideshow
+            - scan: Scan NRIC/CHAS card to login
+            - language: Choose preferred language
+            - dashboard: Main home page
+            - health-screenings: Health screening results
+            - find-care: Find nearby clinics on a map
+            - community-programmes: Community health programmes
+            - profile: User profile and rewards
+            - admin-programmes: Staff programme management
+            - admin-slideshow: Staff slideshow management
+            
+            Listen for navigation requests and immediately call navigate_to. Do not speak or respond with text.`,
             voice: "alloy",
             input_audio_format: "pcm16",
             output_audio_format: "pcm16",
@@ -89,7 +87,7 @@ serve(async (req) => {
               type: "server_vad",
               threshold: 0.6,
               prefix_padding_ms: 500,
-              silence_duration_ms: 1800,
+              silence_duration_ms: 1500,
             },
             tools: [
               {
@@ -120,9 +118,9 @@ serve(async (req) => {
                 },
               },
             ],
-            tool_choice: "auto",
-            temperature: 0.7,
-            max_response_output_tokens: 300,
+            tool_choice: "required", // Always use the tool
+            temperature: 0.3,
+            max_response_output_tokens: 50, // Minimal tokens since we don't need text
           },
         };
 

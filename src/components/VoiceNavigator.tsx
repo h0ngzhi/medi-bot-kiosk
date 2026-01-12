@@ -27,8 +27,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   const recorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const audioQueueRef = useRef<AudioQueue | null>(null);
-  const isSpeakingRef = useRef(false); // Track speaking state for mic control
-  const pendingNavigationRef = useRef<string | null>(null); // Store pending navigation
+  const isSpeakingRef = useRef(false);
 
   const executeNavigation = useCallback((page: string) => {
     const routes: Record<string, string> = {
@@ -55,10 +54,6 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
     }
   }, [navigate, toast]);
 
-  const scheduleNavigation = useCallback((page: string) => {
-    console.log('Scheduling navigation to:', page);
-    pendingNavigationRef.current = page;
-  }, []);
 
   const handleWebSocketMessage = useCallback((event: MessageEvent) => {
     const data = JSON.parse(event.data);
@@ -102,27 +97,16 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       case 'response.audio.done':
         isSpeakingRef.current = false;
         setIsSpeaking(false);
-        
-        // Execute pending navigation after AI finishes speaking
-        if (pendingNavigationRef.current) {
-          const page = pendingNavigationRef.current;
-          pendingNavigationRef.current = null;
-          // Small delay to let the last audio play
-          setTimeout(() => {
-            executeNavigation(page);
-          }, 300);
-        } else {
-          // Resume microphone after AI finishes speaking
-          setTimeout(() => {
-            if (recorderRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
-              recorderRef.current.resume();
-            }
-          }, 150);
-        }
+        // Resume microphone
+        setTimeout(() => {
+          if (recorderRef.current && wsRef.current?.readyState === WebSocket.OPEN) {
+            recorderRef.current.resume();
+          }
+        }, 150);
         break;
 
       case 'response.audio_transcript.delta':
-        setResponse(prev => prev + (data.delta || ''));
+        // Ignore text responses - we're in silent mode
         break;
 
       case 'response.audio_transcript.done':
@@ -130,25 +114,11 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         break;
 
       case 'response.function_call_arguments.done':
-        // Handle navigation tool call
+        // Handle navigation tool call - navigate immediately (no voice to wait for)
         try {
           const args = JSON.parse(data.arguments);
           if (args.page) {
-            // Schedule navigation for after AI speaks confirmation
-            scheduleNavigation(args.page);
-          }
-          
-          // Send function result back to trigger voice confirmation
-          if (wsRef.current?.readyState === WebSocket.OPEN) {
-            wsRef.current.send(JSON.stringify({
-              type: 'conversation.item.create',
-              item: {
-                type: 'function_call_output',
-                call_id: data.call_id,
-                output: JSON.stringify({ success: true, navigated_to: args.page })
-              }
-            }));
-            wsRef.current.send(JSON.stringify({ type: 'response.create' }));
+            executeNavigation(args.page);
           }
         } catch (e) {
           console.error('Error parsing function call:', e);
@@ -164,7 +134,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         });
         break;
     }
-  }, [scheduleNavigation, executeNavigation, toast]);
+  }, [executeNavigation, toast]);
 
   const connect = useCallback(async () => {
     try {
