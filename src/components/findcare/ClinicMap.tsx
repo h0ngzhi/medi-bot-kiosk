@@ -200,16 +200,20 @@ export function ClinicMap({
           dashArray: "8, 8",
         }).addTo(mapRef.current);
 
-        // Auto-fit map to circle bounds with padding
-        const circleBounds = circleRef.current.getBounds();
-        mapRef.current.fitBounds(circleBounds, {
-          padding: [30, 30],
-          maxZoom: 16,
+        // Auto-fit map to circle bounds with generous padding
+        // Use a fixed zoom based on distance to ensure markers are visible
+        let targetZoom = 13;
+        if (distanceFilter <= 1) targetZoom = 14;
+        else if (distanceFilter <= 3) targetZoom = 13;
+        else if (distanceFilter <= 5) targetZoom = 12;
+        else targetZoom = 11;
+
+        mapRef.current.setView([userLocation.lat, userLocation.lng], targetZoom, {
           animate: true,
           duration: 0.5,
         });
       } else {
-        // No distance filter - just center on user location
+        // No distance filter - show user location with moderate zoom
         mapRef.current.setView([userLocation.lat, userLocation.lng], 13, {
           animate: true,
           duration: 0.5,
