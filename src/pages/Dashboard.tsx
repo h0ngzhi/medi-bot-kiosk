@@ -60,10 +60,10 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted pb-32">
+    <div className="h-screen bg-gradient-to-b from-background to-muted flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="bg-card shadow-soft p-6 mb-8">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
+      <header className="bg-card shadow-soft p-6 flex-shrink-0">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="animate-fade-in">
             <p
               className="text-lg text-muted-foreground cursor-default"
@@ -90,39 +90,37 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* Main content */}
-      <main className="max-w-2xl mx-auto px-6">
+      {/* Main content - Grid layout */}
+      <main className="flex-1 flex flex-col max-w-4xl mx-auto w-full px-6 py-6 pb-32">
         <h2
-          className="text-heading text-foreground mb-8 animate-fade-in cursor-default"
+          className="text-heading text-foreground mb-6 animate-fade-in cursor-default flex-shrink-0"
           style={{ animationDelay: "0.1s" }}
           onMouseEnter={() => handleSpeak(t("dashboard.title"))}
         >
           {t("dashboard.title")}
         </h2>
 
-        {/* Menu grid */}
-        <div className="space-y-4">
+        {/* 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-4 flex-1">
           {menuItems.map((item, index) => (
             <Button
               key={item.id}
-              variant="menu"
-              size="menu"
+              variant="outline"
               onClick={() => navigate(item.path)}
               onMouseEnter={() => handleSpeak(t(item.titleKey))}
-              className="w-full animate-slide-up"
+              className="h-full min-h-[140px] flex flex-col items-center justify-center gap-4 p-6 rounded-3xl border-2 hover:border-primary hover:bg-primary/5 transition-all duration-300 animate-slide-up"
               style={{ animationDelay: `${(index + 2) * 0.1}s` }}
             >
-              <div className={`w-16 h-16 rounded-2xl ${item.bgColor} flex items-center justify-center flex-shrink-0`}>
-                <item.icon className={`w-8 h-8 ${item.color}`} />
+              <div className={`w-20 h-20 rounded-2xl ${item.bgColor} flex items-center justify-center`}>
+                <item.icon className={`w-10 h-10 ${item.color}`} />
               </div>
               <div
-                className="flex-1 min-w-0"
+                className="text-center"
                 onMouseEnter={() => handleSpeak(`${t(item.titleKey)}. ${t(item.descKey)}`)}
               >
-                <h3 className="text-xl font-bold text-foreground">{t(item.titleKey)}</h3>
-                <p className="text-base text-muted-foreground">{t(item.descKey)}</p>
+                <h3 className="text-xl font-bold text-foreground mb-1">{t(item.titleKey)}</h3>
+                <p className="text-sm text-muted-foreground line-clamp-2">{t(item.descKey)}</p>
               </div>
-              <ChevronRight className="w-6 h-6 text-muted-foreground flex-shrink-0" />
             </Button>
           ))}
         </div>
