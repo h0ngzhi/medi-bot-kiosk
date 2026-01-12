@@ -11,7 +11,6 @@ import {
   CheckCircle2,
   Plus,
   Minus,
-  MapPin,
   Lock,
   Unlock,
   Trophy,
@@ -20,14 +19,6 @@ import {
   ChevronRight,
   QrCode
 } from 'lucide-react';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { speakText } from '@/utils/speechUtils';
 import { toast } from '@/hooks/use-toast';
@@ -74,20 +65,12 @@ export default function Profile() {
   const { user, t, setUser, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
   const [quantities, setQuantities] = useState<Record<string, number>>({});
-  const [showAddressDialog, setShowAddressDialog] = useState(false);
-  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingRewardId, setProcessingRewardId] = useState<string | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [tierSettings, setTierSettings] = useState<TierSetting[]>([]);
   const [eventsAttended, setEventsAttended] = useState(0);
   const [redeemedRewards, setRedeemedRewards] = useState<RedeemedReward[]>([]);
   const [printingCertId, setPrintingCertId] = useState<string | null>(null);
-  const [address, setAddress] = useState({
-    blockNo: '',
-    unitNo: '',
-    street: '',
-    postalCode: '',
-  });
 
   // Generate a random voucher code
   const generateVoucherCode = () => {
@@ -213,10 +196,28 @@ export default function Profile() {
     }
   };
 
+  // Get redeemed quantity for a reward
+  const getRedeemedQuantity = (rewardId: string) => {
+    return redeemedRewards
+      .filter(r => r.reward_id === rewardId)
+      .reduce((sum, r) => sum + r.quantity, 0);
+  };
+
+  // Get remaining quantity available to redeem
+  const getRemainingQuantity = (reward: Reward) => {
+    return reward.max_quantity - getRedeemedQuantity(reward.id);
+  };
+
+  // Check if reward is maxed out
+  const isMaxedOut = (reward: Reward) => {
+    return getRedeemedQuantity(reward.id) >= reward.max_quantity;
+  };
+
   const handleQuantityChange = (rewardId: string, delta: number, maxQty: number) => {
+    const remaining = getRemainingQuantity(rewards.find(r => r.id === rewardId)!);
     setQuantities(prev => {
       const current = prev[rewardId] || 1;
-      const newQty = Math.max(1, Math.min(maxQty, current + delta));
+      const newQty = Math.max(1, Math.min(Math.min(maxQty, remaining), current + delta));
       return { ...prev, [rewardId]: newQty };
     });
   };
@@ -227,7 +228,18 @@ export default function Profile() {
 
   const canAfford = (reward: Reward) => user && user.points >= getTotalPoints(reward);
 
-  const handleRedeemClick = (reward: Reward) => {
+  const handleRedeemClick = async (reward: Reward) => {
+    if (!user) return;
+
+    if (isMaxedOut(reward)) {
+      toast({
+        title: t('profile.maxedOut'),
+        description: t('profile.alreadyRedeemed'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     if (!isTierUnlocked(reward.tier)) {
       toast({
         title: t('profile.tierLocked'),
@@ -236,6 +248,7 @@ export default function Profile() {
       });
       return;
     }
+
     if (!canAfford(reward)) {
       toast({
         title: t('profile.notEnoughPoints'),
@@ -244,37 +257,21 @@ export default function Profile() {
       });
       return;
     }
-    setSelectedReward(reward);
-    setShowAddressDialog(true);
-  };
 
-  const handleConfirmRedeem = async () => {
-    if (!selectedReward || !user) return;
-    
-    if (!address.blockNo || !address.street || !address.postalCode) {
-      toast({
-        title: t('profile.fillAddress'),
-        description: t('profile.needAddress'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsProcessing(true);
-    const totalPointsToDeduct = getTotalPoints(selectedReward);
+    setProcessingRewardId(reward.id);
+    const totalPointsToDeduct = getTotalPoints(reward);
     const newPoints = user.points - totalPointsToDeduct;
 
     // Generate voucher code for voucher type rewards
-    const voucherCode = selectedReward.reward_type === 'voucher' ? generateVoucherCode() : null;
+    const voucherCode = reward.reward_type === 'voucher' ? generateVoucherCode() : null;
 
     try {
       // Create redemption record
       const { data: redemption } = await supabase.from('user_reward_redemptions').insert({
         kiosk_user_id: user.id,
-        reward_id: selectedReward.id,
-        quantity: getQuantity(selectedReward.id),
+        reward_id: reward.id,
+        quantity: getQuantity(reward.id),
         points_spent: totalPointsToDeduct,
-        delivery_address: address,
         voucher_code: voucherCode,
       }).select().single();
 
@@ -292,19 +289,16 @@ export default function Profile() {
       if (redemption) {
         setRedeemedRewards(prev => [{
           ...redemption,
-          reward: selectedReward
+          reward: reward
         }, ...prev]);
       }
 
       toast({
         title: t('profile.rewardRedeemed'),
-        description: `${getQuantity(selectedReward.id)}x ${getLocalizedText(selectedReward, 'title')} ${t('profile.willBeSent')}`,
+        description: `${getQuantity(reward.id)}x ${getLocalizedText(reward, 'title')}`,
       });
 
-      setShowAddressDialog(false);
-      setSelectedReward(null);
-      setAddress({ blockNo: '', unitNo: '', street: '', postalCode: '' });
-      setQuantities(prev => ({ ...prev, [selectedReward.id]: 1 }));
+      setQuantities(prev => ({ ...prev, [reward.id]: 1 }));
     } catch (error) {
       console.error('Failed to redeem reward:', error);
       toast({
@@ -313,7 +307,7 @@ export default function Profile() {
         variant: 'destructive',
       });
     } finally {
-      setIsProcessing(false);
+      setProcessingRewardId(null);
     }
   };
 
@@ -593,121 +587,34 @@ export default function Profile() {
             </div>
             
             <div className={`space-y-4 ${!isTierUnlocked(1) ? 'opacity-50' : ''}`}>
-              {rewards.map((reward) => (
-                <RewardCard
-                  key={reward.id}
-                  reward={reward}
-                  quantity={getQuantity(reward.id)}
-                  onQuantityChange={(delta) => handleQuantityChange(reward.id, delta, reward.max_quantity)}
-                  onRedeem={() => handleRedeemClick(reward)}
-                  canAfford={canAfford(reward)}
-                  isLocked={!isTierUnlocked(1)}
-                  userPoints={user.points}
-                  language={language}
-                  t={t}
-                  getLocalizedText={getLocalizedText}
-                  getLocalizedDesc={getLocalizedDesc}
-                  handleButtonSpeak={handleButtonSpeak}
-                />
-              ))}
+              {rewards.map((reward) => {
+                const remaining = getRemainingQuantity(reward);
+                const maxedOut = isMaxedOut(reward);
+                return (
+                  <RewardCard
+                    key={reward.id}
+                    reward={reward}
+                    quantity={getQuantity(reward.id)}
+                    onQuantityChange={(delta) => handleQuantityChange(reward.id, delta, reward.max_quantity)}
+                    onRedeem={() => handleRedeemClick(reward)}
+                    canAfford={canAfford(reward)}
+                    isLocked={!isTierUnlocked(1)}
+                    isMaxedOut={maxedOut}
+                    remainingQuantity={remaining}
+                    isProcessing={processingRewardId === reward.id}
+                    userPoints={user.points}
+                    language={language}
+                    t={t}
+                    getLocalizedText={getLocalizedText}
+                    getLocalizedDesc={getLocalizedDesc}
+                    handleButtonSpeak={handleButtonSpeak}
+                  />
+                );
+              })}
             </div>
           </div>
         </div>
       </main>
-
-      {/* Address Dialog */}
-      <Dialog open={showAddressDialog} onOpenChange={setShowAddressDialog}>
-        <DialogContent className="max-w-md mx-4">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-xl">
-              <MapPin className="w-6 h-6 text-primary" />
-              {t('profile.deliveryAddress')}
-            </DialogTitle>
-          </DialogHeader>
-          
-          <div className="space-y-4 mt-4">
-            <p className="text-muted-foreground">{t('profile.enterAddress')}</p>
-
-            {selectedReward && (
-              <div className="bg-muted rounded-xl p-4">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-bold">{getQuantity(selectedReward.id)}x {getLocalizedText(selectedReward, 'title')}</p>
-                    <p className="text-sm text-muted-foreground">{t('profile.pointsDeduct')}: {getTotalPoints(selectedReward)}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="blockNo" className="text-base">{t('meds.blockNo')} *</Label>
-                <Input
-                  id="blockNo"
-                  value={address.blockNo}
-                  onChange={(e) => setAddress(prev => ({ ...prev, blockNo: e.target.value }))}
-                  placeholder="123"
-                  className="h-14 text-lg"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="unitNo" className="text-base">{t('meds.unitNo')}</Label>
-                <Input
-                  id="unitNo"
-                  value={address.unitNo}
-                  onChange={(e) => setAddress(prev => ({ ...prev, unitNo: e.target.value }))}
-                  placeholder="#01-01"
-                  className="h-14 text-lg"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="street" className="text-base">{t('meds.street')} *</Label>
-              <Input
-                id="street"
-                value={address.street}
-                onChange={(e) => setAddress(prev => ({ ...prev, street: e.target.value }))}
-                placeholder="Bedok North Avenue 1"
-                className="h-14 text-lg"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="postalCode" className="text-base">{t('meds.postalCode')} *</Label>
-              <Input
-                id="postalCode"
-                value={address.postalCode}
-                onChange={(e) => setAddress(prev => ({ ...prev, postalCode: e.target.value }))}
-                placeholder="460123"
-                className="h-14 text-lg"
-                maxLength={6}
-              />
-            </div>
-
-            <div className="flex gap-3 pt-4">
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setShowAddressDialog(false)}
-                className="flex-1"
-                disabled={isProcessing}
-              >
-                {t('common.cancel')}
-              </Button>
-              <Button
-                variant="warm"
-                size="lg"
-                onClick={handleConfirmRedeem}
-                className="flex-1"
-                disabled={isProcessing}
-              >
-                {isProcessing ? t('profile.processing') : t('profile.confirmRedeem')}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <AccessibilityBar />
     </div>
@@ -722,6 +629,9 @@ interface RewardCardProps {
   onRedeem: () => void;
   canAfford: boolean;
   isLocked: boolean;
+  isMaxedOut: boolean;
+  remainingQuantity: number;
+  isProcessing: boolean;
   userPoints: number;
   language: string;
   t: (key: string) => string;
@@ -737,6 +647,9 @@ function RewardCard({
   onRedeem,
   canAfford,
   isLocked,
+  isMaxedOut,
+  remainingQuantity,
+  isProcessing,
   userPoints,
   t,
   getLocalizedText,
@@ -748,8 +661,10 @@ function RewardCard({
 
   const typeIcon = reward.reward_type === 'certificate' ? '📜' : reward.reward_type === 'medal' ? '🏆' : '🎫';
 
+  const isDisabled = isLocked || !canAfford || isMaxedOut || isProcessing;
+
   return (
-    <div className="bg-card rounded-2xl shadow-soft p-5 border-2 border-transparent hover:border-primary/20 transition-colors">
+    <div className={`bg-card rounded-2xl shadow-soft p-5 border-2 border-transparent transition-colors ${isMaxedOut ? 'opacity-50' : 'hover:border-primary/20'}`}>
       <div className="flex items-start gap-4 mb-3">
         {/* Badge Image */}
         {reward.image_url && (
@@ -769,6 +684,10 @@ function RewardCard({
                 <h4 className="text-lg font-bold text-foreground">{getLocalizedText(reward, 'title')}</h4>
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">{getLocalizedDesc(reward)}</p>
+              {/* Max quantity info */}
+              <p className="text-xs text-muted-foreground mt-1">
+                {t('profile.maxQuantity')}: {reward.max_quantity} ({remainingQuantity} {t('profile.remaining')})
+              </p>
             </div>
             <div className="text-right flex-shrink-0 ml-2">
               <div className="flex items-center gap-1 text-warning">
@@ -790,7 +709,7 @@ function RewardCard({
             size="icon"
             className="w-10 h-10 rounded-full"
             onClick={() => onQuantityChange(-1)}
-            disabled={quantity <= 1 || isLocked}
+            disabled={quantity <= 1 || isDisabled}
           >
             <Minus className="w-4 h-4" />
           </Button>
@@ -800,7 +719,7 @@ function RewardCard({
             size="icon"
             className="w-10 h-10 rounded-full"
             onClick={() => onQuantityChange(1)}
-            disabled={quantity >= reward.max_quantity || isLocked}
+            disabled={quantity >= remainingQuantity || isDisabled}
           >
             <Plus className="w-4 h-4" />
           </Button>
@@ -814,14 +733,23 @@ function RewardCard({
       </div>
       
       <Button
-        variant={isLocked ? 'outline' : canAfford ? 'warm' : 'outline'}
+        variant={isDisabled ? 'outline' : 'warm'}
         size="lg"
         onClick={onRedeem}
-        onMouseEnter={() => handleButtonSpeak(isLocked ? t('profile.tierLocked') : canAfford ? t('profile.redeem') : t('profile.needMorePoints').replace('{points}', String(needMorePoints)))}
-        disabled={isLocked || !canAfford}
+        onMouseEnter={() => handleButtonSpeak(
+          isMaxedOut ? t('profile.maxedOut') :
+          isLocked ? t('profile.tierLocked') : 
+          canAfford ? t('profile.redeem') : 
+          t('profile.needMorePoints').replace('{points}', String(needMorePoints))
+        )}
+        disabled={isDisabled}
         className="w-full"
       >
-        {isLocked ? (
+        {isProcessing ? (
+          <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {t('profile.processing')}</>
+        ) : isMaxedOut ? (
+          <><CheckCircle2 className="w-4 h-4 mr-2" /> {t('profile.maxedOut')}</>
+        ) : isLocked ? (
           <><Lock className="w-4 h-4 mr-2" /> {t('profile.tierLocked')}</>
         ) : canAfford ? (
           t('profile.redeem')
