@@ -83,7 +83,7 @@ export default function IdleScreen() {
       {/* Slideshow Content */}
       {slides.length > 0 && currentSlide ? (
         <div 
-          className={`absolute inset-0 transition-opacity duration-500 ${
+          className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-accent/5 transition-opacity duration-500 ${
             isTransitioning ? 'opacity-0' : 'opacity-100'
           }`}
         >
@@ -95,14 +95,14 @@ export default function IdleScreen() {
               muted
               loop
               playsInline
-              className="w-full h-full object-cover"
+              className="max-w-full max-h-full w-auto h-auto object-contain rounded-lg shadow-xl"
             />
           ) : (
             <img
               key={currentSlide.id}
               src={currentSlide.media_url}
               alt={currentSlide.title || 'Community Programme'}
-              className="w-full h-full object-cover"
+              className="max-w-[90%] max-h-[85vh] w-auto h-auto object-contain rounded-lg shadow-xl"
             />
           )}
 
