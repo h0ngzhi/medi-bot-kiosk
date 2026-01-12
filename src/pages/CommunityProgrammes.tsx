@@ -11,6 +11,7 @@ import { ProgrammeDetailModal } from '@/components/community/ProgrammeDetailModa
 import { speakText } from '@/utils/speechUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { isRegistrationOpen, getProgrammeStatus } from '@/utils/programmeUtils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   ArrowLeft, 
   Filter,
@@ -25,7 +26,9 @@ import {
   Calendar,
   MapPin,
   CheckCircle,
-  Star
+  Star,
+  ClipboardList,
+  History
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -59,6 +62,7 @@ export default function CommunityProgrammes() {
   const [editingFeedback, setEditingFeedback] = useState<EditingFeedback | null>(null);
   const [feedbackRefreshKey, setFeedbackRefreshKey] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [activeTab, setActiveTab] = useState<'all' | 'completed'>('all');
 
   // Check if current user is admin
   useEffect(() => {
@@ -302,6 +306,40 @@ export default function CommunityProgrammes() {
         </div>
       </header>
 
+      {/* Tabs for All Programmes vs Completed */}
+      <div className="max-w-2xl mx-auto px-6 mb-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'all' | 'completed')} className="w-full">
+          <TabsList className="w-full h-16 bg-muted/50 p-1 rounded-2xl grid grid-cols-2 gap-2">
+            <TabsTrigger 
+              value="all" 
+              className="h-full rounded-xl text-lg font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center justify-center gap-2"
+              onMouseEnter={() => handleSpeak(t('community.allProgrammes'))}
+            >
+              <ClipboardList className="w-5 h-5" />
+              {t('community.allProgrammes')}
+              {filteredUpcomingProgrammes.length > 0 && (
+                <span className="ml-1 bg-primary-foreground/20 px-2 py-0.5 rounded-full text-sm">
+                  {filteredUpcomingProgrammes.length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger 
+              value="completed" 
+              className="h-full rounded-xl text-lg font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center justify-center gap-2"
+              onMouseEnter={() => handleSpeak(t('community.completedProgrammes'))}
+            >
+              <History className="w-5 h-5" />
+              {t('community.completedProgrammes')}
+              {filteredCompletedProgrammes.length > 0 && (
+                <span className="ml-1 bg-primary-foreground/20 px-2 py-0.5 rounded-full text-sm">
+                  {filteredCompletedProgrammes.length}
+                </span>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
       {/* Category filters */}
       <div className="max-w-2xl mx-auto px-6 mb-6">
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
@@ -327,200 +365,202 @@ export default function CommunityProgrammes() {
         </div>
       </div>
 
-      {/* Your Programmes Section - Only shows upcoming programmes where cancel is allowed */}
-      {!loading && myProgrammes.length > 0 && (
-        <div className="max-w-2xl mx-auto px-6 mb-8">
-          <div className="bg-success/10 border-2 border-success/30 rounded-3xl p-6">
-            <h2 
-              className="text-xl font-bold text-success mb-4 flex items-center gap-3"
-              onMouseEnter={() => handleSpeak(t('community.yourProgrammes'))}
-            >
-              <UserCheck className="w-7 h-7" />
-              {t('community.yourProgrammes')}
-            </h2>
-            <div className="space-y-4">
-              {myProgrammes.map((programme) => (
-                <div 
-                  key={programme.id}
-                  className="bg-card rounded-2xl p-4 shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-                  onClick={() => {
-                    const element = document.getElementById(`programme-${programme.id}`);
-                    if (element) {
-                      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      element.classList.add('ring-2', 'ring-primary');
-                      setTimeout(() => element.classList.remove('ring-2', 'ring-primary'), 2000);
-                    }
-                  }}
+      {/* Tab Content */}
+      {activeTab === 'all' && (
+        <>
+          {/* Your Programmes Section - Only shows upcoming programmes where cancel is allowed */}
+          {!loading && myProgrammes.length > 0 && (
+            <div className="max-w-2xl mx-auto px-6 mb-8">
+              <div className="bg-success/10 border-2 border-success/30 rounded-3xl p-6">
+                <h2 
+                  className="text-xl font-bold text-success mb-4 flex items-center gap-3"
+                  onMouseEnter={() => handleSpeak(t('community.yourProgrammes'))}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-foreground mb-1">{programme.title}</h3>
-                      {programme.event_date && (
-                        <p className="text-base text-muted-foreground flex items-center gap-2">
-                          <Calendar className="w-5 h-5 text-primary" />
-                          {new Date(programme.event_date).toLocaleDateString('en-SG', { 
-                            weekday: 'short', 
-                            day: 'numeric', 
-                            month: 'short' 
-                          })}
-                        </p>
-                      )}
-                      {programme.location && (
-                        <p className="text-base text-muted-foreground flex items-center gap-2 mt-1">
-                          <MapPin className="w-5 h-5 text-primary" />
-                          {programme.location}
-                        </p>
-                      )}
+                  <UserCheck className="w-7 h-7" />
+                  {t('community.yourProgrammes')}
+                </h2>
+                <div className="space-y-4">
+                  {myProgrammes.map((programme) => (
+                    <div 
+                      key={programme.id}
+                      className="bg-card rounded-2xl p-4 shadow-sm cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                      onClick={() => {
+                        const element = document.getElementById(`programme-${programme.id}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          element.classList.add('ring-2', 'ring-primary');
+                          setTimeout(() => element.classList.remove('ring-2', 'ring-primary'), 2000);
+                        }
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-semibold text-foreground mb-1">{programme.title}</h3>
+                          {programme.event_date && (
+                            <p className="text-base text-muted-foreground flex items-center gap-2">
+                              <Calendar className="w-5 h-5 text-primary" />
+                              {new Date(programme.event_date).toLocaleDateString('en-SG', { 
+                                weekday: 'short', 
+                                day: 'numeric', 
+                                month: 'short' 
+                              })}
+                            </p>
+                          )}
+                          {programme.location && (
+                            <p className="text-base text-muted-foreground flex items-center gap-2 mt-1">
+                              <MapPin className="w-5 h-5 text-primary" />
+                              {programme.location}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="lg"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCancelParticipation(programme);
+                          }}
+                          className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground h-12 px-4"
+                        >
+                          <X className="w-5 h-5 mr-2" />
+                          {t('community.cancel')}
+                        </Button>
+                      </div>
                     </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Upcoming Programme cards */}
+          <div className="max-w-2xl mx-auto px-6 space-y-6">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : filteredUpcomingProgrammes.length > 0 ? (
+              filteredUpcomingProgrammes.map((programme, index) => (
+                <ProgrammeCard
+                  key={programme.id}
+                  programme={programme}
+                  onSignUp={handleSignUp}
+                  onCancel={handleCancelParticipation}
+                  onFeedback={handleFeedback}
+                  onExpand={handleExpand}
+                  index={index}
+                />
+              ))
+            ) : (
+              <div className="text-center py-12">
+                <ClipboardList className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+                <p className="text-muted-foreground text-lg">{t('community.noProgrammes')}</p>
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'completed' && (
+        <div className="max-w-2xl mx-auto px-6 space-y-6">
+          <p className="text-muted-foreground text-base">
+            {t('community.completedProgrammesDesc')}
+          </p>
+          
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          ) : filteredCompletedProgrammes.length > 0 ? (
+            filteredCompletedProgrammes.map((programme) => (
+              <div 
+                key={programme.id}
+                className="bg-card rounded-3xl shadow-soft overflow-hidden cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
+                onClick={() => handleExpand(programme)}
+              >
+                {/* Header */}
+                <div className="bg-muted/50 px-6 py-3 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <span className="font-semibold text-muted-foreground">{programme.category}</span>
+                    <span className="text-muted-foreground flex items-center gap-1.5">
+                      <CheckCircle className="w-4 h-4" />
+                      {t('community.completed')}
+                    </span>
+                  </div>
+                  <span className="text-sm text-primary font-medium">{t('community.tapToView')}</span>
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-foreground mb-2">{programme.title}</h3>
+                  
+                  {programme.event_date && (
+                    <p className="text-base text-muted-foreground flex items-center gap-2 mb-2">
+                      <Calendar className="w-5 h-5" />
+                      {new Date(programme.event_date).toLocaleDateString('en-SG', { 
+                        weekday: 'short', 
+                        day: 'numeric', 
+                        month: 'long',
+                        year: 'numeric'
+                      })}
+                    </p>
+                  )}
+
+                  {programme.location && (
+                    <p className="text-base text-muted-foreground flex items-center gap-2 mb-4">
+                      <MapPin className="w-5 h-5" />
+                      {programme.location}
+                    </p>
+                  )}
+
+                  {/* Quick feedback summary */}
+                  <ProgrammeFeedbackDisplay 
+                    key={feedbackRefreshKey}
+                    programmeId={programme.id} 
+                    seriesId={(programme as any).series_id}
+                    onEditFeedback={(feedback) => {
+                      handleEditFeedback(feedback, programme);
+                    }}
+                    compact
+                  />
+
+                  {/* Leave feedback button - for signed-up users OR admins */}
+                  {(programme.isSignedUp || isAdmin) && !programme.hasSubmittedFeedback && (
                     <Button
                       variant="outline"
                       size="lg"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleCancelParticipation(programme);
+                        handleFeedback(programme);
                       }}
-                      className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground h-12 px-4"
+                      className="w-full h-14 text-lg mt-4 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
                     >
-                      <X className="w-5 h-5 mr-2" />
-                      {t('community.cancel')}
+                      <Star className="w-5 h-5 mr-2" />
+                      {t('community.leaveFeedback')}
                     </Button>
-                  </div>
+                  )}
+
+                  {(programme.isSignedUp || isAdmin) && programme.hasSubmittedFeedback && (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      disabled
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full h-14 text-lg mt-4"
+                    >
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      {t('community.feedbackSubmittedShort')}
+                    </Button>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Upcoming Programme cards */}
-      <div className="max-w-2xl mx-auto px-6 space-y-6">
-        <h2 
-          className="text-xl font-bold text-foreground"
-          onMouseEnter={() => handleSpeak(t('community.allProgrammes'))}
-        >
-          {t('community.allProgrammes')}
-        </h2>
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : filteredUpcomingProgrammes.length > 0 ? (
-          filteredUpcomingProgrammes.map((programme, index) => (
-            <ProgrammeCard
-              key={programme.id}
-              programme={programme}
-              onSignUp={handleSignUp}
-              onCancel={handleCancelParticipation}
-              onFeedback={handleFeedback}
-              onExpand={handleExpand}
-              index={index}
-            />
-          ))
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground text-lg">{t('community.noProgrammes')}</p>
-          </div>
-        )}
-      </div>
-
-      {/* Completed Programmes Section */}
-      {!loading && filteredCompletedProgrammes.length > 0 && (
-        <div className="max-w-2xl mx-auto px-6 space-y-6 mt-10">
-          <h2 
-            className="text-xl font-bold text-foreground flex items-center gap-3"
-            onMouseEnter={() => handleSpeak(t('community.completedProgrammes'))}
-          >
-            <CheckCircle className="w-6 h-6 text-muted-foreground" />
-            {t('community.completedProgrammes')}
-          </h2>
-          <p className="text-muted-foreground text-base -mt-4">
-            {t('community.completedProgrammesDesc')}
-          </p>
-          
-          {filteredCompletedProgrammes.map((programme) => (
-            <div 
-              key={programme.id}
-              className="bg-card rounded-3xl shadow-soft overflow-hidden opacity-90 cursor-pointer hover:ring-2 hover:ring-primary/50 transition-all"
-              onClick={() => handleExpand(programme)}
-            >
-              {/* Header */}
-              <div className="bg-muted/50 px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="font-semibold text-muted-foreground">{programme.category}</span>
-                  <span className="text-muted-foreground flex items-center gap-1.5">
-                    <CheckCircle className="w-4 h-4" />
-                    {t('community.completed')}
-                  </span>
-                </div>
-                <span className="text-sm text-primary font-medium">{t('community.tapToView')}</span>
               </div>
-
-              {/* Content */}
-              <div className="p-6">
-                <h3 className="text-xl font-bold text-foreground mb-2">{programme.title}</h3>
-                
-                {programme.event_date && (
-                  <p className="text-base text-muted-foreground flex items-center gap-2 mb-2">
-                    <Calendar className="w-5 h-5" />
-                    {new Date(programme.event_date).toLocaleDateString('en-SG', { 
-                      weekday: 'short', 
-                      day: 'numeric', 
-                      month: 'long',
-                      year: 'numeric'
-                    })}
-                  </p>
-                )}
-
-                {programme.location && (
-                  <p className="text-base text-muted-foreground flex items-center gap-2 mb-4">
-                    <MapPin className="w-5 h-5" />
-                    {programme.location}
-                  </p>
-                )}
-
-                {/* Quick feedback summary */}
-                <ProgrammeFeedbackDisplay 
-                  key={feedbackRefreshKey}
-                  programmeId={programme.id} 
-                  seriesId={(programme as any).series_id}
-                  onEditFeedback={(feedback) => {
-                    // Prevent card click when editing
-                    handleEditFeedback(feedback, programme);
-                  }}
-                  compact
-                />
-
-                {/* Leave feedback button - for signed-up users OR admins */}
-                {(programme.isSignedUp || isAdmin) && !programme.hasSubmittedFeedback && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleFeedback(programme);
-                    }}
-                    className="w-full h-14 text-lg mt-4 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-                  >
-                    <Star className="w-5 h-5 mr-2" />
-                    {t('community.leaveFeedback')}
-                  </Button>
-                )}
-
-                {(programme.isSignedUp || isAdmin) && programme.hasSubmittedFeedback && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    disabled
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-full h-14 text-lg mt-4"
-                  >
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    {t('community.feedbackSubmittedShort')}
-                  </Button>
-                )}
-              </div>
+            ))
+          ) : (
+            <div className="text-center py-12">
+              <History className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+              <p className="text-muted-foreground text-lg">{t('community.noCompletedProgrammes')}</p>
             </div>
-          ))}
+          )}
         </div>
       )}
 
