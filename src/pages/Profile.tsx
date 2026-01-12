@@ -75,6 +75,7 @@ export default function Profile() {
   const [equippingMedalId, setEquippingMedalId] = useState<string | null>(null);
   const [dailyBonusClaimed, setDailyBonusClaimed] = useState(false);
   const [showingVoucherId, setShowingVoucherId] = useState<string | null>(null);
+  const [selectedTier, setSelectedTier] = useState<number>(1);
 
   // Generate a random voucher code
   const generateVoucherCode = () => {
@@ -696,31 +697,81 @@ export default function Profile() {
 
         {/* Rewards Section */}
         <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <div className="flex items-center gap-3 mb-6">
+          <div className="flex items-center gap-3 mb-4">
             <Gift className="w-8 h-8 text-primary" />
             <h2 className="text-2xl font-bold text-foreground">{t('profile.redeemRewards')}</h2>
           </div>
 
-          {/* Tier 1 Rewards - Certificates & Badges */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              {isTierUnlocked(1) ? (
-                <Unlock className="w-6 h-6 text-success" />
+          {/* Tier Selection Buttons */}
+          <div className="flex gap-3 mb-6 overflow-x-auto pb-2">
+            {tierSettings.map((tier) => {
+              const isUnlocked = isTierUnlocked(tier.tier);
+              const isSelected = selectedTier === tier.tier;
+              const tierRewardsCount = rewards.filter(r => r.tier === tier.tier).length;
+              
+              return (
+                <Button
+                  key={tier.tier}
+                  variant={isSelected ? 'default' : 'outline'}
+                  size="lg"
+                  onClick={() => setSelectedTier(tier.tier)}
+                  onMouseEnter={() => handleButtonSpeak(getTierTitle(tier))}
+                  className={`flex-shrink-0 h-14 px-6 gap-2 ${
+                    isSelected 
+                      ? 'ring-2 ring-primary ring-offset-2' 
+                      : !isUnlocked 
+                        ? 'opacity-60' 
+                        : ''
+                  }`}
+                >
+                  {isUnlocked ? (
+                    <Unlock className="w-5 h-5" />
+                  ) : (
+                    <Lock className="w-5 h-5" />
+                  )}
+                  <span className="font-bold">{getTierTitle(tier)}</span>
+                  {tierRewardsCount > 0 && (
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                      isSelected 
+                        ? 'bg-primary-foreground/20 text-primary-foreground' 
+                        : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {tierRewardsCount}
+                    </span>
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+
+          {/* Selected Tier Info */}
+          {tierSettings.find(t => t.tier === selectedTier) && (
+            <div className={`flex items-center gap-3 mb-4 p-3 rounded-xl ${
+              isTierUnlocked(selectedTier) 
+                ? 'bg-success/10 border border-success/20' 
+                : 'bg-muted border border-border'
+            }`}>
+              {isTierUnlocked(selectedTier) ? (
+                <>
+                  <Unlock className="w-5 h-5 text-success" />
+                  <span className="text-success font-medium">{t('profile.tierUnlocked')}</span>
+                </>
               ) : (
-                <Lock className="w-6 h-6 text-muted-foreground" />
-              )}
-              <h3 className="text-xl font-bold text-foreground">
-                {tierSettings.find(t => t.tier === 1) ? getTierTitle(tierSettings.find(t => t.tier === 1)!) : t('profile.certificatesAndBadges')}
-              </h3>
-              {!isTierUnlocked(1) && (
-                <span className="text-sm text-muted-foreground">
-                  ({tierSettings.find(t => t.tier === 1)?.events_required} {t('profile.eventsRequired')})
-                </span>
+                <>
+                  <Lock className="w-5 h-5 text-muted-foreground" />
+                  <span className="text-muted-foreground">
+                    {t('profile.attendEventsToUnlock').replace('{count}', String(tierSettings.find(t => t.tier === selectedTier)?.events_required || 0))}
+                  </span>
+                </>
               )}
             </div>
-            
-            <div className={`space-y-4 ${!isTierUnlocked(1) ? 'opacity-50' : ''}`}>
-              {rewards.map((reward) => {
+          )}
+
+          {/* Filtered Rewards by Tier */}
+          <div className={`space-y-4 ${!isTierUnlocked(selectedTier) ? 'opacity-50' : ''}`}>
+            {rewards
+              .filter(reward => reward.tier === selectedTier)
+              .map((reward) => {
                 const remaining = getRemainingQuantity(reward);
                 const maxedOut = isMaxedOut(reward);
                 return (
@@ -731,7 +782,7 @@ export default function Profile() {
                     onQuantityChange={(delta) => handleQuantityChange(reward.id, delta, reward.max_quantity)}
                     onRedeem={() => handleRedeemClick(reward)}
                     canAfford={canAfford(reward)}
-                    isLocked={!isTierUnlocked(1)}
+                    isLocked={!isTierUnlocked(selectedTier)}
                     isMaxedOut={maxedOut}
                     remainingQuantity={remaining}
                     isProcessing={processingRewardId === reward.id}
@@ -744,7 +795,12 @@ export default function Profile() {
                   />
                 );
               })}
-            </div>
+            {rewards.filter(reward => reward.tier === selectedTier).length === 0 && (
+              <div className="text-center py-8 text-muted-foreground">
+                <Gift className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                <p>{t('profile.noRewardsInTier')}</p>
+              </div>
+            )}
           </div>
         </div>
       </main>
