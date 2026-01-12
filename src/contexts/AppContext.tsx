@@ -395,6 +395,8 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.dailyBonusRule': 'Earn 5 points daily! Login bonus resets at 12am.',
     'profile.dailyBonusClaimed': 'Daily Bonus Claimed!',
     'profile.dailyBonusDesc': 'You earned 5 bonus points for logging in today.',
+    'profile.showBarcode': 'Show Barcode',
+    'profile.hideBarcode': 'Hide',
     
     // Accessibility
     'access.translate': 'Translate',
@@ -766,6 +768,8 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.dailyBonusRule': '每日可赚取5积分！登录奖励在凌晨12点重置。',
     'profile.dailyBonusClaimed': '已领取每日奖励！',
     'profile.dailyBonusDesc': '您今天登录获得了5积分奖励。',
+    'profile.showBarcode': '显示条形码',
+    'profile.hideBarcode': '隐藏',
     
     'access.translate': '翻译',
     'access.voice': '语音指南',
@@ -1135,6 +1139,8 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.dailyBonusRule': 'Dapatkan 5 mata setiap hari! Bonus log masuk ditetapkan semula pada 12 tengah malam.',
     'profile.dailyBonusClaimed': 'Bonus Harian Dituntut!',
     'profile.dailyBonusDesc': 'Anda mendapat 5 mata bonus kerana log masuk hari ini.',
+    'profile.showBarcode': 'Tunjuk Kod Bar',
+    'profile.hideBarcode': 'Sembunyi',
     
     'access.translate': 'Terjemah',
     'access.voice': 'Panduan Suara',
@@ -1503,6 +1509,8 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.dailyBonusRule': 'தினமும் 5 புள்ளிகள் பெறுங்கள்! உள்நுழைவு போனஸ் நள்ளிரவு 12 மணிக்கு மீட்டமைக்கப்படும்.',
     'profile.dailyBonusClaimed': 'தினசரி போனஸ் பெறப்பட்டது!',
     'profile.dailyBonusDesc': 'இன்று உள்நுழைந்ததற்கு 5 போனஸ் புள்ளிகள் பெற்றீர்கள்.',
+    'profile.showBarcode': 'பார்கோடு காட்டு',
+    'profile.hideBarcode': 'மறை',
     
     'access.translate': 'மொழிபெயர்',
     'access.voice': 'குரல் வழிகாட்டி',
