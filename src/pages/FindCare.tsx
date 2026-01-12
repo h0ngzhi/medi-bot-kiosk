@@ -7,6 +7,12 @@ import { speakText } from "@/utils/speechUtils";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   ArrowLeft,
   Building2,
   Hospital,
@@ -272,6 +278,8 @@ export default function FindCare() {
     }
   };
 
+  const [selectedHoursClinic, setSelectedHoursClinic] = useState<Clinic | null>(null);
+
   const filteredClinics = clinics.filter((clinic) => {
     const matchesType = filterType === "all" || clinic.type === filterType;
     const matchesRegion = selectedRegion === "all" || clinic.region === selectedRegion;
@@ -475,10 +483,15 @@ export default function FindCare() {
                       </span>
                     </div>
                     {clinic.hours && (
-                      <div className="flex items-start gap-2 text-muted-foreground">
-                        <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                        <span className="text-xs leading-relaxed">{clinic.hours}</span>
-                      </div>
+                      <button
+                        onClick={() => setSelectedHoursClinic(clinic)}
+                        className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors cursor-pointer text-left"
+                      >
+                        <Clock className="w-5 h-5 flex-shrink-0" />
+                        <span className="text-base font-medium underline underline-offset-2">
+                          View Opening Hours
+                        </span>
+                      </button>
                     )}
                     {clinic.phone && (
                       <div className="flex items-center gap-2 text-muted-foreground">
@@ -557,6 +570,36 @@ export default function FindCare() {
       </main>
 
       <AccessibilityBar />
+
+      {/* Operating Hours Dialog */}
+      <Dialog open={!!selectedHoursClinic} onOpenChange={() => setSelectedHoursClinic(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl flex items-center gap-2">
+              <Clock className="w-6 h-6 text-primary" />
+              Opening Hours
+            </DialogTitle>
+          </DialogHeader>
+          {selectedHoursClinic && (
+            <div className="space-y-4">
+              <p className="font-semibold text-lg text-foreground">
+                {selectedHoursClinic.name}
+              </p>
+              <div className="space-y-2 text-base">
+                {selectedHoursClinic.hours.split(" | ").map((dayHours, index) => {
+                  const [day, ...times] = dayHours.split(": ");
+                  return (
+                    <div key={index} className="flex justify-between items-start py-2 border-b border-border last:border-0">
+                      <span className="font-medium text-foreground">{day}</span>
+                      <span className="text-muted-foreground text-right">{times.join(": ")}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
