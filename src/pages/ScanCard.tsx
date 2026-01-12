@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, Camera, XCircle, Keyboard } from 'lucide-react';
+import { CheckCircle2, Loader2, Camera, XCircle, Keyboard, Trash2, Shield } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -13,6 +15,16 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 type ScanState = 'scanning' | 'processing' | 'success' | 'error';
 
@@ -21,6 +33,9 @@ interface ExistingUser {
   name: string;
   user_id: string;
   chas_card_type: string | null;
+  events_attended: number;
+  points: number;
+  is_admin?: boolean;
 }
 
 export default function ScanCard() {
@@ -31,23 +46,47 @@ export default function ScanCard() {
   const [manualName, setManualName] = useState('');
   const [manualChasType, setManualChasType] = useState('Blue');
   const [manualPoints, setManualPoints] = useState('50');
+  const [manualEventsAttended, setManualEventsAttended] = useState('0');
+  const [isAdmin, setIsAdmin] = useState(false);
   const [existingUsers, setExistingUsers] = useState<ExistingUser[]>([]);
+  const [userToDelete, setUserToDelete] = useState<ExistingUser | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
   const navigate = useNavigate();
   const { setUser, t } = useApp();
 
   // Fetch existing users when manual entry dialog opens
+  const fetchExistingUsers = async () => {
+    const { data: users } = await supabase
+      .from('kiosk_users')
+      .select('id, name, user_id, chas_card_type, events_attended, points')
+      .order('updated_at', { ascending: false })
+      .limit(5);
+    
+    if (users) {
+      // Check admin status for each user
+      const usersWithAdminStatus = await Promise.all(
+        users.map(async (user) => {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+          
+          return {
+            ...user,
+            is_admin: !!roleData
+          };
+        })
+      );
+      setExistingUsers(usersWithAdminStatus);
+    }
+  };
+
   useEffect(() => {
     if (showManualEntry) {
-      supabase
-        .from('kiosk_users')
-        .select('id, name, user_id, chas_card_type')
-        .order('updated_at', { ascending: false })
-        .limit(5)
-        .then(({ data }) => {
-          if (data) setExistingUsers(data);
-        });
+      fetchExistingUsers();
     }
   }, [showManualEntry]);
 
@@ -198,8 +237,9 @@ export default function ScanCard() {
       // If not found, create new user with scanned CHAS type
       if (!kioskUser) {
         isNewUser = true;
-        // Use custom points if set via manual entry, otherwise default to 50
+        // Use custom points and events if set via manual entry
         const startingPoints = parseInt(manualPoints) || 50;
+        const startingEvents = parseInt(manualEventsAttended) || 0;
         const { data: newUser, error: insertError } = await supabase
           .from('kiosk_users')
           .insert({
@@ -207,12 +247,20 @@ export default function ScanCard() {
             name: name,
             chas_card_type: chasType.toLowerCase(),
             points: startingPoints,
+            events_attended: startingEvents,
           })
           .select()
           .single();
 
         if (insertError) throw insertError;
         kioskUser = newUser;
+
+        // If admin checkbox was checked, add admin role
+        if (isAdmin) {
+          await supabase
+            .from('user_roles')
+            .insert({ user_id: kioskUser.id, role: 'admin' });
+        }
 
         // Auto-populate sample data for new users
         await populateNewUserData(kioskUser.id);
@@ -415,18 +463,53 @@ export default function ScanCard() {
       ? user.chas_card_type.charAt(0).toUpperCase() + user.chas_card_type.slice(1)
       : 'Blue';
     
-    // Update points if a custom value is entered
+    // Update points and events_attended if custom values are entered
     const customPoints = parseInt(manualPoints);
+    const customEvents = parseInt(manualEventsAttended);
+    const updates: Record<string, number> = {};
+    
     if (!isNaN(customPoints) && customPoints >= 0) {
+      updates.points = customPoints;
+    }
+    if (!isNaN(customEvents) && customEvents >= 0) {
+      updates.events_attended = customEvents;
+    }
+    
+    if (Object.keys(updates).length > 0) {
       await supabase
         .from('kiosk_users')
-        .update({ points: customPoints })
+        .update(updates)
         .eq('id', user.id);
     }
     
     const qrData = `${user.user_id}:${user.name}:${chasType}`;
     setShowManualEntry(false);
     handleQRCodeScanned(qrData);
+  };
+
+  const handleDeleteUser = async (user: ExistingUser) => {
+    try {
+      // Delete user roles first (cascade should handle this, but be explicit)
+      await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', user.id);
+      
+      // Delete the user (cascades to all related tables)
+      const { error } = await supabase
+        .from('kiosk_users')
+        .delete()
+        .eq('id', user.id);
+      
+      if (error) throw error;
+      
+      toast.success(`User ${user.name} deleted successfully`);
+      setUserToDelete(null);
+      fetchExistingUsers();
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
+    }
   };
 
   const formatChasTypeDisplay = (type: string | null): string => {
@@ -551,21 +634,38 @@ export default function ScanCard() {
                 <label className="block text-sm font-medium mb-2">Quick Select</label>
                 <div className="space-y-2">
                   {existingUsers.map((user) => (
-                    <button
-                      key={user.id}
-                      onClick={() => handleQuickSelect(user)}
-                      className="w-full p-3 text-left rounded-lg border border-border hover:bg-accent hover:border-primary transition-colors"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-foreground">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">{user.user_id}</p>
+                    <div key={user.id} className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleQuickSelect(user)}
+                        className="flex-1 p-3 text-left rounded-lg border border-border hover:bg-accent hover:border-primary transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium text-foreground flex items-center gap-2">
+                              {user.name}
+                              {user.is_admin && (
+                                <Shield className="w-4 h-4 text-amber-500" />
+                              )}
+                            </p>
+                            <p className="text-sm text-muted-foreground">{user.user_id}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {user.points} pts • {user.events_attended} events
+                            </p>
+                          </div>
+                          <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
+                            {formatChasTypeDisplay(user.chas_card_type)}
+                          </span>
                         </div>
-                        <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
-                          {formatChasTypeDisplay(user.chas_card_type)}
-                        </span>
-                      </div>
-                    </button>
+                      </button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setUserToDelete(user)}
+                        className="h-10 w-10 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -631,6 +731,38 @@ export default function ScanCard() {
                 Set custom points for new users or update existing users on Quick Select
               </p>
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Events Attended (For Testing)</label>
+              <Input
+                type="number"
+                value={manualEventsAttended}
+                onChange={(e) => setManualEventsAttended(e.target.value)}
+                placeholder="0"
+                min="0"
+                className="h-12 text-lg"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Set events attended for reward tier testing
+              </p>
+            </div>
+
+            <div className="flex items-center space-x-3 p-3 rounded-lg border border-border bg-amber-50 dark:bg-amber-950/20">
+              <Checkbox
+                id="isAdmin"
+                checked={isAdmin}
+                onCheckedChange={(checked) => setIsAdmin(checked === true)}
+              />
+              <div className="flex-1">
+                <label htmlFor="isAdmin" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+                  <Shield className="w-4 h-4 text-amber-500" />
+                  Create as Admin
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Admins can comment on any finished programme
+                </p>
+              </div>
+            </div>
             
             <Button
               variant="default"
@@ -644,6 +776,28 @@ export default function ScanCard() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete User Confirmation */}
+      <AlertDialog open={!!userToDelete} onOpenChange={(open) => !open && setUserToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{userToDelete?.name}</strong> and all their data 
+              (signups, feedback, screenings, etc.). This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => userToDelete && handleDeleteUser(userToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
