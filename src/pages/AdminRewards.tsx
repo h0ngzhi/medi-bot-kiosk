@@ -677,8 +677,18 @@ const AdminRewards = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="1">Tier 1</SelectItem>
-                            <SelectItem value="2">Tier 2</SelectItem>
+                            {tierSettings.length > 0 ? (
+                              tierSettings.map((tier) => (
+                                <SelectItem key={tier.id} value={tier.tier.toString()}>
+                                  Tier {tier.tier} - {tier.title}
+                                </SelectItem>
+                              ))
+                            ) : (
+                              <>
+                                <SelectItem value="1">Tier 1</SelectItem>
+                                <SelectItem value="2">Tier 2</SelectItem>
+                              </>
+                            )}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1036,7 +1046,12 @@ const AdminRewards = () => {
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Trophy
                             className={`h-5 w-5 ${
-                              tier.tier === 1 ? "text-amber-500" : "text-purple-500"
+                              tier.tier === 1 ? "text-amber-500" : 
+                              tier.tier === 2 ? "text-slate-400" : 
+                              tier.tier === 3 ? "text-yellow-400" : 
+                              tier.tier === 4 ? "text-cyan-400" :
+                              tier.tier === 5 ? "text-emerald-500" :
+                              "text-purple-500"
                             }`}
                           />
                           Tier {tier.tier}
