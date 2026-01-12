@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, Loader2, Camera, XCircle, Keyboard, Trash2, Shield } from 'lucide-react';
+import { CheckCircle2, Loader2, Camera, XCircle, Keyboard, Trash2, Shield, Pencil } from 'lucide-react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { useApp } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -50,6 +50,9 @@ export default function ScanCard() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [existingUsers, setExistingUsers] = useState<ExistingUser[]>([]);
   const [userToDelete, setUserToDelete] = useState<ExistingUser | null>(null);
+  const [userToEdit, setUserToEdit] = useState<ExistingUser | null>(null);
+  const [editPoints, setEditPoints] = useState('');
+  const [editEvents, setEditEvents] = useState('');
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isRunningRef = useRef(false);
   const navigate = useNavigate();
@@ -516,6 +519,42 @@ export default function ScanCard() {
     }
   };
 
+  const handleOpenEditUser = (user: ExistingUser) => {
+    setUserToEdit(user);
+    setEditPoints(String(user.points));
+    setEditEvents(String(user.events_attended));
+  };
+
+  const handleSaveEditUser = async () => {
+    if (!userToEdit) return;
+    
+    try {
+      const updates: Record<string, number> = {};
+      const newPoints = parseInt(editPoints);
+      const newEvents = parseInt(editEvents);
+      
+      if (!isNaN(newPoints)) updates.points = newPoints;
+      if (!isNaN(newEvents)) updates.events_attended = newEvents;
+      
+      if (Object.keys(updates).length > 0) {
+        const { error } = await supabase
+          .from('kiosk_users')
+          .update(updates)
+          .eq('id', userToEdit.id);
+        
+        if (error) throw error;
+        
+        toast.success(`Updated ${userToEdit.name}'s stats`);
+        fetchExistingUsers();
+      }
+      
+      setUserToEdit(null);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error('Failed to update user');
+    }
+  };
+
   const formatChasTypeDisplay = (type: string | null): string => {
     if (!type) return 'Blue';
     const lower = type.toLowerCase();
@@ -664,6 +703,14 @@ export default function ScanCard() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => handleOpenEditUser(user)}
+                        className="h-10 w-10 text-primary hover:bg-primary/10"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => setUserToDelete(user)}
                         className="h-10 w-10 text-destructive hover:bg-destructive/10"
                       >
@@ -802,6 +849,61 @@ export default function ScanCard() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit User Dialog */}
+      <Dialog open={!!userToEdit} onOpenChange={(open) => !open && setUserToEdit(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Edit User Stats</DialogTitle>
+            <DialogDescription className="text-base">
+              Update points and events for <strong>{userToEdit?.name}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Points</label>
+              <Input
+                type="number"
+                value={editPoints}
+                onChange={(e) => setEditPoints(e.target.value)}
+                min="0"
+                className="h-12 text-lg"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-2">Events Attended</label>
+              <Input
+                type="number"
+                value={editEvents}
+                onChange={(e) => setEditEvents(e.target.value)}
+                min="0"
+                className="h-12 text-lg"
+              />
+            </div>
+            
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => setUserToEdit(null)}
+                className="flex-1 h-12"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="default"
+                size="lg"
+                onClick={handleSaveEditUser}
+                className="flex-1 h-12"
+              >
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
