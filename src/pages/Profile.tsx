@@ -257,8 +257,6 @@ export default function Profile() {
 
   if (!user) return null;
 
-  const tier1Rewards = rewards.filter(r => r.tier === 1);
-  const tier2Rewards = rewards.filter(r => r.tier === 2);
   const nextTier = getNextTierProgress();
 
   return (
@@ -349,7 +347,7 @@ export default function Profile() {
             <h2 className="text-2xl font-bold text-foreground">{t('profile.redeemRewards')}</h2>
           </div>
 
-          {/* Tier 1 Rewards */}
+          {/* Tier 1 Rewards - Certificates & Badges */}
           <div className="mb-8">
             <div className="flex items-center gap-3 mb-4">
               {isTierUnlocked(1) ? (
@@ -358,7 +356,7 @@ export default function Profile() {
                 <Lock className="w-6 h-6 text-muted-foreground" />
               )}
               <h3 className="text-xl font-bold text-foreground">
-                {tierSettings.find(t => t.tier === 1) ? getTierTitle(tierSettings.find(t => t.tier === 1)!) : 'Tier 1'}
+                {tierSettings.find(t => t.tier === 1) ? getTierTitle(tierSettings.find(t => t.tier === 1)!) : t('profile.certificatesAndBadges')}
               </h3>
               {!isTierUnlocked(1) && (
                 <span className="text-sm text-muted-foreground">
@@ -368,7 +366,7 @@ export default function Profile() {
             </div>
             
             <div className={`space-y-4 ${!isTierUnlocked(1) ? 'opacity-50' : ''}`}>
-              {tier1Rewards.map((reward) => (
+              {rewards.map((reward) => (
                 <RewardCard
                   key={reward.id}
                   reward={reward}
@@ -377,45 +375,6 @@ export default function Profile() {
                   onRedeem={() => handleRedeemClick(reward)}
                   canAfford={canAfford(reward)}
                   isLocked={!isTierUnlocked(1)}
-                  userPoints={user.points}
-                  language={language}
-                  t={t}
-                  getLocalizedText={getLocalizedText}
-                  getLocalizedDesc={getLocalizedDesc}
-                  handleButtonSpeak={handleButtonSpeak}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Tier 2 Rewards */}
-          <div className="mb-8">
-            <div className="flex items-center gap-3 mb-4">
-              {isTierUnlocked(2) ? (
-                <Unlock className="w-6 h-6 text-success" />
-              ) : (
-                <Lock className="w-6 h-6 text-muted-foreground" />
-              )}
-              <h3 className="text-xl font-bold text-foreground">
-                {tierSettings.find(t => t.tier === 2) ? getTierTitle(tierSettings.find(t => t.tier === 2)!) : 'Tier 2'}
-              </h3>
-              {!isTierUnlocked(2) && (
-                <span className="text-sm text-muted-foreground">
-                  ({tierSettings.find(t => t.tier === 2)?.events_required} {t('profile.eventsRequired')})
-                </span>
-              )}
-            </div>
-            
-            <div className={`space-y-4 ${!isTierUnlocked(2) ? 'opacity-50' : ''}`}>
-              {tier2Rewards.map((reward) => (
-                <RewardCard
-                  key={reward.id}
-                  reward={reward}
-                  quantity={getQuantity(reward.id)}
-                  onQuantityChange={(delta) => handleQuantityChange(reward.id, delta, reward.max_quantity)}
-                  onRedeem={() => handleRedeemClick(reward)}
-                  canAfford={canAfford(reward)}
-                  isLocked={!isTierUnlocked(2)}
                   userPoints={user.points}
                   language={language}
                   t={t}
