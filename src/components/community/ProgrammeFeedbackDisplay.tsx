@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, User, Pencil, Trash2, Loader2, Trophy } from 'lucide-react';
+import { Star, User, Pencil, Trash2, Loader2, Trophy, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
@@ -15,11 +15,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
 
 interface Feedback {
   id: string;
@@ -30,23 +25,26 @@ interface Feedback {
   kiosk_user_id: string;
 }
 
-interface EquippedMedalInfo {
-  title: string;
-  image_url: string | null;
+interface UserProfileInfo {
+  name: string;
+  events_attended: number;
+  medal_title: string | null;
+  medal_image_url: string | null;
 }
 
 interface ProgrammeFeedbackDisplayProps {
   programmeId: string;
   seriesId?: string;
   onEditFeedback?: (feedback: Feedback) => void;
+  compact?: boolean;
 }
 
-export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback }: ProgrammeFeedbackDisplayProps) {
+export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback, compact = false }: ProgrammeFeedbackDisplayProps) {
   const { t, user, language } = useApp();
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const [userMedals, setUserMedals] = useState<Record<string, EquippedMedalInfo>>({});
+  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfileInfo>>({});
 
   const getLocalizedTitle = (reward: { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null }) => {
     if (language === 'en') return reward.title;
@@ -90,21 +88,24 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
     
     setFeedbacks(feedbackData);
 
-    // Fetch equipped medals for all feedback authors
+    // Fetch user profiles with equipped medals and events attended
     if (feedbackData.length > 0) {
       const userIds = [...new Set(feedbackData.map(f => f.kiosk_user_id))];
       
       const { data: usersData } = await supabase
         .from('kiosk_users')
-        .select('id, equipped_medal_id')
-        .in('id', userIds)
-        .not('equipped_medal_id', 'is', null);
+        .select('id, name, events_attended, equipped_medal_id')
+        .in('id', userIds);
 
       if (usersData && usersData.length > 0) {
-        const medalIds = usersData
-          .map(u => u.equipped_medal_id)
-          .filter((id): id is string => id !== null);
+        const profilesMap: Record<string, UserProfileInfo> = {};
+        
+        // Get medal info for users with equipped medals
+        const usersWithMedals = usersData.filter(u => u.equipped_medal_id);
+        const medalIds = usersWithMedals.map(u => u.equipped_medal_id).filter((id): id is string => id !== null);
 
+        let medalsData: Record<string, { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null; image_url: string | null }> = {};
+        
         if (medalIds.length > 0) {
           const { data: redemptionsData } = await supabase
             .from('user_reward_redemptions')
@@ -115,24 +116,26 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
             .in('id', medalIds);
 
           if (redemptionsData) {
-            const medalsMap: Record<string, EquippedMedalInfo> = {};
-            
-            usersData.forEach(userData => {
-              if (userData.equipped_medal_id) {
-                const redemption = redemptionsData.find(r => r.id === userData.equipped_medal_id);
-                if (redemption?.rewards) {
-                  const reward = redemption.rewards as unknown as { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null; image_url: string | null };
-                  medalsMap[userData.id] = {
-                    title: getLocalizedTitle(reward),
-                    image_url: reward.image_url
-                  };
-                }
+            redemptionsData.forEach(r => {
+              if (r.rewards) {
+                medalsData[r.id] = r.rewards as unknown as { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null; image_url: string | null };
               }
             });
-            
-            setUserMedals(medalsMap);
           }
         }
+
+        // Build profiles map
+        usersData.forEach(userData => {
+          const medal = userData.equipped_medal_id ? medalsData[userData.equipped_medal_id] : null;
+          profilesMap[userData.id] = {
+            name: userData.name,
+            events_attended: userData.events_attended || 0,
+            medal_title: medal ? getLocalizedTitle(medal) : null,
+            medal_image_url: medal?.image_url || null
+          };
+        });
+        
+        setUserProfiles(profilesMap);
       }
     }
     
@@ -168,18 +171,41 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
 
   const averageRating = feedbacks.reduce((sum, f) => sum + f.rating, 0) / feedbacks.length;
 
+  // Compact mode for card view - just show summary
+  if (compact) {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="flex">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Star
+              key={star}
+              className={`w-5 h-5 ${
+                star <= Math.round(averageRating)
+                  ? 'text-warning fill-warning'
+                  : 'text-muted-foreground/30'
+              }`}
+            />
+          ))}
+        </div>
+        <span className="text-lg font-medium">
+          {averageRating.toFixed(1)} ({feedbacks.length} {t('community.reviews')})
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4 pt-4 border-t border-border/50">
-      <div className="flex items-center justify-between mb-3">
-        <h4 className="text-base font-semibold text-foreground">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-lg font-bold text-foreground">
           {t('community.participantFeedback')}
         </h4>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <div className="flex">
             {[1, 2, 3, 4, 5].map((star) => (
               <Star
                 key={star}
-                className={`w-4 h-4 ${
+                className={`w-5 h-5 ${
                   star <= Math.round(averageRating)
                     ? 'text-warning fill-warning'
                     : 'text-muted-foreground/30'
@@ -187,120 +213,146 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
               />
             ))}
           </div>
-          <span className="text-sm text-muted-foreground">
-            ({feedbacks.length})
+          <span className="text-lg text-muted-foreground font-medium">
+            {averageRating.toFixed(1)} ({feedbacks.length})
           </span>
         </div>
       </div>
 
-      <div className="space-y-3 max-h-48 overflow-y-auto">
+      <div className="space-y-4">
         {feedbacks.slice(0, 5).map((feedback) => {
           const isOwner = user?.id === feedback.kiosk_user_id;
-          const equippedMedal = userMedals[feedback.kiosk_user_id];
+          const profile = userProfiles[feedback.kiosk_user_id];
           
           return (
-            <div key={feedback.id} className="bg-muted/50 rounded-xl p-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      {equippedMedal ? (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <div className="flex-shrink-0">
-                              {equippedMedal.image_url ? (
-                                <img 
-                                  src={equippedMedal.image_url} 
-                                  alt={equippedMedal.title}
-                                  className="w-5 h-5 object-contain rounded"
-                                />
-                              ) : (
-                                <Trophy className="w-4 h-4 text-amber-500" />
-                              )}
-                            </div>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>{equippedMedal.title}</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      ) : (
-                        <User className="w-4 h-4 text-primary" />
-                      )}
-                      <span className="text-sm font-medium text-foreground">
-                        {feedback.participant_name}
-                        {isOwner && (
-                          <span className="text-xs text-primary ml-1">(You)</span>
-                        )}
-                      </span>
+            <div key={feedback.id} className="bg-muted/50 rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
+              {/* User Profile Header - Enhanced for elderly visibility */}
+              <div className="flex items-start gap-4 mb-3">
+                {/* Medal/Avatar */}
+                <div className="flex-shrink-0">
+                  {profile?.medal_image_url ? (
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 border-2 border-amber-300 flex items-center justify-center shadow-md">
+                      <img 
+                        src={profile.medal_image_url} 
+                        alt={profile.medal_title || 'Medal'}
+                        className="w-10 h-10 object-contain"
+                      />
                     </div>
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          className={`w-3 h-3 ${
-                            star <= feedback.rating
-                              ? 'text-warning fill-warning'
-                              : 'text-muted-foreground/30'
-                          }`}
-                        />
-                      ))}
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-primary/10 border-2 border-primary/20 flex items-center justify-center">
+                      <User className="w-7 h-7 text-primary" />
                     </div>
-                  </div>
-                  {feedback.comment && (
-                    <p className="text-sm text-muted-foreground pl-6">
-                      "{feedback.comment}"
-                    </p>
                   )}
                 </div>
-                
-                {isOwner && (
-                  <div className="flex gap-1">
-                    {onEditFeedback && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => onEditFeedback(feedback)}
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Button>
+
+                {/* User Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-lg font-bold text-foreground">
+                      {feedback.participant_name}
+                    </span>
+                    {isOwner && (
+                      <span className="text-sm bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
+                        {t('community.you') || 'You'}
+                      </span>
                     )}
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-7 w-7 text-destructive hover:bg-destructive/10"
-                          disabled={deleting === feedback.id}
-                        >
-                          {deleting === feedback.id ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{t('community.deleteFeedback') || 'Delete Feedback?'}</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            {t('community.deleteFeedbackConfirm') || 'This will permanently delete your feedback. This action cannot be undone.'}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleDelete(feedback.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            {t('common.delete') || 'Delete'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
-                )}
+                  
+                  {/* Medal Title - Prominent Display */}
+                  {profile?.medal_title && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Trophy className="w-4 h-4 text-amber-500" />
+                      <span className="text-base font-semibold text-amber-600">
+                        {profile.medal_title}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Events Attended */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <Calendar className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-base text-muted-foreground">
+                      {profile?.events_attended || 0} {t('community.eventsAttended') || 'events attended'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Rating */}
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-5 h-5 ${
+                          star <= feedback.rating
+                            ? 'text-warning fill-warning'
+                            : 'text-muted-foreground/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  
+                  {/* Edit/Delete buttons for owner */}
+                  {isOwner && (
+                    <div className="flex gap-1 mt-1">
+                      {onEditFeedback && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEditFeedback(feedback);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            disabled={deleting === feedback.id}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {deleting === feedback.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>{t('community.deleteFeedback') || 'Delete Feedback?'}</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              {t('community.deleteFeedbackConfirm') || 'This will permanently delete your feedback. This action cannot be undone.'}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>{t('common.cancel') || 'Cancel'}</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(feedback.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              {t('common.delete') || 'Delete'}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* Comment */}
+              {feedback.comment && (
+                <p className="text-lg text-foreground bg-background/50 rounded-xl p-3 italic">
+                  "{feedback.comment}"
+                </p>
+              )}
             </div>
           );
         })}
