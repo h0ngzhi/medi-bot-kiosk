@@ -321,23 +321,34 @@ export default function FindCare() {
 
   // Fetch missing hours from Google Places API and cache to database
   const fetchMissingHours = async () => {
-    const clinicsWithoutHours = clinics.filter(c => !c.hours);
-    if (clinicsWithoutHours.length === 0) {
-      toast.success("All clinics already have opening hours!");
+    // First, check which clinics are already cached in DB
+    const { data: cachedData } = await supabase
+      .from("clinic_hours_cache")
+      .select("clinic_id, status, hours");
+    
+    const cachedIds = new Set(cachedData?.map(c => c.clinic_id) || []);
+    
+    // Only fetch for clinics that:
+    // 1. Don't have hours displayed AND
+    // 2. Are NOT already cached in the database (to avoid redundant API calls)
+    const clinicsToFetch = clinics.filter(c => !c.hours && !cachedIds.has(c.id));
+    
+    if (clinicsToFetch.length === 0) {
+      toast.success("All clinics already have opening hours or have been checked!");
       return;
     }
 
     setIsFetchingHours(true);
-    setFetchProgress({ current: 0, total: clinicsWithoutHours.length });
+    setFetchProgress({ current: 0, total: clinicsToFetch.length });
 
     const updatedClinics = [...clinics];
     const closedClinicIds: string[] = [];
     let successCount = 0;
     let closedCount = 0;
 
-    for (let i = 0; i < clinicsWithoutHours.length; i++) {
-      const clinic = clinicsWithoutHours[i];
-      setFetchProgress({ current: i + 1, total: clinicsWithoutHours.length });
+    for (let i = 0; i < clinicsToFetch.length; i++) {
+      const clinic = clinicsToFetch[i];
+      setFetchProgress({ current: i + 1, total: clinicsToFetch.length });
 
       try {
         const { data, error } = await supabase.functions.invoke("fetch-clinic-hours", {
