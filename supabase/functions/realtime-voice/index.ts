@@ -64,16 +64,16 @@ serve(async (req) => {
             You help elderly users navigate the app using voice commands.
             
             Available pages:
-            - Dashboard: The main home page showing quick actions
-            - Health Screenings: View and manage health screening appointments
-            - Medications: View medication information and delivery status
-            - Community Programmes: Browse and sign up for community health programmes
-            - Teleconsult: Start a video consultation with a doctor
-            - Profile: View user profile and points
+            - Dashboard: The main home page showing quick actions and overview
+            - Health Screenings: View health screening results like blood pressure and weight, with AI-powered programme recommendations
+            - Community Programmes: Browse and sign up for community health programmes and activities
+            - Find Care: Find nearby CHAS clinics, polyclinics, and hospitals on a map with opening hours
+            - Profile: View user profile, CHAS card, points and redeem rewards
             
             When users want to go somewhere, use the navigate_to tool.
             Keep your responses brief and clear, suitable for elderly users.
-            Speak in a warm, friendly tone.`,
+            Speak in a warm, friendly, and patient tone.
+            Speak slightly slower than normal for better comprehension.`,
             voice: "alloy",
             input_audio_format: "pcm16",
             output_audio_format: "pcm16",
@@ -82,9 +82,9 @@ serve(async (req) => {
             },
             turn_detection: {
               type: "server_vad",
-              threshold: 0.5,
-              prefix_padding_ms: 300,
-              silence_duration_ms: 1000,
+              threshold: 0.6,
+              prefix_padding_ms: 500,
+              silence_duration_ms: 1800,
             },
             tools: [
               {
@@ -99,9 +99,8 @@ serve(async (req) => {
                       enum: [
                         "dashboard",
                         "health-screenings",
-                        "medications",
                         "community-programmes",
-                        "teleconsult",
+                        "find-care",
                         "profile",
                       ],
                       description: "The page to navigate to",
@@ -112,8 +111,8 @@ serve(async (req) => {
               },
             ],
             tool_choice: "auto",
-            temperature: 0.8,
-            max_response_output_tokens: 150,
+            temperature: 0.7,
+            max_response_output_tokens: 300,
           },
         };
 

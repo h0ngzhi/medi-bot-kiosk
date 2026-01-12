@@ -32,9 +32,8 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
     const routes: Record<string, string> = {
       'dashboard': '/dashboard',
       'health-screenings': '/health',
-      'medications': '/medications',
-      'teleconsult': '/teleconsult',
       'community-programmes': '/community',
+      'find-care': '/find-care',
       'profile': '/profile'
     };
     
@@ -44,7 +43,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       navigate(route);
       toast({
         title: 'Navigating',
-        description: `Going to ${page.replace('-', ' ')}`,
+        description: `Going to ${page.replace(/-/g, ' ')}`,
       });
     }
   }, [navigate, toast]);
@@ -349,7 +348,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
             </div>
           ) : (
             <p className="text-xs text-muted-foreground text-center">
-              Try: "Take me to medications" or "Show health screenings"
+              Try: "Show health screenings" or "Find a clinic near me"
             </p>
           )}
         </div>
