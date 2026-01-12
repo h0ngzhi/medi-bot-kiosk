@@ -544,7 +544,7 @@ export default function FindCare() {
               className="h-9"
             >
               <Map className="w-4 h-4 mr-2" />
-              Map
+              {t("findcare.mapView")}
             </Button>
             <Button
               variant={viewMode === "list" ? "default" : "ghost"}
@@ -553,7 +553,7 @@ export default function FindCare() {
               className="h-9"
             >
               <List className="w-4 h-4 mr-2" />
-              List
+              {t("findcare.listView")}
             </Button>
           </div>
         </div>
@@ -585,7 +585,7 @@ export default function FindCare() {
               ) : (
                 <>
                   <Locate className="w-4 h-4 mr-2" />
-                  {userLocation ? "Located" : "Find Me"}
+                  {userLocation ? t("findcare.located") : t("findcare.findMe")}
                 </>
               )}
             </Button>
@@ -602,7 +602,7 @@ export default function FindCare() {
           {/* Distance filters (only show when location available) */}
           {userLocation && (
             <div className="flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-medium text-muted-foreground">Distance:</span>
+              <span className="text-sm font-medium text-muted-foreground">{t("findcare.distance")}:</span>
               {[1, 3, 5, null].map((dist) => (
                 <Button
                   key={dist ?? "all"}
@@ -611,7 +611,7 @@ export default function FindCare() {
                   onClick={() => setDistanceFilter(dist as DistanceFilter)}
                   className="h-8"
                 >
-                  {dist ? `${dist} km` : "All"}
+                  {dist ? `${dist} ${t("findcare.km")}` : t("findcare.all")}
                 </Button>
               ))}
             </div>
@@ -625,7 +625,7 @@ export default function FindCare() {
               size="sm"
               className="h-8"
             >
-              All
+              {t("findcare.all")}
             </Button>
             <Button
               variant={filterType === "gp" ? "default" : "outline"}
@@ -634,7 +634,7 @@ export default function FindCare() {
               className="h-8"
             >
               <Stethoscope className="w-3.5 h-3.5 mr-1.5" />
-              GP
+              {t("findcare.gp")}
             </Button>
             <Button
               variant={filterType === "dental" ? "default" : "outline"}
@@ -643,7 +643,7 @@ export default function FindCare() {
               className="h-8"
             >
               <Building2 className="w-3.5 h-3.5 mr-1.5" />
-              Dental
+              {t("findcare.dental")}
             </Button>
             <Button
               variant={filterType === "polyclinic" ? "default" : "outline"}
@@ -652,7 +652,7 @@ export default function FindCare() {
               className="h-8"
             >
               <Building2 className="w-3.5 h-3.5 mr-1.5" />
-              Polyclinic
+              {t("findcare.polyclinic")}
             </Button>
             <Button
               variant={filterType === "hospital" ? "default" : "outline"}
@@ -661,13 +661,13 @@ export default function FindCare() {
               className="h-8"
             >
               <Hospital className="w-3.5 h-3.5 mr-1.5" />
-              Hospital
+              {t("findcare.hospital")}
             </Button>
             
             {/* Results count and fetch button */}
             <div className="flex-1 flex items-center justify-end gap-2">
               <span className="text-sm text-muted-foreground">
-                {isLoading ? "Loading..." : `${filteredClinics.length} clinics`}
+                {isLoading ? t("findcare.loading") : `${filteredClinics.length} ${t("findcare.clinicsFound")}`}
               </span>
               {!isLoading && clinics.filter(c => !c.hours).length > 0 && (
                 <Button
@@ -685,7 +685,7 @@ export default function FindCare() {
                   ) : (
                     <>
                       <RefreshCw className="w-3 h-3 mr-1.5" />
-                      Fetch Hours
+                      {t("findcare.fetchHours")}
                     </>
                   )}
                 </Button>
@@ -701,7 +701,7 @@ export default function FindCare() {
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
-              <p className="text-muted-foreground">Loading clinics...</p>
+              <p className="text-muted-foreground">{t("findcare.loadingClinics")}</p>
             </div>
           </div>
         ) : viewMode === "map" ? (
@@ -732,33 +732,33 @@ export default function FindCare() {
                   ) : (
                     <Navigation className="w-4 h-4" />
                   )}
-                  <span className="ml-2">Recenter</span>
+                  <span className="ml-2">{t("findcare.recenter")}</span>
                 </Button>
               )}
               
               {/* Legend */}
               <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm p-4 rounded-xl shadow-lg text-sm space-y-2">
-                <div className="font-bold text-foreground mb-3">Clinic Types</div>
+                <div className="font-bold text-foreground mb-3">{t("findcare.clinicTypes")}</div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.gp }}></div>
-                  <span className="font-medium">GP Clinic</span>
+                  <span className="font-medium">{t("findcare.gpClinic")}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.dental }}></div>
-                  <span className="font-medium">Dental</span>
+                  <span className="font-medium">{t("findcare.dentalClinic")}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.polyclinic }}></div>
-                  <span className="font-medium">Polyclinic</span>
+                  <span className="font-medium">{t("findcare.polyclinic")}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.hospital }}></div>
-                  <span className="font-medium">Hospital</span>
+                  <span className="font-medium">{t("findcare.hospital")}</span>
                 </div>
                 {userLocation && (
                   <div className="flex items-center gap-3 pt-2 border-t mt-2">
                     <div className="w-4 h-4 rounded-full bg-blue-500"></div>
-                    <span className="font-medium">Your Location</span>
+                    <span className="font-medium">{t("findcare.yourLocation")}</span>
                   </div>
                 )}
               </div>
@@ -768,8 +768,8 @@ export default function FindCare() {
             <div className="w-96 bg-card border-l flex flex-col overflow-hidden">
               <div className="p-3 border-b bg-muted/50">
                 <h2 className="font-semibold text-foreground">
-                  Nearby Clinics
-                  {distanceFilter && <span className="text-muted-foreground font-normal"> (within {distanceFilter} km)</span>}
+                  {t("findcare.nearbyClinics")}
+                  {distanceFilter && <span className="text-muted-foreground font-normal"> ({t("findcare.within")} {distanceFilter} {t("findcare.km")})</span>}
                 </h2>
               </div>
               <ClinicListPanel
@@ -811,7 +811,7 @@ export default function FindCare() {
             onClick={() => window.location.href = "tel:995"}
           >
             <Phone className="w-4 h-4 mr-2" />
-            Call 995
+            {t("findcare.call995")}
           </Button>
         </div>
       </div>
@@ -824,7 +824,7 @@ export default function FindCare() {
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center gap-2">
               <Clock className="w-6 h-6 text-primary" />
-              Opening Hours
+              {t("findcare.openingHours")}
             </DialogTitle>
           </DialogHeader>
           {selectedHoursClinic && (
@@ -854,7 +854,7 @@ export default function FindCare() {
           <DialogHeader>
             <DialogTitle className="text-xl flex items-center gap-2">
               <Phone className="w-6 h-6 text-primary" />
-              Contact Number
+              {t("findcare.contactNumber")}
             </DialogTitle>
           </DialogHeader>
           {phonePopup && (
@@ -872,7 +872,7 @@ export default function FindCare() {
                 onClick={() => window.location.href = `tel:${phonePopup.phone.replace(/\s/g, "")}`}
               >
                 <Phone className="w-5 h-5 mr-2" />
-                Call Now
+                {t("findcare.callNow")}
               </Button>
             </div>
           )}
