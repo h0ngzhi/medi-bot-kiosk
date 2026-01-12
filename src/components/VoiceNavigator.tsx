@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Check, Navigation } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { useApp } from '@/contexts/AppContext';
 import { AudioRecorder, encodeAudioForAPI } from '@/utils/audioUtils';
 import Lottie from 'lottie-react';
 import robotAnimation from '@/assets/robot-assistant.json';
@@ -12,9 +13,130 @@ interface VoiceNavigatorProps {
   onClose: () => void;
 }
 
+const translations = {
+  en: {
+    voiceGuideReady: "Voice Guide Ready",
+    sayWhereToGo: "Say where you want to go",
+    microphoneError: "Microphone Error",
+    allowMicAccess: "Please allow microphone access",
+    connectionError: "Connection Error",
+    failedToConnect: "Failed to connect to voice service",
+    failedToStart: "Failed to start voice assistant",
+    voiceError: "Voice Error",
+    navigatingTo: "Navigating to",
+    listening: "Listening...",
+    readySpeak: "Ready - speak anytime",
+    connecting: "Connecting...",
+    goingTo: "Going to",
+    youSaid: "You said:",
+    tryExample: 'Try: "Go to community programmes" or "Show me health screenings"',
+    pageLabels: {
+      'home': 'Home',
+      'scan': 'Scan Card',
+      'language': 'Language',
+      'dashboard': 'Dashboard',
+      'health-screenings': 'Health Screenings',
+      'find-care': 'Find Care',
+      'community-programmes': 'Community Programmes',
+      'profile': 'Profile',
+      'admin-programmes': 'Admin Programmes',
+      'admin-slideshow': 'Admin Slideshow'
+    }
+  },
+  zh: {
+    voiceGuideReady: "语音导航已就绪",
+    sayWhereToGo: "请说出您想去的页面",
+    microphoneError: "麦克风错误",
+    allowMicAccess: "请允许麦克风访问",
+    connectionError: "连接错误",
+    failedToConnect: "无法连接到语音服务",
+    failedToStart: "无法启动语音助手",
+    voiceError: "语音错误",
+    navigatingTo: "正在前往",
+    listening: "正在聆听...",
+    readySpeak: "已就绪 - 随时可以说话",
+    connecting: "正在连接...",
+    goingTo: "前往",
+    youSaid: "您说：",
+    tryExample: '试试说："去社区活动" 或 "显示健康检查"',
+    pageLabels: {
+      'home': '主页',
+      'scan': '扫描卡片',
+      'language': '语言',
+      'dashboard': '仪表板',
+      'health-screenings': '健康检查',
+      'find-care': '寻找护理',
+      'community-programmes': '社区活动',
+      'profile': '个人资料',
+      'admin-programmes': '管理活动',
+      'admin-slideshow': '管理幻灯片'
+    }
+  },
+  ms: {
+    voiceGuideReady: "Panduan Suara Sedia",
+    sayWhereToGo: "Sebut destinasi anda",
+    microphoneError: "Ralat Mikrofon",
+    allowMicAccess: "Sila benarkan akses mikrofon",
+    connectionError: "Ralat Sambungan",
+    failedToConnect: "Gagal menyambung ke perkhidmatan suara",
+    failedToStart: "Gagal memulakan pembantu suara",
+    voiceError: "Ralat Suara",
+    navigatingTo: "Menuju ke",
+    listening: "Mendengar...",
+    readySpeak: "Sedia - bercakap bila-bila masa",
+    connecting: "Menyambung...",
+    goingTo: "Menuju ke",
+    youSaid: "Anda berkata:",
+    tryExample: 'Cuba: "Pergi ke program komuniti" atau "Tunjukkan pemeriksaan kesihatan"',
+    pageLabels: {
+      'home': 'Laman Utama',
+      'scan': 'Imbas Kad',
+      'language': 'Bahasa',
+      'dashboard': 'Papan Pemuka',
+      'health-screenings': 'Pemeriksaan Kesihatan',
+      'find-care': 'Cari Penjagaan',
+      'community-programmes': 'Program Komuniti',
+      'profile': 'Profil',
+      'admin-programmes': 'Program Pentadbir',
+      'admin-slideshow': 'Slaid Pentadbir'
+    }
+  },
+  ta: {
+    voiceGuideReady: "குரல் வழிகாட்டி தயார்",
+    sayWhereToGo: "எங்கு செல்ல விரும்புகிறீர்கள் என்று சொல்லுங்கள்",
+    microphoneError: "மைக்ரோஃபோன் பிழை",
+    allowMicAccess: "மைக்ரோஃபோன் அணுகலை அனுமதிக்கவும்",
+    connectionError: "இணைப்பு பிழை",
+    failedToConnect: "குரல் சேவையுடன் இணைக்க முடியவில்லை",
+    failedToStart: "குரல் உதவியாளரை தொடங்க முடியவில்லை",
+    voiceError: "குரல் பிழை",
+    navigatingTo: "செல்கிறது",
+    listening: "கேட்கிறது...",
+    readySpeak: "தயார் - எப்போது வேண்டுமானாலும் பேசுங்கள்",
+    connecting: "இணைக்கிறது...",
+    goingTo: "செல்கிறது",
+    youSaid: "நீங்கள் சொன்னது:",
+    tryExample: 'முயற்சிக்கவும்: "சமூக நிகழ்ச்சிகளுக்கு செல்" அல்லது "சுகாதார பரிசோதனைகளைக் காட்டு"',
+    pageLabels: {
+      'home': 'முகப்பு',
+      'scan': 'கார்டு ஸ்கேன்',
+      'language': 'மொழி',
+      'dashboard': 'டாஷ்போர்டு',
+      'health-screenings': 'சுகாதார பரிசோதனைகள்',
+      'find-care': 'பராமரிப்பு கண்டுபிடி',
+      'community-programmes': 'சமூக நிகழ்ச்சிகள்',
+      'profile': 'சுயவிவரம்',
+      'admin-programmes': 'நிர்வாக நிகழ்ச்சிகள்',
+      'admin-slideshow': 'நிர்வாக ஸ்லைடுஷோ'
+    }
+  }
+};
+
 const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { language } = useApp();
+  const t = translations[language];
   
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -24,19 +146,6 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   const wsRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
-
-  const pageLabels: Record<string, string> = {
-    'home': 'Home',
-    'scan': 'Scan Card',
-    'language': 'Language',
-    'dashboard': 'Dashboard',
-    'health-screenings': 'Health Screenings',
-    'find-care': 'Find Care',
-    'community-programmes': 'Community Programmes',
-    'profile': 'Profile',
-    'admin-programmes': 'Admin Programmes',
-    'admin-slideshow': 'Admin Slideshow'
-  };
 
   const executeNavigation = useCallback((page: string) => {
     const routes: Record<string, string> = {
@@ -106,12 +215,12 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         console.error('API Error:', data.error);
         toast({
           variant: 'destructive',
-          title: 'Voice Error',
+          title: t.voiceError,
           description: data.error?.message || 'An error occurred',
         });
         break;
     }
-  }, [executeNavigation, toast]);
+  }, [executeNavigation, toast, t.voiceError]);
 
   const connect = useCallback(async () => {
     try {
@@ -142,15 +251,15 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         try {
           await recorderRef.current.start();
           toast({
-            title: 'Voice Guide Ready',
-            description: 'Say where you want to go',
+            title: t.voiceGuideReady,
+            description: t.sayWhereToGo,
           });
         } catch (error) {
           console.error('Microphone error:', error);
           toast({
             variant: 'destructive',
-            title: 'Microphone Error',
-            description: 'Please allow microphone access',
+            title: t.microphoneError,
+            description: t.allowMicAccess,
           });
         }
       };
@@ -161,8 +270,8 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         console.error('WebSocket error:', error);
         toast({
           variant: 'destructive',
-          title: 'Connection Error',
-          description: 'Failed to connect to voice service',
+          title: t.connectionError,
+          description: t.failedToConnect,
         });
       };
 
@@ -175,11 +284,11 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       console.error('Connection error:', error);
       toast({
         variant: 'destructive',
-        title: 'Connection Error',
-        description: 'Failed to start voice assistant',
+        title: t.connectionError,
+        description: t.failedToStart,
       });
     }
-  }, [handleWebSocketMessage, toast]);
+  }, [handleWebSocketMessage, toast, t]);
 
   const disconnect = useCallback(() => {
     recorderRef.current?.stop();
@@ -230,20 +339,20 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       {/* Command Recognized Overlay - Full Screen Visual Feedback */}
       {commandRecognized && (
         <div className="absolute inset-0 flex items-center justify-center bg-primary/20 backdrop-blur-sm pointer-events-auto animate-in fade-in duration-200">
-          <div className="bg-card rounded-3xl p-8 shadow-2xl border-4 border-primary flex flex-col items-center gap-4 animate-in zoom-in-95 duration-300">
-            <div className="w-20 h-20 rounded-full bg-primary flex items-center justify-center">
-              <Check className="w-12 h-12 text-primary-foreground" strokeWidth={3} />
+          <div className="bg-card rounded-3xl p-10 shadow-2xl border-4 border-primary flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
+            <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center">
+              <Check className="w-14 h-14 text-primary-foreground" strokeWidth={3} />
             </div>
             <div className="text-center">
-              <p className="text-lg text-muted-foreground mb-1">Navigating to</p>
-              <p className="text-3xl font-bold text-card-foreground">{pageLabels[commandRecognized]}</p>
+              <p className="text-xl text-muted-foreground mb-2">{t.navigatingTo}</p>
+              <p className="text-4xl font-bold text-card-foreground">{t.pageLabels[commandRecognized as keyof typeof t.pageLabels]}</p>
             </div>
           </div>
         </div>
       )}
       
       {/* Floating Robot Animation - Bottom Right */}
-      <div className="absolute bottom-24 right-4 pointer-events-auto">
+      <div className="absolute bottom-28 right-6 pointer-events-auto">
         <div className={`relative transition-all duration-500 ${commandRecognized ? 'scale-110' : isListening ? 'scale-105' : 'scale-100'}`}>
           {/* Glow effect behind robot */}
           <div className={`absolute inset-0 rounded-full blur-2xl transition-all duration-300 ${
@@ -255,7 +364,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
           }`} />
           
           {/* Robot Animation */}
-          <div className="relative w-40 h-40">
+          <div className="relative w-48 h-48">
             <Lottie 
               animationData={robotAnimation} 
               loop={true}
@@ -264,7 +373,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
           </div>
           
           {/* Status indicator ring */}
-          <div className={`absolute -inset-2 rounded-full border-4 transition-all duration-300 ${
+          <div className={`absolute -inset-3 rounded-full border-4 transition-all duration-300 ${
             commandRecognized 
               ? 'border-primary animate-pulse' 
               : isListening 
@@ -277,12 +386,12 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       </div>
 
       {/* Floating Info Panel - Top area */}
-      <div className="absolute top-4 left-4 right-4 pointer-events-auto">
-        <div className="bg-card/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-border/50 max-w-md mx-auto">
+      <div className="absolute top-6 left-6 right-6 pointer-events-auto">
+        <div className="bg-card/95 backdrop-blur-md rounded-3xl p-6 shadow-2xl border-2 border-border/50 max-w-lg mx-auto">
           {/* Header with close button */}
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className={`w-5 h-5 rounded-full ${
                 commandRecognized 
                   ? 'bg-primary animate-pulse' 
                   : isListening 
@@ -291,35 +400,35 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
                       ? 'bg-primary/60' 
                       : 'bg-muted-foreground'
               }`} />
-              <span className="text-sm font-medium text-card-foreground">
+              <span className="text-xl font-semibold text-card-foreground">
                 {commandRecognized 
-                  ? `Going to ${pageLabels[commandRecognized]}...`
+                  ? `${t.goingTo} ${t.pageLabels[commandRecognized as keyof typeof t.pageLabels]}...`
                   : isListening 
-                    ? 'Listening...' 
+                    ? t.listening
                     : isConnected 
-                      ? 'Ready - speak anytime' 
-                      : 'Connecting...'}
+                      ? t.readySpeak
+                      : t.connecting}
               </span>
             </div>
             <Button 
               variant="ghost" 
-              size="sm" 
+              size="icon" 
               onClick={handleClose}
-              className="h-8 w-8 p-0 rounded-full hover:bg-destructive/10"
+              className="h-12 w-12 rounded-full hover:bg-destructive/10"
             >
-              <X className="h-4 w-4" />
+              <X className="h-6 w-6" />
             </Button>
           </div>
 
           {/* Transcript area */}
           {transcript ? (
-            <div className="bg-muted/50 rounded-lg p-2">
-              <p className="text-xs text-muted-foreground">You said:</p>
-              <p className="text-sm text-card-foreground">{transcript}</p>
+            <div className="bg-muted/50 rounded-xl p-4">
+              <p className="text-base text-muted-foreground mb-1">{t.youSaid}</p>
+              <p className="text-xl text-card-foreground font-medium">{transcript}</p>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground text-center">
-              Try: "Go to community programmes" or "Show me health screenings"
+            <p className="text-lg text-muted-foreground text-center py-2">
+              {t.tryExample}
             </p>
           )}
         </div>
