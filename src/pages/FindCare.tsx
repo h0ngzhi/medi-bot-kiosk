@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -24,21 +24,15 @@ import {
   Stethoscope,
   Loader2,
   RefreshCw,
+  Locate,
+  Map,
+  List,
+  AlertCircle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-interface Clinic {
-  id: string;
-  name: string;
-  type: "gp" | "dental" | "polyclinic" | "hospital";
-  address: string;
-  postalCode: string;
-  phone: string;
-  hours: string;
-  region: string;
-  programmes: string[];
-}
+import { ClinicMap, type MapClinic } from "@/components/findcare/ClinicMap";
+import { ClinicListPanel } from "@/components/findcare/ClinicListPanel";
 
 interface GeoJSONFeature {
   type: string;
@@ -48,7 +42,7 @@ interface GeoJSONFeature {
   };
   geometry: {
     type: string;
-    coordinates: [number, number, number];
+    coordinates: [number, number, number]; // [lng, lat, alt]
   };
 }
 
@@ -63,10 +57,22 @@ interface ClinicHoursData {
   OperationHours: string;
 }
 
+// Calculate distance between two coordinates using Haversine formula
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+}
+
 // Parse HTML operation hours to readable format
 const parseOperationHours = (html: string): string => {
   if (!html) return "";
-  // Remove HTML tags and format nicely
   const cleaned = html
     .replace(/<strong>/g, "")
     .replace(/<\/strong>/g, "")
@@ -74,7 +80,6 @@ const parseOperationHours = (html: string): string => {
     .replace(/ : /g, ": ")
     .trim();
   
-  // Get unique day entries (some days may have multiple time slots)
   const lines = cleaned.split("\n").filter(Boolean);
   const dayMap: Record<string, string[]> = {};
   
@@ -90,7 +95,6 @@ const parseOperationHours = (html: string): string => {
     }
   });
   
-  // Format: combine same-day times with " & "
   const formatted = Object.entries(dayMap)
     .map(([day, times]) => `${day}: ${times.join(" & ")}`)
     .join(" | ");
@@ -98,7 +102,7 @@ const parseOperationHours = (html: string): string => {
   return formatted || "";
 };
 
-// Parse HTML description from GeoJSON to extract clinic data
+// Parse HTML description from GeoJSON
 const parseDescription = (html: string): Record<string, string> => {
   const result: Record<string, string> = {};
   const matches = html.matchAll(/<th>([^<]+)<\/th>\s*<td>([^<]*)<\/td>/g);
@@ -112,34 +116,33 @@ const parseDescription = (html: string): Record<string, string> => {
 const getRegionFromPostal = (postalCode: string): string => {
   const prefix = parseInt(postalCode.substring(0, 2), 10);
   
-  // Singapore postal code regions
   if ([1, 2, 3, 4, 5, 6].includes(prefix)) return "Central";
-  if ([7, 8].includes(prefix)) return "Central"; // Downtown
-  if ([14, 15, 16].includes(prefix)) return "East"; // Geylang, Eunos
-  if ([17, 18].includes(prefix)) return "East"; // Changi
-  if ([38, 39, 40, 41].includes(prefix)) return "East"; // Tampines, Pasir Ris
-  if ([46, 47, 48, 49, 50, 51, 52].includes(prefix)) return "East"; // Bedok, Upper East Coast
-  if ([9, 10].includes(prefix)) return "Central"; // Orchard
-  if ([11, 12, 13].includes(prefix)) return "Central"; // Newton, Novena
-  if ([19, 20].includes(prefix)) return "North-East"; // Serangoon
-  if ([28, 29, 30].includes(prefix)) return "Central"; // Bishan
-  if ([31, 32, 33, 34].includes(prefix)) return "Central"; // Toa Payoh, Braddell
-  if ([53, 54, 55, 56, 57].includes(prefix)) return "North-East"; // Serangoon, Hougang
-  if ([72, 73].includes(prefix)) return "North"; // Woodlands
-  if ([75, 76].includes(prefix)) return "North"; // Yishun
-  if ([77, 78].includes(prefix)) return "North"; // Sembawang
-  if ([79, 80].includes(prefix)) return "North"; // Seletar
-  if ([58, 59].includes(prefix)) return "North"; // Ang Mo Kio
-  if ([60, 61, 62, 63, 64].includes(prefix)) return "West"; // Jurong
-  if ([65, 66, 67, 68].includes(prefix)) return "West"; // Jurong, Tuas
-  if ([69, 70, 71].includes(prefix)) return "West"; // Bukit Batok, Choa Chu Kang
-  if ([21, 22, 23].includes(prefix)) return "West"; // Bukit Timah, Clementi
-  if ([24, 25, 26, 27].includes(prefix)) return "West"; // Holland, Queenstown
-  if ([35, 36, 37].includes(prefix)) return "Central"; // Kallang, Macpherson
-  if ([42, 43, 44, 45].includes(prefix)) return "East"; // Katong, Marine Parade
-  if ([81, 82].includes(prefix)) return "North-East"; // Punggol, Sengkang
+  if ([7, 8].includes(prefix)) return "Central";
+  if ([14, 15, 16].includes(prefix)) return "East";
+  if ([17, 18].includes(prefix)) return "East";
+  if ([38, 39, 40, 41].includes(prefix)) return "East";
+  if ([46, 47, 48, 49, 50, 51, 52].includes(prefix)) return "East";
+  if ([9, 10].includes(prefix)) return "Central";
+  if ([11, 12, 13].includes(prefix)) return "Central";
+  if ([19, 20].includes(prefix)) return "North-East";
+  if ([28, 29, 30].includes(prefix)) return "Central";
+  if ([31, 32, 33, 34].includes(prefix)) return "Central";
+  if ([53, 54, 55, 56, 57].includes(prefix)) return "North-East";
+  if ([72, 73].includes(prefix)) return "North";
+  if ([75, 76].includes(prefix)) return "North";
+  if ([77, 78].includes(prefix)) return "North";
+  if ([79, 80].includes(prefix)) return "North";
+  if ([58, 59].includes(prefix)) return "North";
+  if ([60, 61, 62, 63, 64].includes(prefix)) return "West";
+  if ([65, 66, 67, 68].includes(prefix)) return "West";
+  if ([69, 70, 71].includes(prefix)) return "West";
+  if ([21, 22, 23].includes(prefix)) return "West";
+  if ([24, 25, 26, 27].includes(prefix)) return "West";
+  if ([35, 36, 37].includes(prefix)) return "Central";
+  if ([42, 43, 44, 45].includes(prefix)) return "East";
+  if ([81, 82].includes(prefix)) return "North-East";
   
-  return "Central"; // Default
+  return "Central";
 };
 
 // Format address from parsed data
@@ -160,17 +163,9 @@ const formatAddress = (data: Record<string, string>): string => {
     }
   }
   
-  if (streetName) {
-    parts.push(streetName);
-  }
-  
-  if (floorNo && unitNo) {
-    parts.push(`#${floorNo}-${unitNo}`);
-  }
-  
-  if (buildingName) {
-    parts.push(buildingName);
-  }
+  if (streetName) parts.push(streetName);
+  if (floorNo && unitNo) parts.push(`#${floorNo}-${unitNo}`);
+  if (buildingName) parts.push(buildingName);
   
   return parts.join(" ").toUpperCase();
 };
@@ -186,23 +181,85 @@ const formatPhone = (phone: string): string => {
 };
 
 type FilterType = "all" | "gp" | "dental" | "polyclinic" | "hospital";
+type DistanceFilter = 1 | 3 | 5 | null;
+type ViewMode = "map" | "list";
 
 export default function FindCare() {
   const { t, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
+  
+  // State
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState<string>("all");
-  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [clinics, setClinics] = useState<MapClinic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [regions, setRegions] = useState<string[]>(["all"]);
   const [isFetchingHours, setIsFetchingHours] = useState(false);
   const [fetchProgress, setFetchProgress] = useState({ current: 0, total: 0 });
+  const [selectedHoursClinic, setSelectedHoursClinic] = useState<MapClinic | null>(null);
+  const [selectedClinic, setSelectedClinic] = useState<MapClinic | null>(null);
+  
+  // Location state
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [distanceFilter, setDistanceFilter] = useState<DistanceFilter>(null);
+  
+  // View mode (map vs list)
+  const [viewMode, setViewMode] = useState<ViewMode>("map");
 
+  // Request user location on mount
+  useEffect(() => {
+    requestLocation();
+  }, []);
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationError(null);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setIsLocating(false);
+        setDistanceFilter(3); // Default to 3km when location is available
+        toast.success("Location found! Showing clinics near you.", { duration: 5000 });
+      },
+      (error) => {
+        setIsLocating(false);
+        let errorMsg = "Unable to get your location";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg = "Location access denied. Please enable location in your browser settings.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMsg = "Location information unavailable";
+            break;
+          case error.TIMEOUT:
+            errorMsg = "Location request timed out";
+            break;
+        }
+        setLocationError(errorMsg);
+        toast.error(errorMsg, { duration: 8000 });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000,
+      }
+    );
+  };
+
+  // Load clinics data
   useEffect(() => {
     const loadClinics = async () => {
       try {
-        // Load GeoJSON, hours JSON, and cached hours from database in parallel
         const [geoResponse, hoursResponse, cachedHoursResult] = await Promise.all([
           fetch("/data/CHASClinics.geojson"),
           fetch("/data/ClinicHours.json"),
@@ -212,39 +269,36 @@ export default function FindCare() {
         const geoData: GeoJSONData = await geoResponse.json();
         const hoursData: ClinicHoursData[] = await hoursResponse.json();
         
-        // Create maps for quick lookup
-        const hoursMap = new Map<string, string>();
+        const hoursMap: Record<string, string> = {};
         hoursData.forEach(clinic => {
           if (clinic.Phone) {
             const cleanedPhone = clinic.Phone.replace(/\D/g, "");
             const formattedHours = parseOperationHours(clinic.OperationHours);
             if (formattedHours) {
-              hoursMap.set(cleanedPhone, formattedHours);
+              hoursMap[cleanedPhone] = formattedHours;
             }
           }
         });
 
-        // Create map from cached database hours
-        const cachedHoursMap = new Map<string, { hours: string; phone: string; name: string; status: string }>();
+        const cachedHoursMap: Record<string, { hours: string; phone: string; name: string; status: string }> = {};
         if (cachedHoursResult.data) {
           cachedHoursResult.data.forEach(cached => {
-            cachedHoursMap.set(cached.clinic_id, {
+            cachedHoursMap[cached.clinic_id] = {
               hours: cached.hours || "",
               phone: cached.phone || "",
               name: cached.clinic_name,
               status: cached.status
-            });
+            };
           });
         }
         
-        const parsedClinics: Clinic[] = [];
+        const parsedClinics: MapClinic[] = [];
         
         geoData.features.forEach((feature, index) => {
           const parsed = parseDescription(feature.properties.Description);
           const clinicId = parsed["HCI_CODE"] || `clinic-${index}`;
           
-          // Check if this clinic is marked as closed in cache
-          const cached = cachedHoursMap.get(clinicId);
+          const cached = cachedHoursMap[clinicId];
           if (cached?.status === "closed") {
             return; // Skip closed clinics
           }
@@ -252,10 +306,8 @@ export default function FindCare() {
           const postalCode = parsed["POSTAL_CD"] || "";
           const region = getRegionFromPostal(postalCode);
           const licenceType = parsed["LICENCE_TYPE"] || "";
-          const programmes = (parsed["CLINIC_PROGRAMME_CODE"] || "").split(",").map(p => p.trim()).filter(Boolean);
           
-          // Determine clinic type
-          let type: Clinic["type"] = "gp";
+          let type: MapClinic["type"] = "gp";
           const name = (parsed["HCI_NAME"] || "").toLowerCase();
           if (name.includes("dental") || licenceType === "DC") {
             type = "dental";
@@ -265,11 +317,9 @@ export default function FindCare() {
             type = "hospital";
           }
           
-          // Get phone and match with hours data
           const rawPhone = parsed["HCI_TEL"] || "";
           const cleanedPhone = rawPhone.replace(/\D/g, "");
           
-          // Priority: 1. Database cache, 2. JSON file, 3. Empty
           let matchedHours = "";
           let finalPhone = formatPhone(rawPhone);
           let finalName = parsed["HCI_NAME"] || "Unknown Clinic";
@@ -279,8 +329,11 @@ export default function FindCare() {
             if (cached.phone) finalPhone = cached.phone;
             if (cached.name) finalName = cached.name;
           } else {
-            matchedHours = hoursMap.get(cleanedPhone) || "";
+            matchedHours = hoursMap[cleanedPhone] || "";
           }
+          
+          // Get coordinates from GeoJSON (format: [lng, lat, alt])
+          const [lng, lat] = feature.geometry.coordinates;
           
           parsedClinics.push({
             id: clinicId,
@@ -291,20 +344,16 @@ export default function FindCare() {
             phone: finalPhone,
             hours: matchedHours,
             region,
-            programmes,
+            lat,
+            lng,
           });
         });
         
-        // Sort alphabetically by name
         parsedClinics.sort((a, b) => a.name.localeCompare(b.name));
-        
-        // Extract unique regions
-        const uniqueRegions = ["all", ...new Set(parsedClinics.map(c => c.region))].sort();
-        setRegions(uniqueRegions);
-        
         setClinics(parsedClinics);
       } catch (error) {
         console.error("Failed to load clinics data:", error);
+        toast.error("Failed to load clinic data");
       } finally {
         setIsLoading(false);
       }
@@ -313,24 +362,65 @@ export default function FindCare() {
     loadClinics();
   }, []);
 
+  // Calculate distances when user location changes
+  const clinicsWithDistance = useMemo(() => {
+    if (!userLocation) return clinics;
+    
+    return clinics.map(clinic => ({
+      ...clinic,
+      distance: calculateDistance(userLocation.lat, userLocation.lng, clinic.lat, clinic.lng),
+    })).sort((a, b) => (a.distance || 0) - (b.distance || 0));
+  }, [clinics, userLocation]);
+
+  // Filter clinics
+  const filteredClinics = useMemo(() => {
+    let result = clinicsWithDistance;
+    
+    // Filter by type
+    if (filterType !== "all") {
+      result = result.filter(c => c.type === filterType);
+    }
+    
+    // Filter by search
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      result = result.filter(c =>
+        c.name.toLowerCase().includes(query) ||
+        c.address.toLowerCase().includes(query) ||
+        c.postalCode.includes(query)
+      );
+    }
+    
+    // Filter by distance
+    if (userLocation && distanceFilter) {
+      result = result.filter(c => c.distance && c.distance <= distanceFilter);
+    }
+    
+    return result;
+  }, [clinicsWithDistance, filterType, searchQuery, distanceFilter, userLocation]);
+
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
       speakText(text, language);
     }
   };
 
-  // Fetch missing hours from Google Places API and cache to database
+  const handleOpenMaps = (address: string, postalCode: string) => {
+    const query = encodeURIComponent(`${address}, Singapore ${postalCode}`);
+    window.open(`https://maps.google.com/?q=${query}`, "_blank", "noopener,noreferrer");
+  };
+
+  const handleCall = (phone: string) => {
+    window.location.href = `tel:${phone.replace(/\s/g, "")}`;
+  };
+
+  // Fetch missing hours from Google Places API
   const fetchMissingHours = async () => {
-    // First, check which clinics are already cached in DB
     const { data: cachedData } = await supabase
       .from("clinic_hours_cache")
       .select("clinic_id, status, hours");
     
     const cachedIds = new Set(cachedData?.map(c => c.clinic_id) || []);
-    
-    // Only fetch for clinics that:
-    // 1. Don't have hours displayed AND
-    // 2. Are NOT already cached in the database (to avoid redundant API calls)
     const clinicsToFetch = clinics.filter(c => !c.hours && !cachedIds.has(c.id));
     
     if (clinicsToFetch.length === 0) {
@@ -364,7 +454,6 @@ export default function FindCare() {
           continue;
         }
 
-        // Save to database cache
         if (data.status === "closed") {
           await supabase.from("clinic_hours_cache").upsert({
             clinic_id: clinic.id,
@@ -398,7 +487,6 @@ export default function FindCare() {
             }
           }
         } else if (data.status === "not_found") {
-          // Cache not found status to avoid re-querying
           await supabase.from("clinic_hours_cache").upsert({
             clinic_id: clinic.id,
             clinic_name: clinic.name,
@@ -408,337 +496,307 @@ export default function FindCare() {
           }, { onConflict: "clinic_id" });
         }
 
-        // Small delay to avoid rate limiting
         await new Promise(resolve => setTimeout(resolve, 200));
       } catch (err) {
         console.error(`Failed to fetch hours for ${clinic.name}:`, err);
       }
     }
 
-    // Remove closed clinics from UI
     const finalClinics = updatedClinics.filter(c => !closedClinicIds.includes(c.id));
     setClinics(finalClinics);
     setIsFetchingHours(false);
 
     toast.success(
-      `Done! Updated ${successCount} clinics, removed ${closedCount} closed clinics. Results saved to database.`,
+      `Done! Updated ${successCount} clinics, removed ${closedCount} closed clinics.`,
       { duration: 8000 }
     );
   };
 
-  const [selectedHoursClinic, setSelectedHoursClinic] = useState<Clinic | null>(null);
-
-  const filteredClinics = clinics.filter((clinic) => {
-    const matchesType = filterType === "all" || clinic.type === filterType;
-    const matchesRegion = selectedRegion === "all" || clinic.region === selectedRegion;
-    const matchesSearch =
-      searchQuery === "" ||
-      clinic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      clinic.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      clinic.postalCode.includes(searchQuery);
-    return matchesType && matchesRegion && matchesSearch;
-  });
-
-  const handleOpenMaps = (address: string, postalCode: string) => {
-    const query = encodeURIComponent(`${address}, Singapore ${postalCode}`);
-    window.open(`https://maps.google.com/?q=${query}`, "_blank", "noopener,noreferrer");
-  };
-
-  const handleCall = (phone: string) => {
-    window.location.href = `tel:${phone.replace(/\s/g, "")}`;
-  };
-
-  const getClinicIcon = (type: Clinic["type"]) => {
-    switch (type) {
-      case "gp":
-        return <Stethoscope className="w-6 h-6 text-primary" />;
-      case "dental":
-        return <Building2 className="w-6 h-6 text-accent" />;
-      case "polyclinic":
-        return <Building2 className="w-6 h-6 text-primary" />;
-      case "hospital":
-        return <Hospital className="w-6 h-6 text-secondary" />;
-    }
-  };
-
-  const getClinicTypeLabel = (type: Clinic["type"]) => {
-    switch (type) {
-      case "gp":
-        return t("findcare.gpClinic");
-      case "dental":
-        return t("findcare.dentalClinic");
-      case "polyclinic":
-        return t("findcare.polyclinic");
-      case "hospital":
-        return t("findcare.hospital");
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted pb-32">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="bg-card shadow-soft p-6 mb-8">
-        <div className="max-w-2xl mx-auto flex items-center gap-4">
+      <header className="bg-card shadow-soft p-4 flex-shrink-0">
+        <div className="max-w-7xl mx-auto flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => navigate("/dashboard")}
             onMouseEnter={() => handleSpeak(t("common.back"))}
-            className="w-14 h-14 rounded-full"
+            className="w-12 h-12 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <div onMouseEnter={() => handleSpeak(`${t("findcare.title")}. ${t("findcare.subtitle")}`)}>
-            <h1 className="text-heading text-foreground cursor-default">{t("findcare.title")}</h1>
-            <p className="text-base text-muted-foreground cursor-default">{t("findcare.subtitle")}</p>
+          <div className="flex-1" onMouseEnter={() => handleSpeak(`${t("findcare.title")}. ${t("findcare.subtitle")}`)}>
+            <h1 className="text-xl font-bold text-foreground">{t("findcare.title")}</h1>
+            <p className="text-sm text-muted-foreground">{t("findcare.subtitle")}</p>
+          </div>
+          
+          {/* View toggle */}
+          <div className="flex bg-muted rounded-lg p-1">
+            <Button
+              variant={viewMode === "map" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("map")}
+              className="h-9"
+            >
+              <Map className="w-4 h-4 mr-2" />
+              Map
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className="h-9"
+            >
+              <List className="w-4 h-4 mr-2" />
+              List
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-6">
-        <div className="space-y-6 animate-fade-in">
-          {/* Search bar */}
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={t("findcare.searchPlaceholder")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 h-14 text-lg"
-            />
+      {/* Filters Bar */}
+      <div className="bg-card border-b p-4 flex-shrink-0">
+        <div className="max-w-7xl mx-auto space-y-3">
+          {/* Search and location */}
+          <div className="flex gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={t("findcare.searchPlaceholder")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 h-11"
+              />
+            </div>
+            <Button
+              variant={userLocation ? "secondary" : "default"}
+              onClick={requestLocation}
+              disabled={isLocating}
+              className="h-11 px-4"
+            >
+              {isLocating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <Locate className="w-4 h-4 mr-2" />
+                  {userLocation ? "Located" : "Find Me"}
+                </>
+              )}
+            </Button>
           </div>
 
-          {/* Filter buttons - Type */}
+          {/* Location error */}
+          {locationError && (
+            <div className="flex items-center gap-2 text-sm text-amber-600 bg-amber-50 p-2 rounded-lg">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{locationError}</span>
+            </div>
+          )}
+
+          {/* Distance filters (only show when location available) */}
+          {userLocation && (
+            <div className="flex flex-wrap gap-2 items-center">
+              <span className="text-sm font-medium text-muted-foreground">Distance:</span>
+              {[1, 3, 5, null].map((dist) => (
+                <Button
+                  key={dist ?? "all"}
+                  variant={distanceFilter === dist ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setDistanceFilter(dist as DistanceFilter)}
+                  className="h-8"
+                >
+                  {dist ? `${dist} km` : "All"}
+                </Button>
+              ))}
+            </div>
+          )}
+
+          {/* Type filters */}
           <div className="flex flex-wrap gap-2">
             <Button
               variant={filterType === "all" ? "default" : "outline"}
               onClick={() => setFilterType("all")}
-              onMouseEnter={() => handleSpeak(t("findcare.all"))}
               size="sm"
+              className="h-8"
             >
-              {t("findcare.all")}
+              All
             </Button>
             <Button
               variant={filterType === "gp" ? "default" : "outline"}
               onClick={() => setFilterType("gp")}
-              onMouseEnter={() => handleSpeak(t("findcare.gpClinic"))}
               size="sm"
+              className="h-8"
             >
-              <Stethoscope className="w-4 h-4 mr-2" />
-              {t("findcare.gpClinic")}
+              <Stethoscope className="w-3.5 h-3.5 mr-1.5" />
+              GP
             </Button>
             <Button
               variant={filterType === "dental" ? "default" : "outline"}
               onClick={() => setFilterType("dental")}
-              onMouseEnter={() => handleSpeak(t("findcare.dentalClinic"))}
               size="sm"
+              className="h-8"
             >
-              <Building2 className="w-4 h-4 mr-2" />
-              {t("findcare.dentalClinic")}
+              <Building2 className="w-3.5 h-3.5 mr-1.5" />
+              Dental
             </Button>
             <Button
               variant={filterType === "polyclinic" ? "default" : "outline"}
               onClick={() => setFilterType("polyclinic")}
-              onMouseEnter={() => handleSpeak(t("findcare.polyclinics"))}
               size="sm"
+              className="h-8"
             >
-              <Building2 className="w-4 h-4 mr-2" />
-              {t("findcare.polyclinics")}
+              <Building2 className="w-3.5 h-3.5 mr-1.5" />
+              Polyclinic
             </Button>
             <Button
               variant={filterType === "hospital" ? "default" : "outline"}
               onClick={() => setFilterType("hospital")}
-              onMouseEnter={() => handleSpeak(t("findcare.hospitals"))}
               size="sm"
+              className="h-8"
             >
-              <Hospital className="w-4 h-4 mr-2" />
-              {t("findcare.hospitals")}
+              <Hospital className="w-3.5 h-3.5 mr-1.5" />
+              Hospital
             </Button>
-          </div>
-
-          {/* Filter buttons - Region */}
-          <div className="flex flex-wrap gap-2">
-            {regions.map((region) => (
-              <Button
-                key={region}
-                variant={selectedRegion === region ? "secondary" : "outline"}
-                onClick={() => setSelectedRegion(region)}
-                onMouseEnter={() =>
-                  handleSpeak(region === "all" ? t("findcare.allRegions") : region)
-                }
-                size="sm"
-              >
-                {region === "all" ? t("findcare.allRegions") : region}
-              </Button>
-            ))}
-          </div>
-
-          {/* Results count and fetch button */}
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-muted-foreground">
-              {isLoading 
-                ? t("common.loading") || "Loading..."
-                : t("findcare.resultsCount").replace("{count}", filteredClinics.length.toString())
-              }
-            </p>
-            {!isLoading && clinics.filter(c => !c.hours).length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={fetchMissingHours}
-                disabled={isFetchingHours}
-                className="flex-shrink-0"
-              >
-                {isFetchingHours ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    {fetchProgress.current}/{fetchProgress.total}
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Fetch Missing Hours ({clinics.filter(c => !c.hours).length})
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-
-          {/* Loading state */}
-          {isLoading && (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          )}
-
-          {/* Clinics list */}
-          {!isLoading && (
-            <div className="space-y-4">
-              {filteredClinics.slice(0, 50).map((clinic) => (
-                <Card key={clinic.id} className="p-4 space-y-4">
-                  <div className="flex items-start gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                      {getClinicIcon(clinic.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3
-                          className="font-bold text-foreground cursor-default text-lg"
-                          onMouseEnter={() => handleSpeak(clinic.name)}
-                        >
-                          {clinic.name}
-                        </h3>
-                        <span className="text-xs bg-muted px-2 py-1 rounded-full flex-shrink-0">
-                          {getClinicTypeLabel(clinic.type)}
-                        </span>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">{clinic.region}</p>
-                      {clinic.programmes.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {clinic.programmes.map((prog) => (
-                            <span key={prog} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                              {prog}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-start gap-2 text-muted-foreground">
-                      <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <span>
-                        {clinic.address}, Singapore {clinic.postalCode}
-                      </span>
-                    </div>
-                    {clinic.hours && (
-                      <button
-                        onClick={() => setSelectedHoursClinic(clinic)}
-                        className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors cursor-pointer text-left"
-                      >
-                        <Clock className="w-5 h-5 flex-shrink-0" />
-                        <span className="text-base font-medium underline underline-offset-2">
-                          View Opening Hours
-                        </span>
-                      </button>
-                    )}
-                    {clinic.phone && (
-                      <div className="flex items-center gap-2 text-muted-foreground">
-                        <Phone className="w-4 h-4 flex-shrink-0" />
-                        <span>{clinic.phone}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    {clinic.phone && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleCall(clinic.phone)}
-                        onMouseEnter={() => handleSpeak(t("findcare.call"))}
-                        className="flex-1"
-                      >
-                        <Phone className="w-4 h-4 mr-2" />
-                        {t("findcare.call")}
-                      </Button>
-                    )}
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleOpenMaps(clinic.address, clinic.postalCode)}
-                      onMouseEnter={() => handleSpeak(t("findcare.directions"))}
-                      className="flex-1"
-                    >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      {t("findcare.directions")}
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-
-              {filteredClinics.length > 50 && (
-                <Card className="p-4 text-center bg-muted/50">
-                  <p className="text-sm text-muted-foreground">
-                    Showing 50 of {filteredClinics.length} results. Use search to find specific clinics.
-                  </p>
-                </Card>
-              )}
-
-              {filteredClinics.length === 0 && !isLoading && (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">{t("findcare.noResults")}</p>
-                </Card>
+            
+            {/* Results count and fetch button */}
+            <div className="flex-1 flex items-center justify-end gap-2">
+              <span className="text-sm text-muted-foreground">
+                {isLoading ? "Loading..." : `${filteredClinics.length} clinics`}
+              </span>
+              {!isLoading && clinics.filter(c => !c.hours).length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchMissingHours}
+                  disabled={isFetchingHours}
+                  className="h-8"
+                >
+                  {isFetchingHours ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                      {fetchProgress.current}/{fetchProgress.total}
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="w-3 h-3 mr-1.5" />
+                      Fetch Hours
+                    </>
+                  )}
+                </Button>
               )}
             </div>
-          )}
-
-          {/* CHAS info notice */}
-          <Card className="p-4 bg-primary/5 border-primary/20">
-            <p className="text-sm text-foreground">
-              <strong>{t("findcare.chasNoticeTitle")}</strong> {t("findcare.chasNoticeDesc")}
-            </p>
-          </Card>
-
-          {/* Emergency notice */}
-          <Card className="p-4 bg-destructive/10 border-destructive/20">
-            <p className="text-sm text-foreground">
-              <strong>{t("findcare.emergencyTitle")}</strong> {t("findcare.emergencyDesc")}
-            </p>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="mt-3"
-              onClick={() => handleCall("995")}
-            >
-              <Phone className="w-4 h-4 mr-2" />
-              {t("findcare.call995")}
-            </Button>
-          </Card>
+          </div>
         </div>
+      </div>
+
+      {/* Main content */}
+      <main className="flex-1 flex overflow-hidden">
+        {isLoading ? (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
+              <p className="text-muted-foreground">Loading clinics...</p>
+            </div>
+          </div>
+        ) : viewMode === "map" ? (
+          <div className="flex-1 flex">
+            {/* Map */}
+            <div className="flex-1 relative">
+              <ClinicMap
+                clinics={filteredClinics}
+                userLocation={userLocation}
+                distanceFilter={distanceFilter}
+                onClinicSelect={setSelectedClinic}
+                onCall={handleCall}
+                onDirections={handleOpenMaps}
+                t={t}
+              />
+              
+              {/* Legend */}
+              <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm p-3 rounded-lg shadow-lg text-xs space-y-1.5">
+                <div className="font-semibold text-foreground mb-2">Clinic Types</div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-teal-500"></div>
+                  <span>GP Clinic</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-orange-500"></div>
+                  <span>Dental</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-purple-500"></div>
+                  <span>Polyclinic</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                  <span>Hospital</span>
+                </div>
+                {userLocation && (
+                  <div className="flex items-center gap-2 pt-1 border-t mt-1">
+                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+                    <span>Your Location</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Side panel */}
+            <div className="w-96 bg-card border-l flex flex-col overflow-hidden">
+              <div className="p-3 border-b bg-muted/50">
+                <h2 className="font-semibold text-foreground">
+                  Nearby Clinics
+                  {distanceFilter && <span className="text-muted-foreground font-normal"> (within {distanceFilter} km)</span>}
+                </h2>
+              </div>
+              <ClinicListPanel
+                clinics={filteredClinics.slice(0, 100)}
+                selectedClinic={selectedClinic}
+                onClinicSelect={setSelectedClinic}
+                onCall={handleCall}
+                onDirections={handleOpenMaps}
+                onViewHours={setSelectedHoursClinic}
+                t={t}
+                handleSpeak={handleSpeak}
+              />
+            </div>
+          </div>
+        ) : (
+          /* List view */
+          <div className="flex-1 overflow-auto p-4">
+            <div className="max-w-2xl mx-auto">
+              <ClinicListPanel
+                clinics={filteredClinics.slice(0, 100)}
+                selectedClinic={selectedClinic}
+                onClinicSelect={setSelectedClinic}
+                onCall={handleCall}
+                onDirections={handleOpenMaps}
+                onViewHours={setSelectedHoursClinic}
+                t={t}
+                handleSpeak={handleSpeak}
+              />
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Emergency notice */}
+      <div className="flex-shrink-0 bg-destructive/10 border-t border-destructive/20 p-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <p className="text-sm text-foreground">
+            <strong>{t("findcare.emergencyTitle")}</strong> {t("findcare.emergencyDesc")}
+          </p>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => handleCall("995")}
+          >
+            <Phone className="w-4 h-4 mr-2" />
+            Call 995
+          </Button>
+        </div>
+      </div>
 
       <AccessibilityBar />
 
