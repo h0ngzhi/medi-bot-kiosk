@@ -54,6 +54,7 @@ export type Database = {
           conducted_by: string | null
           contact_number: string | null
           created_at: string
+          created_by_admin_id: string | null
           current_signups: number | null
           description: string | null
           duration: string | null
@@ -83,6 +84,7 @@ export type Database = {
           conducted_by?: string | null
           contact_number?: string | null
           created_at?: string
+          created_by_admin_id?: string | null
           current_signups?: number | null
           description?: string | null
           duration?: string | null
@@ -112,6 +114,7 @@ export type Database = {
           conducted_by?: string | null
           contact_number?: string | null
           created_at?: string
+          created_by_admin_id?: string | null
           current_signups?: number | null
           description?: string | null
           duration?: string | null
@@ -135,7 +138,15 @@ export type Database = {
           title?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "community_programmes_created_by_admin_id_fkey"
+            columns: ["created_by_admin_id"]
+            isOneToOne: false
+            referencedRelation: "programme_admins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dashboard_slideshow: {
         Row: {
@@ -367,6 +378,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      programme_admins: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          password_hash: string
+          role: Database["public"]["Enums"]["programme_admin_role"]
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          password_hash: string
+          role?: Database["public"]["Enums"]["programme_admin_role"]
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          password_hash?: string
+          role?: Database["public"]["Enums"]["programme_admin_role"]
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
       }
       programme_feedback: {
         Row: {
@@ -697,6 +741,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      programme_admin_role: "viewer" | "editor" | "super_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -825,6 +870,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      programme_admin_role: ["viewer", "editor", "super_admin"],
     },
   },
 } as const

@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
+import { ProgrammeAdminProvider } from "@/contexts/ProgrammeAdminContext";
 import { PrototypeGate } from "@/components/PrototypeGate";
 import IdleScreen from "./pages/IdleScreen";
 import ScanCard from "./pages/ScanCard";
@@ -16,6 +17,7 @@ import Profile from "./pages/Profile";
 import ProfileHistory from "./pages/ProfileHistory";
 import NotFound from "./pages/NotFound";
 import AdminProgrammes from "./pages/AdminProgrammes";
+import AdminProgrammesLogin from "./pages/AdminProgrammesLogin";
 import AdminSlideshow from "./pages/AdminSlideshow";
 import AdminRewards from "./pages/AdminRewards";
 import { HealthChatBot } from "@/components/HealthChatBot";
@@ -27,29 +29,32 @@ const App = () => (
   <PrototypeGate>
     <QueryClientProvider client={queryClient}>
       <AppProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<IdleScreen />} />
-              <Route path="/scan" element={<ScanCard />} />
-              <Route path="/language" element={<LanguageSelection />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/health" element={<HealthScreenings />} />
-              <Route path="/findcare" element={<FindCare />} />
-              <Route path="/community" element={<CommunityProgrammes />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/profile/history" element={<ProfileHistory />} />
-              <Route path="/admin/programmes" element={<AdminProgrammes />} />
-              <Route path="/admin/slideshow" element={<AdminSlideshow />} />
-              <Route path="/admin/rewards" element={<AdminRewards />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            <HealthChatBot />
-            
-          </BrowserRouter>
-        </TooltipProvider>
+        <ProgrammeAdminProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<IdleScreen />} />
+                <Route path="/scan" element={<ScanCard />} />
+                <Route path="/language" element={<LanguageSelection />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/health" element={<HealthScreenings />} />
+                <Route path="/findcare" element={<FindCare />} />
+                <Route path="/community" element={<CommunityProgrammes />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/profile/history" element={<ProfileHistory />} />
+                <Route path="/admin/programmes/login" element={<AdminProgrammesLogin />} />
+                <Route path="/admin/programmes" element={<AdminProgrammes />} />
+                <Route path="/admin/slideshow" element={<AdminSlideshow />} />
+                <Route path="/admin/rewards" element={<AdminRewards />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              <HealthChatBot />
+              
+            </BrowserRouter>
+          </TooltipProvider>
+        </ProgrammeAdminProvider>
       </AppProvider>
     </QueryClientProvider>
   </PrototypeGate>
