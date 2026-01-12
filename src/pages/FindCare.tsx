@@ -23,7 +23,10 @@ import {
   Search,
   Stethoscope,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface Clinic {
   id: string;
@@ -193,6 +196,8 @@ export default function FindCare() {
   const [clinics, setClinics] = useState<Clinic[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [regions, setRegions] = useState<string[]>(["all"]);
+  const [isFetchingHours, setIsFetchingHours] = useState(false);
+  const [fetchProgress, setFetchProgress] = useState({ current: 0, total: 0 });
 
   useEffect(() => {
     const loadClinics = async () => {
@@ -276,6 +281,74 @@ export default function FindCare() {
     if (isTtsEnabled) {
       speakText(text, language);
     }
+  };
+
+  // Fetch missing hours from Google Places API
+  const fetchMissingHours = async () => {
+    const clinicsWithoutHours = clinics.filter(c => !c.hours);
+    if (clinicsWithoutHours.length === 0) {
+      toast.success("All clinics already have opening hours!");
+      return;
+    }
+
+    setIsFetchingHours(true);
+    setFetchProgress({ current: 0, total: clinicsWithoutHours.length });
+
+    const updatedClinics = [...clinics];
+    const closedClinicIds: string[] = [];
+    let successCount = 0;
+    let closedCount = 0;
+
+    for (let i = 0; i < clinicsWithoutHours.length; i++) {
+      const clinic = clinicsWithoutHours[i];
+      setFetchProgress({ current: i + 1, total: clinicsWithoutHours.length });
+
+      try {
+        const { data, error } = await supabase.functions.invoke("fetch-clinic-hours", {
+          body: {
+            clinicName: clinic.name,
+            address: `${clinic.address}, Singapore ${clinic.postalCode}`,
+            phone: clinic.phone,
+          },
+        });
+
+        if (error) {
+          console.error(`Error fetching hours for ${clinic.name}:`, error);
+          continue;
+        }
+
+        if (data.status === "closed") {
+          closedClinicIds.push(clinic.id);
+          closedCount++;
+        } else if (data.status === "open" && data.data?.hours) {
+          const clinicIndex = updatedClinics.findIndex(c => c.id === clinic.id);
+          if (clinicIndex !== -1) {
+            updatedClinics[clinicIndex] = {
+              ...updatedClinics[clinicIndex],
+              hours: data.data.hours,
+              phone: data.data.phone || updatedClinics[clinicIndex].phone,
+              name: data.data.name || updatedClinics[clinicIndex].name,
+            };
+            successCount++;
+          }
+        }
+
+        // Small delay to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+      } catch (err) {
+        console.error(`Failed to fetch hours for ${clinic.name}:`, err);
+      }
+    }
+
+    // Remove closed clinics
+    const finalClinics = updatedClinics.filter(c => !closedClinicIds.includes(c.id));
+    setClinics(finalClinics);
+    setIsFetchingHours(false);
+
+    toast.success(
+      `Done! Updated ${successCount} clinics, removed ${closedCount} closed clinics.`,
+      { duration: 8000 }
+    );
   };
 
   const [selectedHoursClinic, setSelectedHoursClinic] = useState<Clinic | null>(null);
@@ -426,13 +499,36 @@ export default function FindCare() {
             ))}
           </div>
 
-          {/* Results count */}
-          <p className="text-sm text-muted-foreground">
-            {isLoading 
-              ? t("common.loading") || "Loading..."
-              : t("findcare.resultsCount").replace("{count}", filteredClinics.length.toString())
-            }
-          </p>
+          {/* Results count and fetch button */}
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-muted-foreground">
+              {isLoading 
+                ? t("common.loading") || "Loading..."
+                : t("findcare.resultsCount").replace("{count}", filteredClinics.length.toString())
+              }
+            </p>
+            {!isLoading && clinics.filter(c => !c.hours).length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchMissingHours}
+                disabled={isFetchingHours}
+                className="flex-shrink-0"
+              >
+                {isFetchingHours ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    {fetchProgress.current}/{fetchProgress.total}
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Fetch Missing Hours ({clinics.filter(c => !c.hours).length})
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
 
           {/* Loading state */}
           {isLoading && (
