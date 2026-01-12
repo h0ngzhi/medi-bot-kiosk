@@ -104,8 +104,8 @@ interface ClinicMapProps {
   userLocation: { lat: number; lng: number } | null;
   distanceFilter: number | null;
   onClinicSelect: (clinic: MapClinic) => void;
-  onCall: (phone: string) => void;
-  onDirections: (address: string, postalCode: string) => void;
+  onShowPhone: (phone: string, clinicName: string) => void;
+  onViewHours: (clinic: MapClinic) => void;
   t: (key: string) => string;
 }
 
@@ -114,8 +114,8 @@ export function ClinicMap({
   userLocation,
   distanceFilter,
   onClinicSelect,
-  onCall,
-  onDirections,
+  onShowPhone,
+  onViewHours,
   t,
 }: ClinicMapProps) {
   const mapRef = useRef<L.Map | null>(null);
@@ -243,6 +243,17 @@ export function ClinicMap({
     // Clear existing markers
     markersRef.current.clearLayers();
 
+    // Set up global handlers for popup buttons
+    (window as any).__clinicMapShowPhone = (phone: string, name: string) => {
+      onShowPhone(phone, name);
+    };
+    (window as any).__clinicMapViewHours = (clinicId: string) => {
+      const clinic = visibleClinics.find(c => c.id === clinicId);
+      if (clinic) {
+        onViewHours(clinic);
+      }
+    };
+
     // Add new markers
     visibleClinics.forEach((clinic) => {
       const marker = L.marker([clinic.lat, clinic.lng], {
@@ -250,6 +261,9 @@ export function ClinicMap({
       });
 
       const typeColor = getTypeColor(clinic.type);
+      const escapedName = clinic.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
+      const escapedPhone = clinic.phone.replace(/'/g, "\\'").replace(/"/g, '\\"');
+      
       const popupContent = `
         <div style="min-width: 220px; padding: 8px;">
           <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
@@ -293,7 +307,7 @@ export function ClinicMap({
           <div style="display: flex; gap: 8px;">
             ${clinic.phone ? `
               <button 
-                onclick="window.location.href='tel:${clinic.phone.replace(/\s/g, '')}'"
+                onclick="window.__clinicMapShowPhone('${escapedPhone}', '${escapedName}')"
                 style="
                   flex: 1; 
                   padding: 10px 12px; 
@@ -312,7 +326,7 @@ export function ClinicMap({
               </button>
             ` : ''}
             <button 
-              onclick="window.open('https://maps.google.com/?q=${encodeURIComponent(clinic.address + ', Singapore ' + clinic.postalCode)}', '_blank')"
+              onclick="window.__clinicMapViewHours('${clinic.id}')"
               style="
                 flex: 1; 
                 padding: 10px 12px; 
@@ -326,7 +340,7 @@ export function ClinicMap({
                 transition: all 0.2s;
               "
             >
-              🧭 Directions
+              🕐 View Hours
             </button>
           </div>
         </div>
@@ -336,7 +350,13 @@ export function ClinicMap({
       marker.on("click", () => onClinicSelect(clinic));
       marker.addTo(markersRef.current!);
     });
-  }, [visibleClinics, onClinicSelect, t]);
+
+    // Cleanup global handlers
+    return () => {
+      delete (window as any).__clinicMapShowPhone;
+      delete (window as any).__clinicMapViewHours;
+    };
+  }, [visibleClinics, onClinicSelect, onShowPhone, onViewHours, t]);
 
   return (
     <div 
