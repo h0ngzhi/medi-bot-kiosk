@@ -64,6 +64,7 @@ interface Reward {
   is_active: boolean;
   display_order: number;
   image_url: string | null;
+  reward_type: string | null;
   created_at: string;
 }
 
@@ -94,6 +95,7 @@ type RewardForm = {
   is_active: boolean;
   display_order: number;
   image_url: string;
+  reward_type: string;
 };
 
 type TierForm = {
@@ -121,6 +123,7 @@ const emptyRewardForm: RewardForm = {
   is_active: true,
   display_order: 0,
   image_url: "",
+  reward_type: "voucher",
 };
 
 const emptyTierForm: TierForm = {
@@ -280,6 +283,7 @@ const AdminRewards = () => {
       is_active: rewardForm.is_active,
       display_order: rewardForm.display_order,
       image_url: rewardForm.image_url || null,
+      reward_type: rewardForm.reward_type,
     };
 
     if (editingRewardId) {
@@ -336,6 +340,7 @@ const AdminRewards = () => {
       is_active: reward.is_active,
       display_order: reward.display_order,
       image_url: reward.image_url || "",
+      reward_type: reward.reward_type || "voucher",
     });
     setRewardDialogOpen(true);
   };
@@ -614,6 +619,37 @@ const AdminRewards = () => {
                       />
                     </div>
 
+                    {/* Reward Type Selector */}
+                    <div className="space-y-2">
+                      <Label>Reward Type *</Label>
+                      <Select
+                        value={rewardForm.reward_type}
+                        onValueChange={(v) =>
+                          setRewardForm({ ...rewardForm, reward_type: v })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="certificate">
+                            📜 Certificate (Printable)
+                          </SelectItem>
+                          <SelectItem value="medal">
+                            🏆 Medal/Trophy (Display in rack)
+                          </SelectItem>
+                          <SelectItem value="voucher">
+                            🎫 Voucher (Barcode/Code)
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        {rewardForm.reward_type === 'certificate' && 'Users can print this certificate after redemption'}
+                        {rewardForm.reward_type === 'medal' && 'Displayed in user\'s trophy rack section'}
+                        {rewardForm.reward_type === 'voucher' && 'Shows barcode and redemption code to user'}
+                      </p>
+                    </div>
+
                     <div className="grid grid-cols-4 gap-4">
                       <div className="space-y-2">
                         <Label>Points Cost</Label>
@@ -793,6 +829,13 @@ const AdminRewards = () => {
                             </div>
                           </CardHeader>
                           <CardContent>
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge variant="outline" className="text-xs">
+                                {reward.reward_type === 'certificate' && '📜 Certificate'}
+                                {reward.reward_type === 'medal' && '🏆 Medal'}
+                                {(reward.reward_type === 'voucher' || !reward.reward_type) && '🎫 Voucher'}
+                              </Badge>
+                            </div>
                             <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                               {reward.description || "No description"}
                             </p>

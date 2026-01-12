@@ -14,7 +14,11 @@ import {
   MapPin,
   Lock,
   Unlock,
-  Trophy
+  Trophy,
+  Printer,
+  Loader2,
+  ChevronRight,
+  QrCode
 } from 'lucide-react';
 import {
   Dialog,
@@ -43,6 +47,7 @@ interface Reward {
   tier: number;
   max_quantity: number;
   image_url: string | null;
+  reward_type: string | null;
 }
 
 interface TierSetting {
@@ -52,6 +57,17 @@ interface TierSetting {
   title_zh: string | null;
   title_ms: string | null;
   title_ta: string | null;
+}
+
+interface RedeemedReward {
+  id: string;
+  reward_id: string;
+  quantity: number;
+  points_spent: number;
+  redeemed_at: string;
+  voucher_code: string | null;
+  status: string;
+  reward: Reward | null;
 }
 
 export default function Profile() {
@@ -64,6 +80,8 @@ export default function Profile() {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [tierSettings, setTierSettings] = useState<TierSetting[]>([]);
   const [eventsAttended, setEventsAttended] = useState(0);
+  const [redeemedRewards, setRedeemedRewards] = useState<RedeemedReward[]>([]);
+  const [printingCertId, setPrintingCertId] = useState<string | null>(null);
   const [address, setAddress] = useState({
     blockNo: '',
     unitNo: '',
@@ -71,7 +89,18 @@ export default function Profile() {
     postalCode: '',
   });
 
-  // Fetch rewards, tier settings, and user events attended
+  // Generate a random voucher code
+  const generateVoucherCode = () => {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    for (let i = 0; i < 12; i++) {
+      if (i > 0 && i % 4 === 0) code += '-';
+      code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+  };
+
+  // Fetch rewards, tier settings, user events attended, and redeemed rewards
   useEffect(() => {
     const fetchData = async () => {
       // Fetch rewards
@@ -92,7 +121,7 @@ export default function Profile() {
       
       if (tierData) setTierSettings(tierData);
 
-      // Fetch user's events attended
+      // Fetch user's events attended and redeemed rewards
       if (user?.id) {
         const { data: userData } = await supabase
           .from('kiosk_users')
@@ -101,6 +130,33 @@ export default function Profile() {
           .single();
         
         if (userData) setEventsAttended(userData.events_attended || 0);
+
+        // Fetch redeemed rewards
+        const { data: redemptions } = await supabase
+          .from('user_reward_redemptions')
+          .select(`
+            id,
+            reward_id,
+            quantity,
+            points_spent,
+            redeemed_at,
+            voucher_code,
+            status,
+            rewards (
+              id, title, title_zh, title_ms, title_ta,
+              description, description_zh, description_ms, description_ta,
+              points_cost, tier, max_quantity, image_url, reward_type
+            )
+          `)
+          .eq('kiosk_user_id', user.id)
+          .order('redeemed_at', { ascending: false });
+
+        if (redemptions) {
+          setRedeemedRewards(redemptions.map(r => ({
+            ...r,
+            reward: r.rewards as unknown as Reward
+          })));
+        }
       }
     };
 
@@ -148,7 +204,7 @@ export default function Profile() {
         };
       }
     }
-    return null; // All tiers unlocked
+    return null;
   };
 
   const handleButtonSpeak = (text: string) => {
@@ -208,15 +264,19 @@ export default function Profile() {
     const totalPointsToDeduct = getTotalPoints(selectedReward);
     const newPoints = user.points - totalPointsToDeduct;
 
+    // Generate voucher code for voucher type rewards
+    const voucherCode = selectedReward.reward_type === 'voucher' ? generateVoucherCode() : null;
+
     try {
       // Create redemption record
-      await supabase.from('user_reward_redemptions').insert({
+      const { data: redemption } = await supabase.from('user_reward_redemptions').insert({
         kiosk_user_id: user.id,
         reward_id: selectedReward.id,
         quantity: getQuantity(selectedReward.id),
         points_spent: totalPointsToDeduct,
         delivery_address: address,
-      });
+        voucher_code: voucherCode,
+      }).select().single();
 
       // Update points
       const { error } = await supabase
@@ -227,6 +287,14 @@ export default function Profile() {
       if (error) throw error;
 
       setUser({ ...user, points: newPoints });
+
+      // Add to redeemed rewards list
+      if (redemption) {
+        setRedeemedRewards(prev => [{
+          ...redemption,
+          reward: selectedReward
+        }, ...prev]);
+      }
 
       toast({
         title: t('profile.rewardRedeemed'),
@@ -249,6 +317,17 @@ export default function Profile() {
     }
   };
 
+  const handlePrintCertificate = async (redemptionId: string) => {
+    setPrintingCertId(redemptionId);
+    // Simulate printing delay
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    setPrintingCertId(null);
+    toast({
+      title: t('profile.certificatePrinted'),
+      description: t('profile.collectCertificate'),
+    });
+  };
+
   useEffect(() => {
     if (!user) {
       navigate('/');
@@ -258,6 +337,11 @@ export default function Profile() {
   if (!user) return null;
 
   const nextTier = getNextTierProgress();
+
+  // Separate redeemed rewards by type
+  const redeemedMedals = redeemedRewards.filter(r => r.reward?.reward_type === 'medal');
+  const redeemedCertificates = redeemedRewards.filter(r => r.reward?.reward_type === 'certificate');
+  const redeemedVouchers = redeemedRewards.filter(r => r.reward?.reward_type === 'voucher' || !r.reward?.reward_type);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted pb-32">
@@ -318,27 +402,170 @@ export default function Profile() {
           )}
         </div>
 
-        {/* Participation History */}
-        <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          <div className="flex items-center gap-3 mb-4" onMouseEnter={() => handleButtonSpeak(t('profile.history'))}>
+        {/* Participation History Link */}
+        <Button
+          variant="outline"
+          size="lg"
+          onClick={() => navigate('/profile/history')}
+          className="w-full mb-6 h-16 text-lg justify-between"
+        >
+          <div className="flex items-center gap-3">
             <History className="w-6 h-6 text-primary" />
-            <h2 className="text-xl font-bold text-foreground cursor-default">{t('profile.history')}</h2>
+            <span>{t('profile.history')}</span>
           </div>
-          <div className="space-y-3">
-            {user.participationHistory.length > 0 ? (
-              user.participationHistory.slice(0, 3).map((item, index) => (
-                <div key={index} className="flex items-center gap-3 p-3 bg-muted rounded-xl cursor-default">
-                  <CheckCircle2 className="w-5 h-5 text-success flex-shrink-0" />
-                  <span className="text-foreground">{item}</span>
+          <ChevronRight className="w-5 h-5" />
+        </Button>
+
+        {/* Trophy Rack - Medals */}
+        {redeemedMedals.length > 0 && (
+          <div className="bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 rounded-3xl shadow-soft p-6 mb-6 animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <Trophy className="w-7 h-7 text-amber-500" />
+              <h2 className="text-xl font-bold text-foreground">{t('profile.trophyRack')}</h2>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+              {redeemedMedals.map((redemption) => (
+                <div key={redemption.id} className="text-center">
+                  {redemption.reward?.image_url ? (
+                    <img 
+                      src={redemption.reward.image_url}
+                      alt={getLocalizedText(redemption.reward, 'title')}
+                      className="w-20 h-20 mx-auto object-contain rounded-xl bg-white/50 p-2 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 mx-auto rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
+                      <Trophy className="w-10 h-10 text-amber-500" />
+                    </div>
+                  )}
+                  <p className="text-sm font-medium text-foreground mt-2 line-clamp-2">
+                    {redemption.reward ? getLocalizedText(redemption.reward, 'title') : 'Medal'}
+                  </p>
+                  {redemption.quantity > 1 && (
+                    <span className="text-xs text-muted-foreground">x{redemption.quantity}</span>
+                  )}
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-4 text-muted-foreground">
-                <p>{t('profile.noHistory')}</p>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Certificates Section */}
+        {redeemedCertificates.length > 0 && (
+          <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <Award className="w-6 h-6 text-primary" />
+              <h2 className="text-xl font-bold text-foreground">{t('profile.certificates')}</h2>
+            </div>
+            <div className="space-y-3">
+              {redeemedCertificates.map((redemption) => (
+                <div key={redemption.id} className="flex items-center justify-between p-4 bg-muted rounded-xl">
+                  <div className="flex items-center gap-3">
+                    {redemption.reward?.image_url ? (
+                      <img 
+                        src={redemption.reward.image_url}
+                        alt=""
+                        className="w-12 h-12 object-contain rounded bg-white p-1"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded bg-primary/10 flex items-center justify-center">
+                        <Award className="w-6 h-6 text-primary" />
+                      </div>
+                    )}
+                    <div>
+                      <p className="font-medium text-foreground">
+                        {redemption.reward ? getLocalizedText(redemption.reward, 'title') : 'Certificate'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {new Date(redemption.redeemed_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    onClick={() => handlePrintCertificate(redemption.id)}
+                    disabled={printingCertId === redemption.id}
+                    className="h-12"
+                  >
+                    {printingCertId === redemption.id ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        {t('profile.printing')}
+                      </>
+                    ) : printingCertId === null ? (
+                      <>
+                        <Printer className="w-4 h-4 mr-2" />
+                        {t('profile.print')}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 mr-2 text-success" />
+                        {t('profile.printed')}
+                      </>
+                    )}
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Vouchers Section */}
+        {redeemedVouchers.length > 0 && (
+          <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <Gift className="w-6 h-6 text-success" />
+              <h2 className="text-xl font-bold text-foreground">{t('profile.vouchers')}</h2>
+            </div>
+            <div className="space-y-4">
+              {redeemedVouchers.map((redemption) => (
+                <div key={redemption.id} className="p-4 bg-gradient-to-r from-success/5 to-primary/5 rounded-xl border border-success/20">
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <p className="font-bold text-lg text-foreground">
+                        {redemption.reward ? getLocalizedText(redemption.reward, 'title') : 'Voucher'}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {t('profile.redeemedOn')} {new Date(redemption.redeemed_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    {redemption.quantity > 1 && (
+                      <span className="text-sm bg-primary/10 text-primary px-2 py-1 rounded-full">
+                        x{redemption.quantity}
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* Barcode simulation */}
+                  <div className="bg-white rounded-lg p-4 text-center">
+                    <div className="flex justify-center items-end gap-0.5 h-16 mb-2">
+                      {/* Generate barcode-like bars */}
+                      {Array.from({ length: 40 }).map((_, i) => (
+                        <div 
+                          key={i}
+                          className="bg-black"
+                          style={{ 
+                            width: Math.random() > 0.5 ? '2px' : '3px',
+                            height: `${40 + Math.random() * 24}px`
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="flex items-center justify-center gap-2">
+                      <QrCode className="w-4 h-4 text-muted-foreground" />
+                      <p className="font-mono text-lg font-bold tracking-wider text-foreground">
+                        {redemption.voucher_code || generateVoucherCode()}
+                      </p>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {t('profile.showToRedeem')}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Rewards Section */}
         <div className="animate-fade-in" style={{ animationDelay: '0.2s' }}>
@@ -519,6 +746,8 @@ function RewardCard({
   const totalPoints = reward.points_cost * quantity;
   const needMorePoints = totalPoints - userPoints;
 
+  const typeIcon = reward.reward_type === 'certificate' ? '📜' : reward.reward_type === 'medal' ? '🏆' : '🎫';
+
   return (
     <div className="bg-card rounded-2xl shadow-soft p-5 border-2 border-transparent hover:border-primary/20 transition-colors">
       <div className="flex items-start gap-4 mb-3">
@@ -535,7 +764,10 @@ function RewardCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div>
-              <h4 className="text-lg font-bold text-foreground">{getLocalizedText(reward, 'title')}</h4>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-lg">{typeIcon}</span>
+                <h4 className="text-lg font-bold text-foreground">{getLocalizedText(reward, 'title')}</h4>
+              </div>
               <p className="text-sm text-muted-foreground line-clamp-2">{getLocalizedDesc(reward)}</p>
             </div>
             <div className="text-right flex-shrink-0 ml-2">

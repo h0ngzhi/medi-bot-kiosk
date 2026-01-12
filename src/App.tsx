@@ -13,6 +13,7 @@ import HealthScreenings from "./pages/HealthScreenings";
 import FindCare from "./pages/FindCare";
 import CommunityProgrammes from "./pages/CommunityProgrammes";
 import Profile from "./pages/Profile";
+import ProfileHistory from "./pages/ProfileHistory";
 import NotFound from "./pages/NotFound";
 import AdminProgrammes from "./pages/AdminProgrammes";
 import AdminSlideshow from "./pages/AdminSlideshow";
@@ -39,6 +40,7 @@ const App = () => (
               <Route path="/findcare" element={<FindCare />} />
               <Route path="/community" element={<CommunityProgrammes />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/history" element={<ProfileHistory />} />
               <Route path="/admin/programmes" element={<AdminProgrammes />} />
               <Route path="/admin/slideshow" element={<AdminSlideshow />} />
               <Route path="/admin/rewards" element={<AdminRewards />} />
