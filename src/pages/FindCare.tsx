@@ -6,9 +6,6 @@ import { AccessibilityBar } from "@/components/AccessibilityBar";
 import { speakText } from "@/utils/speechUtils";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { format } from "date-fns";
 import {
   ArrowLeft,
   Building2,
@@ -17,81 +14,194 @@ import {
   MapPin,
   Clock,
   Navigation,
-  CalendarDays,
-  CheckCircle2,
-  ExternalLink,
+  Search,
+  Stethoscope,
 } from "lucide-react";
 
-interface Facility {
+interface Clinic {
   id: string;
   name: string;
-  type: "polyclinic" | "hospital";
+  type: "gp" | "dental" | "polyclinic" | "hospital";
   address: string;
+  postalCode: string;
   phone: string;
   hours: string;
-  distance: string;
-  mapsUrl: string;
-  availableSlots: string[];
+  region: string;
 }
 
-// Sample nearby facilities data for Singapore
-const nearbyFacilities: Facility[] = [
+// Sample CHAS clinics data based on data.gov.sg structure
+// In production, this would be fetched from the API
+const chasClinics: Clinic[] = [
   {
     id: "1",
-    name: "Bedok Polyclinic",
-    type: "polyclinic",
-    address: "11 Bedok North Street 1, Singapore 469662",
-    phone: "6443 6969",
-    hours: "8:00 AM - 1:00 PM, 2:00 PM - 4:30 PM",
-    distance: "0.8 km",
-    mapsUrl: "https://maps.google.com/?q=Bedok+Polyclinic+Singapore",
-    availableSlots: ["9:00 AM", "10:30 AM", "2:00 PM", "3:30 PM"],
+    name: "Bedok Family Clinic",
+    type: "gp",
+    address: "Blk 201 Bedok North Street 1, #01-421",
+    postalCode: "460201",
+    phone: "6445 1234",
+    hours: "Mon-Fri: 8:30AM-12:30PM, 2PM-5PM, 7PM-9PM",
+    region: "East",
   },
   {
     id: "2",
-    name: "Tampines Polyclinic",
-    type: "polyclinic",
-    address: "1 Tampines Street 41, Singapore 529203",
-    phone: "6788 0833",
-    hours: "8:00 AM - 1:00 PM, 2:00 PM - 4:30 PM",
-    distance: "2.3 km",
-    mapsUrl: "https://maps.google.com/?q=Tampines+Polyclinic+Singapore",
-    availableSlots: ["9:30 AM", "11:00 AM", "2:30 PM"],
+    name: "Tampines Medical Centre",
+    type: "gp",
+    address: "Blk 827 Tampines Street 81, #01-140",
+    postalCode: "520827",
+    phone: "6789 5678",
+    hours: "Mon-Fri: 8AM-1PM, 2PM-5PM | Sat: 8AM-12PM",
+    region: "East",
   },
   {
     id: "3",
-    name: "Changi General Hospital",
-    type: "hospital",
-    address: "2 Simei Street 3, Singapore 529889",
-    phone: "6788 8833",
-    hours: "24 Hours (Emergency)",
-    distance: "3.1 km",
-    mapsUrl: "https://maps.google.com/?q=Changi+General+Hospital+Singapore",
-    availableSlots: ["10:00 AM", "11:30 AM", "3:00 PM", "4:00 PM"],
+    name: "Pasir Ris Family Clinic",
+    type: "gp",
+    address: "Blk 442 Pasir Ris Drive 6, #01-28",
+    postalCode: "510442",
+    phone: "6583 9012",
+    hours: "Mon-Fri: 9AM-12PM, 2PM-5PM, 7PM-9PM",
+    region: "East",
   },
   {
     id: "4",
-    name: "Pasir Ris Polyclinic",
+    name: "Simei Medical Centre",
+    type: "gp",
+    address: "Blk 247 Simei Street 5, #01-128",
+    postalCode: "520247",
+    phone: "6786 3456",
+    hours: "Mon-Sat: 8:30AM-12:30PM, 2PM-4:30PM",
+    region: "East",
+  },
+  {
+    id: "5",
+    name: "Geylang Dental Clinic",
+    type: "dental",
+    address: "Blk 125 Geylang East Avenue 1, #01-253",
+    postalCode: "380125",
+    phone: "6744 7890",
+    hours: "Mon-Fri: 9AM-6PM | Sat: 9AM-1PM",
+    region: "Central",
+  },
+  {
+    id: "6",
+    name: "Marine Parade Family Clinic",
+    type: "gp",
+    address: "Blk 84 Marine Parade Central, #01-606",
+    postalCode: "440084",
+    phone: "6345 6789",
+    hours: "Mon-Fri: 8:30AM-12:30PM, 2PM-5PM",
+    region: "Central",
+  },
+  {
+    id: "7",
+    name: "Ang Mo Kio Medical Centre",
+    type: "gp",
+    address: "Blk 722 Ang Mo Kio Avenue 8, #01-2821",
+    postalCode: "560722",
+    phone: "6456 1234",
+    hours: "Mon-Fri: 8AM-1PM, 2PM-9PM | Sat-Sun: 8AM-1PM",
+    region: "North",
+  },
+  {
+    id: "8",
+    name: "Yishun Family Clinic",
+    type: "gp",
+    address: "Blk 846 Yishun Ring Road, #01-3539",
+    postalCode: "760846",
+    phone: "6852 4567",
+    hours: "Mon-Fri: 8:30AM-12:30PM, 2PM-5PM, 7PM-9PM",
+    region: "North",
+  },
+  {
+    id: "9",
+    name: "Woodlands Dental Surgery",
+    type: "dental",
+    address: "Blk 302 Woodlands Street 31, #01-271",
+    postalCode: "730302",
+    phone: "6365 7890",
+    hours: "Mon-Fri: 9AM-5PM | Sat: 9AM-12PM",
+    region: "North",
+  },
+  {
+    id: "10",
+    name: "Jurong West Medical Clinic",
+    type: "gp",
+    address: "Blk 501 Jurong West Street 51, #01-257",
+    postalCode: "640501",
+    phone: "6567 8901",
+    hours: "Mon-Fri: 8AM-12PM, 2PM-5PM, 7PM-9PM",
+    region: "West",
+  },
+  {
+    id: "11",
+    name: "Clementi Family Practice",
+    type: "gp",
+    address: "Blk 442 Clementi Avenue 3, #01-63",
+    postalCode: "120442",
+    phone: "6778 2345",
+    hours: "Mon-Sat: 9AM-1PM, 2PM-5PM",
+    region: "West",
+  },
+  {
+    id: "12",
+    name: "Bukit Batok Medical Centre",
+    type: "gp",
+    address: "Blk 283 Bukit Batok East Avenue 3, #01-269",
+    postalCode: "650283",
+    phone: "6569 3456",
+    hours: "Mon-Fri: 8:30AM-12:30PM, 2PM-4:30PM, 7PM-9PM",
+    region: "West",
+  },
+  {
+    id: "13",
+    name: "Bedok Polyclinic",
     type: "polyclinic",
-    address: "1 Pasir Ris Drive 4, Singapore 519457",
-    phone: "6585 3333",
-    hours: "8:00 AM - 1:00 PM, 2:00 PM - 4:30 PM",
-    distance: "4.5 km",
-    mapsUrl: "https://maps.google.com/?q=Pasir+Ris+Polyclinic+Singapore",
-    availableSlots: ["8:30 AM", "10:00 AM", "2:00 PM"],
+    address: "11 Bedok North Street 1",
+    postalCode: "469662",
+    phone: "6443 6969",
+    hours: "Mon-Fri: 8AM-1PM, 2PM-4:30PM",
+    region: "East",
+  },
+  {
+    id: "14",
+    name: "Tampines Polyclinic",
+    type: "polyclinic",
+    address: "1 Tampines Street 41",
+    postalCode: "529203",
+    phone: "6788 0833",
+    hours: "Mon-Fri: 8AM-1PM, 2PM-4:30PM",
+    region: "East",
+  },
+  {
+    id: "15",
+    name: "Changi General Hospital",
+    type: "hospital",
+    address: "2 Simei Street 3",
+    postalCode: "529889",
+    phone: "6788 8833",
+    hours: "24 Hours (Emergency)",
+    region: "East",
+  },
+  {
+    id: "16",
+    name: "Singapore General Hospital",
+    type: "hospital",
+    address: "Outram Road",
+    postalCode: "169608",
+    phone: "6222 3322",
+    hours: "24 Hours (Emergency)",
+    region: "Central",
   },
 ];
 
-type ViewState = "list" | "booking" | "confirmed";
+type FilterType = "all" | "gp" | "dental" | "polyclinic" | "hospital";
 
 export default function FindCare() {
-  const { t, user, language, isTtsEnabled } = useApp();
+  const { t, language, isTtsEnabled } = useApp();
   const navigate = useNavigate();
-  const [viewState, setViewState] = useState<ViewState>("list");
-  const [selectedFacility, setSelectedFacility] = useState<Facility | null>(null);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
-  const [filterType, setFilterType] = useState<"all" | "polyclinic" | "hospital">("all");
+  const [filterType, setFilterType] = useState<FilterType>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRegion, setSelectedRegion] = useState<string>("all");
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -99,41 +209,49 @@ export default function FindCare() {
     }
   };
 
-  const filteredFacilities = nearbyFacilities.filter(
-    (f) => filterType === "all" || f.type === filterType
-  );
+  const filteredClinics = chasClinics.filter((clinic) => {
+    const matchesType = filterType === "all" || clinic.type === filterType;
+    const matchesRegion = selectedRegion === "all" || clinic.region === selectedRegion;
+    const matchesSearch =
+      searchQuery === "" ||
+      clinic.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      clinic.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      clinic.postalCode.includes(searchQuery);
+    return matchesType && matchesRegion && matchesSearch;
+  });
 
-  const handleSelectFacility = (facility: Facility) => {
-    setSelectedFacility(facility);
-    setViewState("booking");
-  };
-
-  const handleOpenMaps = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
+  const handleOpenMaps = (address: string, postalCode: string) => {
+    const query = encodeURIComponent(`${address}, Singapore ${postalCode}`);
+    window.open(`https://maps.google.com/?q=${query}`, "_blank", "noopener,noreferrer");
   };
 
   const handleCall = (phone: string) => {
-    window.location.href = `tel:${phone}`;
+    window.location.href = `tel:${phone.replace(/\s/g, "")}`;
   };
 
-  const handleConfirmBooking = () => {
-    if (!selectedDate || !selectedSlot) return;
-    setViewState("confirmed");
+  const getClinicIcon = (type: Clinic["type"]) => {
+    switch (type) {
+      case "gp":
+        return <Stethoscope className="w-6 h-6 text-primary" />;
+      case "dental":
+        return <Building2 className="w-6 h-6 text-accent" />;
+      case "polyclinic":
+        return <Building2 className="w-6 h-6 text-primary" />;
+      case "hospital":
+        return <Hospital className="w-6 h-6 text-secondary" />;
+    }
   };
 
-  const handleBack = () => {
-    if (viewState === "list") {
-      navigate("/dashboard");
-    } else if (viewState === "booking") {
-      setViewState("list");
-      setSelectedFacility(null);
-      setSelectedDate(undefined);
-      setSelectedSlot(null);
-    } else {
-      setViewState("list");
-      setSelectedFacility(null);
-      setSelectedDate(undefined);
-      setSelectedSlot(null);
+  const getClinicTypeLabel = (type: Clinic["type"]) => {
+    switch (type) {
+      case "gp":
+        return t("findcare.gpClinic");
+      case "dental":
+        return t("findcare.dentalClinic");
+      case "polyclinic":
+        return t("findcare.polyclinic");
+      case "hospital":
+        return t("findcare.hospital");
     }
   };
 
@@ -145,7 +263,7 @@ export default function FindCare() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleBack}
+            onClick={() => navigate("/dashboard")}
             onMouseEnter={() => handleSpeak(t("common.back"))}
             className="w-14 h-14 rounded-full"
           >
@@ -159,278 +277,185 @@ export default function FindCare() {
       </header>
 
       <main className="max-w-2xl mx-auto px-6">
-        {/* Facility List View */}
-        {viewState === "list" && (
-          <div className="space-y-6 animate-fade-in">
-            {/* Filter buttons */}
-            <div className="flex gap-2">
-              <Button
-                variant={filterType === "all" ? "default" : "outline"}
-                onClick={() => setFilterType("all")}
-                onMouseEnter={() => handleSpeak(t("findcare.all"))}
-                className="flex-1"
-              >
-                {t("findcare.all")}
-              </Button>
-              <Button
-                variant={filterType === "polyclinic" ? "default" : "outline"}
-                onClick={() => setFilterType("polyclinic")}
-                onMouseEnter={() => handleSpeak(t("findcare.polyclinics"))}
-                className="flex-1"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                {t("findcare.polyclinics")}
-              </Button>
-              <Button
-                variant={filterType === "hospital" ? "default" : "outline"}
-                onClick={() => setFilterType("hospital")}
-                onMouseEnter={() => handleSpeak(t("findcare.hospitals"))}
-                className="flex-1"
-              >
-                <Hospital className="w-4 h-4 mr-2" />
-                {t("findcare.hospitals")}
-              </Button>
-            </div>
-
-            {/* Facilities list */}
-            <div className="space-y-4">
-              {filteredFacilities.map((facility) => (
-                <Card key={facility.id} className="p-4 space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                          facility.type === "polyclinic" ? "bg-primary/10" : "bg-secondary/10"
-                        }`}
-                      >
-                        {facility.type === "polyclinic" ? (
-                          <Building2 className="w-6 h-6 text-primary" />
-                        ) : (
-                          <Hospital className="w-6 h-6 text-secondary" />
-                        )}
-                      </div>
-                      <div>
-                        <h3
-                          className="font-bold text-foreground cursor-default"
-                          onMouseEnter={() => handleSpeak(facility.name)}
-                        >
-                          {facility.name}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">{facility.distance}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-2 text-sm">
-                    <div className="flex items-start gap-2 text-muted-foreground">
-                      <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <span>{facility.address}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="w-4 h-4 flex-shrink-0" />
-                      <span>{facility.hours}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Phone className="w-4 h-4 flex-shrink-0" />
-                      <span>{facility.phone}</span>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleCall(facility.phone)}
-                      onMouseEnter={() => handleSpeak(t("findcare.call"))}
-                      className="flex-1"
-                    >
-                      <Phone className="w-4 h-4 mr-2" />
-                      {t("findcare.call")}
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenMaps(facility.mapsUrl)}
-                      onMouseEnter={() => handleSpeak(t("findcare.directions"))}
-                      className="flex-1"
-                    >
-                      <Navigation className="w-4 h-4 mr-2" />
-                      {t("findcare.directions")}
-                    </Button>
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={() => handleSelectFacility(facility)}
-                      onMouseEnter={() => handleSpeak(t("findcare.book"))}
-                      className="flex-1"
-                    >
-                      <CalendarDays className="w-4 h-4 mr-2" />
-                      {t("findcare.book")}
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-            {/* Emergency notice */}
-            <Card className="p-4 bg-destructive/10 border-destructive/20">
-              <p className="text-sm text-foreground">
-                <strong>{t("findcare.emergencyTitle")}</strong> {t("findcare.emergencyDesc")}
-              </p>
-              <Button
-                variant="destructive"
-                size="sm"
-                className="mt-3"
-                onClick={() => handleCall("995")}
-              >
-                <Phone className="w-4 h-4 mr-2" />
-                {t("findcare.call995")}
-              </Button>
-            </Card>
+        <div className="space-y-6 animate-fade-in">
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder={t("findcare.searchPlaceholder")}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 h-14 text-lg"
+            />
           </div>
-        )}
 
-        {/* Booking View */}
-        {viewState === "booking" && selectedFacility && (
-          <div className="space-y-6 animate-fade-in">
-            {/* Selected facility summary */}
-            <Card className="p-4">
-              <div className="flex items-start gap-3">
-                <div
-                  className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                    selectedFacility.type === "polyclinic" ? "bg-primary/10" : "bg-secondary/10"
-                  }`}
-                >
-                  {selectedFacility.type === "polyclinic" ? (
-                    <Building2 className="w-6 h-6 text-primary" />
-                  ) : (
-                    <Hospital className="w-6 h-6 text-secondary" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="font-bold text-foreground">{selectedFacility.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedFacility.address}</p>
-                </div>
-              </div>
-            </Card>
-
-            {/* Date picker */}
-            <div>
-              <h3
-                className="font-bold text-foreground mb-3 cursor-default"
-                onMouseEnter={() => handleSpeak(t("findcare.selectDate"))}
-              >
-                {t("findcare.selectDate")}
-              </h3>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start text-left font-normal">
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {selectedDate ? format(selectedDate, "PPP") : t("findcare.pickDate")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={selectedDate}
-                    onSelect={setSelectedDate}
-                    disabled={(date) => date < new Date()}
-                    initialFocus
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-
-            {/* Time slots */}
-            {selectedDate && (
-              <div>
-                <h3
-                  className="font-bold text-foreground mb-3 cursor-default"
-                  onMouseEnter={() => handleSpeak(t("findcare.selectTime"))}
-                >
-                  {t("findcare.selectTime")}
-                </h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {selectedFacility.availableSlots.map((slot) => (
-                    <Button
-                      key={slot}
-                      variant={selectedSlot === slot ? "default" : "outline"}
-                      onClick={() => setSelectedSlot(slot)}
-                      onMouseEnter={() => handleSpeak(slot)}
-                    >
-                      {slot}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Patient name */}
-            <div>
-              <h3 className="font-bold text-foreground mb-3">{t("findcare.patientName")}</h3>
-              <Input value={user?.name || ""} disabled className="bg-muted" />
-            </div>
-
-            {/* Confirm button */}
+          {/* Filter buttons - Type */}
+          <div className="flex flex-wrap gap-2">
             <Button
-              variant="warm"
-              size="xl"
-              onClick={handleConfirmBooking}
-              disabled={!selectedDate || !selectedSlot}
-              onMouseEnter={() => handleSpeak(t("findcare.confirmBooking"))}
-              className="w-full"
+              variant={filterType === "all" ? "default" : "outline"}
+              onClick={() => setFilterType("all")}
+              onMouseEnter={() => handleSpeak(t("findcare.all"))}
+              size="sm"
             >
-              {t("findcare.confirmBooking")}
+              {t("findcare.all")}
+            </Button>
+            <Button
+              variant={filterType === "gp" ? "default" : "outline"}
+              onClick={() => setFilterType("gp")}
+              onMouseEnter={() => handleSpeak(t("findcare.gpClinic"))}
+              size="sm"
+            >
+              <Stethoscope className="w-4 h-4 mr-2" />
+              {t("findcare.gpClinic")}
+            </Button>
+            <Button
+              variant={filterType === "dental" ? "default" : "outline"}
+              onClick={() => setFilterType("dental")}
+              onMouseEnter={() => handleSpeak(t("findcare.dentalClinic"))}
+              size="sm"
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              {t("findcare.dentalClinic")}
+            </Button>
+            <Button
+              variant={filterType === "polyclinic" ? "default" : "outline"}
+              onClick={() => setFilterType("polyclinic")}
+              onMouseEnter={() => handleSpeak(t("findcare.polyclinics"))}
+              size="sm"
+            >
+              <Building2 className="w-4 h-4 mr-2" />
+              {t("findcare.polyclinics")}
+            </Button>
+            <Button
+              variant={filterType === "hospital" ? "default" : "outline"}
+              onClick={() => setFilterType("hospital")}
+              onMouseEnter={() => handleSpeak(t("findcare.hospitals"))}
+              size="sm"
+            >
+              <Hospital className="w-4 h-4 mr-2" />
+              {t("findcare.hospitals")}
             </Button>
           </div>
-        )}
 
-        {/* Confirmation View */}
-        {viewState === "confirmed" && selectedFacility && (
-          <div className="animate-fade-in">
-            <Card className="p-8 text-center">
-              <div className="w-20 h-20 rounded-full bg-success/20 flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10 text-success" />
-              </div>
-              <h2
-                className="text-heading text-foreground mb-2 cursor-default"
-                onMouseEnter={() => handleSpeak(t("findcare.bookingConfirmed"))}
+          {/* Filter buttons - Region */}
+          <div className="flex flex-wrap gap-2">
+            {["all", "East", "West", "North", "Central"].map((region) => (
+              <Button
+                key={region}
+                variant={selectedRegion === region ? "secondary" : "outline"}
+                onClick={() => setSelectedRegion(region)}
+                onMouseEnter={() =>
+                  handleSpeak(region === "all" ? t("findcare.allRegions") : region)
+                }
+                size="sm"
               >
-                {t("findcare.bookingConfirmed")}
-              </h2>
-              <p className="text-muted-foreground mb-6">{t("findcare.bookingConfirmedDesc")}</p>
-
-              <div className="bg-muted rounded-xl p-4 text-left space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("findcare.facility")}</span>
-                  <span className="font-medium">{selectedFacility.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("findcare.date")}</span>
-                  <span className="font-medium">{selectedDate && format(selectedDate, "PPP")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("findcare.time")}</span>
-                  <span className="font-medium">{selectedSlot}</span>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => handleOpenMaps(selectedFacility.mapsUrl)}
-                >
-                  <ExternalLink className="w-4 h-4 mr-2" />
-                  {t("findcare.getDirections")}
-                </Button>
-                <Button variant="warm" size="xl" onClick={handleBack} className="w-full">
-                  {t("findcare.returnDashboard")}
-                </Button>
-              </div>
-            </Card>
+                {region === "all" ? t("findcare.allRegions") : region}
+              </Button>
+            ))}
           </div>
-        )}
+
+          {/* Results count */}
+          <p className="text-sm text-muted-foreground">
+            {t("findcare.resultsCount").replace("{count}", filteredClinics.length.toString())}
+          </p>
+
+          {/* Clinics list */}
+          <div className="space-y-4">
+            {filteredClinics.map((clinic) => (
+              <Card key={clinic.id} className="p-4 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    {getClinicIcon(clinic.type)}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <h3
+                        className="font-bold text-foreground cursor-default text-lg"
+                        onMouseEnter={() => handleSpeak(clinic.name)}
+                      >
+                        {clinic.name}
+                      </h3>
+                      <span className="text-xs bg-muted px-2 py-1 rounded-full flex-shrink-0">
+                        {getClinicTypeLabel(clinic.type)}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">{clinic.region}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-start gap-2 text-muted-foreground">
+                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                    <span>
+                      {clinic.address}, Singapore {clinic.postalCode}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Clock className="w-4 h-4 flex-shrink-0" />
+                    <span>{clinic.hours}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Phone className="w-4 h-4 flex-shrink-0" />
+                    <span>{clinic.phone}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleCall(clinic.phone)}
+                    onMouseEnter={() => handleSpeak(t("findcare.call"))}
+                    className="flex-1"
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    {t("findcare.call")}
+                  </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => handleOpenMaps(clinic.address, clinic.postalCode)}
+                    onMouseEnter={() => handleSpeak(t("findcare.directions"))}
+                    className="flex-1"
+                  >
+                    <Navigation className="w-4 h-4 mr-2" />
+                    {t("findcare.directions")}
+                  </Button>
+                </div>
+              </Card>
+            ))}
+
+            {filteredClinics.length === 0 && (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">{t("findcare.noResults")}</p>
+              </Card>
+            )}
+          </div>
+
+          {/* CHAS info notice */}
+          <Card className="p-4 bg-primary/5 border-primary/20">
+            <p className="text-sm text-foreground">
+              <strong>{t("findcare.chasNoticeTitle")}</strong> {t("findcare.chasNoticeDesc")}
+            </p>
+          </Card>
+
+          {/* Emergency notice */}
+          <Card className="p-4 bg-destructive/10 border-destructive/20">
+            <p className="text-sm text-foreground">
+              <strong>{t("findcare.emergencyTitle")}</strong> {t("findcare.emergencyDesc")}
+            </p>
+            <Button
+              variant="destructive"
+              size="sm"
+              className="mt-3"
+              onClick={() => handleCall("995")}
+            >
+              <Phone className="w-4 h-4 mr-2" />
+              {t("findcare.call995")}
+            </Button>
+          </Card>
+        </div>
       </main>
 
       <AccessibilityBar />
