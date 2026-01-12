@@ -73,6 +73,7 @@ export default function Profile() {
   const [printingCertId, setPrintingCertId] = useState<string | null>(null);
   const [equippedMedalId, setEquippedMedalId] = useState<string | null>(null);
   const [equippingMedalId, setEquippingMedalId] = useState<string | null>(null);
+  const [dailyBonusClaimed, setDailyBonusClaimed] = useState(false);
 
   // Generate a random voucher code
   const generateVoucherCode = () => {
@@ -106,17 +107,42 @@ export default function Profile() {
       
       if (tierData) setTierSettings(tierData);
 
-      // Fetch user's events attended and redeemed rewards
+      // Fetch user's events attended, equipped medal, and check daily login bonus
       if (user?.id) {
         const { data: userData } = await supabase
           .from('kiosk_users')
-          .select('events_attended, equipped_medal_id')
+          .select('events_attended, equipped_medal_id, last_login_bonus_at, points')
           .eq('id', user.id)
           .single();
         
         if (userData) {
           setEventsAttended(userData.events_attended || 0);
           setEquippedMedalId(userData.equipped_medal_id || null);
+          
+          // Check and grant daily login bonus
+          const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+          const lastBonusDate = userData.last_login_bonus_at;
+          
+          if (lastBonusDate !== today) {
+            // Grant daily login bonus
+            const newPoints = (userData.points || 0) + 5;
+            const { error } = await supabase
+              .from('kiosk_users')
+              .update({ 
+                points: newPoints,
+                last_login_bonus_at: today
+              })
+              .eq('id', user.id);
+            
+            if (!error) {
+              setUser({ ...user, points: newPoints });
+              setDailyBonusClaimed(true);
+              toast({
+                title: t('profile.dailyBonusClaimed'),
+                description: t('profile.dailyBonusDesc'),
+              });
+            }
+          }
         }
 
         // Fetch redeemed rewards
@@ -401,7 +427,7 @@ export default function Profile() {
       <main className="max-w-2xl mx-auto px-6">
         {/* Points & Progress Card */}
         <div className="bg-card rounded-3xl shadow-soft p-6 mb-6 animate-fade-in">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl bg-warning/10 flex items-center justify-center">
                 <Award className="w-8 h-8 text-warning" />
@@ -415,6 +441,12 @@ export default function Profile() {
               <p className="text-sm text-muted-foreground">{t('profile.eventsAttended')}</p>
               <p className="text-2xl font-bold text-primary">{eventsAttended}</p>
             </div>
+          </div>
+          
+          {/* Daily Bonus Rule */}
+          <div className="bg-primary/10 border border-primary/20 rounded-xl p-3 mb-4 flex items-center gap-3">
+            <Gift className="w-5 h-5 text-primary flex-shrink-0" />
+            <p className="text-sm text-primary font-medium">{t('profile.dailyBonusRule')}</p>
           </div>
 
           {/* Progress to next tier */}

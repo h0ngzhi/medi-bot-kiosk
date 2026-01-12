@@ -374,6 +374,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.maxQuantity': 'Max',
     'profile.browseProgrammes': 'Browse Programmes',
     'profile.historySubtitle': 'Your redeemed rewards and achievements',
+    'profile.certificates': 'Certificates',
+    'profile.dailyBonusRule': 'Earn 5 points daily! Login bonus resets at 12am.',
+    'profile.dailyBonusClaimed': 'Daily Bonus Claimed!',
+    'profile.dailyBonusDesc': 'You earned 5 bonus points for logging in today.',
     
     // Accessibility
     'access.translate': 'Translate',
@@ -724,6 +728,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.maxQuantity': '上限',
     'profile.browseProgrammes': '浏览活动',
     'profile.historySubtitle': '您兑换的奖励和成就',
+    'profile.certificates': '证书',
+    'profile.dailyBonusRule': '每日可赚取5积分！登录奖励在凌晨12点重置。',
+    'profile.dailyBonusClaimed': '已领取每日奖励！',
+    'profile.dailyBonusDesc': '您今天登录获得了5积分奖励。',
     
     'access.translate': '翻译',
     'access.voice': '语音指南',
@@ -1072,6 +1080,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.maxQuantity': 'Had',
     'profile.browseProgrammes': 'Layari Program',
     'profile.historySubtitle': 'Ganjaran dan pencapaian anda',
+    'profile.certificates': 'Sijil',
+    'profile.dailyBonusRule': 'Dapatkan 5 mata setiap hari! Bonus log masuk ditetapkan semula pada 12 tengah malam.',
+    'profile.dailyBonusClaimed': 'Bonus Harian Dituntut!',
+    'profile.dailyBonusDesc': 'Anda mendapat 5 mata bonus kerana log masuk hari ini.',
     
     'access.translate': 'Terjemah',
     'access.voice': 'Panduan Suara',
@@ -1419,6 +1431,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.maxQuantity': 'அதிகபட்சம்',
     'profile.browseProgrammes': 'திட்டங்களை பார்வையிடு',
     'profile.historySubtitle': 'உங்கள் வெகுமதிகள் மற்றும் சாதனைகள்',
+    'profile.certificates': 'சான்றிதழ்கள்',
+    'profile.dailyBonusRule': 'தினமும் 5 புள்ளிகள் பெறுங்கள்! உள்நுழைவு போனஸ் நள்ளிரவு 12 மணிக்கு மீட்டமைக்கப்படும்.',
+    'profile.dailyBonusClaimed': 'தினசரி போனஸ் பெறப்பட்டது!',
+    'profile.dailyBonusDesc': 'இன்று உள்நுழைந்ததற்கு 5 போனஸ் புள்ளிகள் பெற்றீர்கள்.',
     
     'access.translate': 'மொழிபெயர்',
     'access.voice': 'குரல் வழிகாட்டி',
