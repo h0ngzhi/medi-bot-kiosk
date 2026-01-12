@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
 import { PrototypeGate } from "@/components/PrototypeGate";
+import IdleScreen from "./pages/IdleScreen";
 import ScanCard from "./pages/ScanCard";
 import LanguageSelection from "./pages/LanguageSelection";
 import Dashboard from "./pages/Dashboard";
@@ -14,6 +15,7 @@ import CommunityProgrammes from "./pages/CommunityProgrammes";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import AdminProgrammes from "./pages/AdminProgrammes";
+import AdminSlideshow from "./pages/AdminSlideshow";
 import { HealthChatBot } from "@/components/HealthChatBot";
 
 
@@ -28,7 +30,8 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route path="/" element={<ScanCard />} />
+              <Route path="/" element={<IdleScreen />} />
+              <Route path="/scan" element={<ScanCard />} />
               <Route path="/language" element={<LanguageSelection />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/health" element={<HealthScreenings />} />
@@ -36,6 +39,7 @@ const App = () => (
               <Route path="/community" element={<CommunityProgrammes />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/admin/programmes" element={<AdminProgrammes />} />
+              <Route path="/admin/slideshow" element={<AdminSlideshow />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
             <HealthChatBot />
