@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
   Navigation,
   Search,
   Stethoscope,
+  Loader2,
 } from "lucide-react";
 
 interface Clinic {
@@ -27,172 +28,112 @@ interface Clinic {
   phone: string;
   hours: string;
   region: string;
+  programmes: string[];
 }
 
-// Sample CHAS clinics data based on data.gov.sg structure
-// In production, this would be fetched from the API
-const chasClinics: Clinic[] = [
-  {
-    id: "1",
-    name: "Bedok Family Clinic",
-    type: "gp",
-    address: "Blk 201 Bedok North Street 1, #01-421",
-    postalCode: "460201",
-    phone: "6445 1234",
-    hours: "Mon-Fri: 8:30AM-12:30PM, 2PM-5PM, 7PM-9PM",
-    region: "East",
-  },
-  {
-    id: "2",
-    name: "Tampines Medical Centre",
-    type: "gp",
-    address: "Blk 827 Tampines Street 81, #01-140",
-    postalCode: "520827",
-    phone: "6789 5678",
-    hours: "Mon-Fri: 8AM-1PM, 2PM-5PM | Sat: 8AM-12PM",
-    region: "East",
-  },
-  {
-    id: "3",
-    name: "Pasir Ris Family Clinic",
-    type: "gp",
-    address: "Blk 442 Pasir Ris Drive 6, #01-28",
-    postalCode: "510442",
-    phone: "6583 9012",
-    hours: "Mon-Fri: 9AM-12PM, 2PM-5PM, 7PM-9PM",
-    region: "East",
-  },
-  {
-    id: "4",
-    name: "Simei Medical Centre",
-    type: "gp",
-    address: "Blk 247 Simei Street 5, #01-128",
-    postalCode: "520247",
-    phone: "6786 3456",
-    hours: "Mon-Sat: 8:30AM-12:30PM, 2PM-4:30PM",
-    region: "East",
-  },
-  {
-    id: "5",
-    name: "Geylang Dental Clinic",
-    type: "dental",
-    address: "Blk 125 Geylang East Avenue 1, #01-253",
-    postalCode: "380125",
-    phone: "6744 7890",
-    hours: "Mon-Fri: 9AM-6PM | Sat: 9AM-1PM",
-    region: "Central",
-  },
-  {
-    id: "6",
-    name: "Marine Parade Family Clinic",
-    type: "gp",
-    address: "Blk 84 Marine Parade Central, #01-606",
-    postalCode: "440084",
-    phone: "6345 6789",
-    hours: "Mon-Fri: 8:30AM-12:30PM, 2PM-5PM",
-    region: "Central",
-  },
-  {
-    id: "7",
-    name: "Ang Mo Kio Medical Centre",
-    type: "gp",
-    address: "Blk 722 Ang Mo Kio Avenue 8, #01-2821",
-    postalCode: "560722",
-    phone: "6456 1234",
-    hours: "Mon-Fri: 8AM-1PM, 2PM-9PM | Sat-Sun: 8AM-1PM",
-    region: "North",
-  },
-  {
-    id: "8",
-    name: "Yishun Family Clinic",
-    type: "gp",
-    address: "Blk 846 Yishun Ring Road, #01-3539",
-    postalCode: "760846",
-    phone: "6852 4567",
-    hours: "Mon-Fri: 8:30AM-12:30PM, 2PM-5PM, 7PM-9PM",
-    region: "North",
-  },
-  {
-    id: "9",
-    name: "Woodlands Dental Surgery",
-    type: "dental",
-    address: "Blk 302 Woodlands Street 31, #01-271",
-    postalCode: "730302",
-    phone: "6365 7890",
-    hours: "Mon-Fri: 9AM-5PM | Sat: 9AM-12PM",
-    region: "North",
-  },
-  {
-    id: "10",
-    name: "Jurong West Medical Clinic",
-    type: "gp",
-    address: "Blk 501 Jurong West Street 51, #01-257",
-    postalCode: "640501",
-    phone: "6567 8901",
-    hours: "Mon-Fri: 8AM-12PM, 2PM-5PM, 7PM-9PM",
-    region: "West",
-  },
-  {
-    id: "11",
-    name: "Clementi Family Practice",
-    type: "gp",
-    address: "Blk 442 Clementi Avenue 3, #01-63",
-    postalCode: "120442",
-    phone: "6778 2345",
-    hours: "Mon-Sat: 9AM-1PM, 2PM-5PM",
-    region: "West",
-  },
-  {
-    id: "12",
-    name: "Bukit Batok Medical Centre",
-    type: "gp",
-    address: "Blk 283 Bukit Batok East Avenue 3, #01-269",
-    postalCode: "650283",
-    phone: "6569 3456",
-    hours: "Mon-Fri: 8:30AM-12:30PM, 2PM-4:30PM, 7PM-9PM",
-    region: "West",
-  },
-  {
-    id: "13",
-    name: "Bedok Polyclinic",
-    type: "polyclinic",
-    address: "11 Bedok North Street 1",
-    postalCode: "469662",
-    phone: "6443 6969",
-    hours: "Mon-Fri: 8AM-1PM, 2PM-4:30PM",
-    region: "East",
-  },
-  {
-    id: "14",
-    name: "Tampines Polyclinic",
-    type: "polyclinic",
-    address: "1 Tampines Street 41",
-    postalCode: "529203",
-    phone: "6788 0833",
-    hours: "Mon-Fri: 8AM-1PM, 2PM-4:30PM",
-    region: "East",
-  },
-  {
-    id: "15",
-    name: "Changi General Hospital",
-    type: "hospital",
-    address: "2 Simei Street 3",
-    postalCode: "529889",
-    phone: "6788 8833",
-    hours: "24 Hours (Emergency)",
-    region: "East",
-  },
-  {
-    id: "16",
-    name: "Singapore General Hospital",
-    type: "hospital",
-    address: "Outram Road",
-    postalCode: "169608",
-    phone: "6222 3322",
-    hours: "24 Hours (Emergency)",
-    region: "Central",
-  },
-];
+interface GeoJSONFeature {
+  type: string;
+  properties: {
+    Name: string;
+    Description: string;
+  };
+  geometry: {
+    type: string;
+    coordinates: [number, number, number];
+  };
+}
+
+interface GeoJSONData {
+  type: string;
+  features: GeoJSONFeature[];
+}
+
+// Parse HTML description from GeoJSON to extract clinic data
+const parseDescription = (html: string): Record<string, string> => {
+  const result: Record<string, string> = {};
+  const matches = html.matchAll(/<th>([^<]+)<\/th>\s*<td>([^<]*)<\/td>/g);
+  for (const match of matches) {
+    result[match[1]] = match[2];
+  }
+  return result;
+};
+
+// Determine region based on postal code
+const getRegionFromPostal = (postalCode: string): string => {
+  const prefix = parseInt(postalCode.substring(0, 2), 10);
+  
+  // Singapore postal code regions
+  if ([1, 2, 3, 4, 5, 6].includes(prefix)) return "Central";
+  if ([7, 8].includes(prefix)) return "Central"; // Downtown
+  if ([14, 15, 16].includes(prefix)) return "East"; // Geylang, Eunos
+  if ([17, 18].includes(prefix)) return "East"; // Changi
+  if ([38, 39, 40, 41].includes(prefix)) return "East"; // Tampines, Pasir Ris
+  if ([46, 47, 48, 49, 50, 51, 52].includes(prefix)) return "East"; // Bedok, Upper East Coast
+  if ([9, 10].includes(prefix)) return "Central"; // Orchard
+  if ([11, 12, 13].includes(prefix)) return "Central"; // Newton, Novena
+  if ([19, 20].includes(prefix)) return "North-East"; // Serangoon
+  if ([28, 29, 30].includes(prefix)) return "Central"; // Bishan
+  if ([31, 32, 33, 34].includes(prefix)) return "Central"; // Toa Payoh, Braddell
+  if ([53, 54, 55, 56, 57].includes(prefix)) return "North-East"; // Serangoon, Hougang
+  if ([72, 73].includes(prefix)) return "North"; // Woodlands
+  if ([75, 76].includes(prefix)) return "North"; // Yishun
+  if ([77, 78].includes(prefix)) return "North"; // Sembawang
+  if ([79, 80].includes(prefix)) return "North"; // Seletar
+  if ([58, 59].includes(prefix)) return "North"; // Ang Mo Kio
+  if ([60, 61, 62, 63, 64].includes(prefix)) return "West"; // Jurong
+  if ([65, 66, 67, 68].includes(prefix)) return "West"; // Jurong, Tuas
+  if ([69, 70, 71].includes(prefix)) return "West"; // Bukit Batok, Choa Chu Kang
+  if ([21, 22, 23].includes(prefix)) return "West"; // Bukit Timah, Clementi
+  if ([24, 25, 26, 27].includes(prefix)) return "West"; // Holland, Queenstown
+  if ([35, 36, 37].includes(prefix)) return "Central"; // Kallang, Macpherson
+  if ([42, 43, 44, 45].includes(prefix)) return "East"; // Katong, Marine Parade
+  if ([81, 82].includes(prefix)) return "North-East"; // Punggol, Sengkang
+  
+  return "Central"; // Default
+};
+
+// Format address from parsed data
+const formatAddress = (data: Record<string, string>): string => {
+  const parts: string[] = [];
+  
+  const blkHseNo = data["BLK_HSE_NO"];
+  const streetName = data["STREET_NAME"];
+  const floorNo = data["FLOOR_NO"];
+  const unitNo = data["UNIT_NO"];
+  const buildingName = data["BUILDING_NAME"];
+  
+  if (blkHseNo) {
+    if (data["ADDR_TYPE"] === "A") {
+      parts.push(`Blk ${blkHseNo}`);
+    } else {
+      parts.push(blkHseNo);
+    }
+  }
+  
+  if (streetName) {
+    parts.push(streetName);
+  }
+  
+  if (floorNo && unitNo) {
+    parts.push(`#${floorNo}-${unitNo}`);
+  }
+  
+  if (buildingName) {
+    parts.push(buildingName);
+  }
+  
+  return parts.join(" ").toUpperCase();
+};
+
+// Format phone number
+const formatPhone = (phone: string): string => {
+  if (!phone) return "";
+  const cleaned = phone.replace(/\D/g, "");
+  if (cleaned.length === 8) {
+    return `${cleaned.substring(0, 4)} ${cleaned.substring(4)}`;
+  }
+  return phone;
+};
 
 type FilterType = "all" | "gp" | "dental" | "polyclinic" | "hospital";
 
@@ -202,6 +143,64 @@ export default function FindCare() {
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRegion, setSelectedRegion] = useState<string>("all");
+  const [clinics, setClinics] = useState<Clinic[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [regions, setRegions] = useState<string[]>(["all"]);
+
+  useEffect(() => {
+    const loadClinics = async () => {
+      try {
+        const response = await fetch("/data/CHASClinics.geojson");
+        const data: GeoJSONData = await response.json();
+        
+        const parsedClinics: Clinic[] = data.features.map((feature, index) => {
+          const parsed = parseDescription(feature.properties.Description);
+          const postalCode = parsed["POSTAL_CD"] || "";
+          const region = getRegionFromPostal(postalCode);
+          const licenceType = parsed["LICENCE_TYPE"] || "";
+          const programmes = (parsed["CLINIC_PROGRAMME_CODE"] || "").split(",").map(p => p.trim()).filter(Boolean);
+          
+          // Determine clinic type based on licence type and name
+          let type: Clinic["type"] = "gp";
+          const name = (parsed["HCI_NAME"] || "").toLowerCase();
+          if (name.includes("dental") || licenceType === "DC") {
+            type = "dental";
+          } else if (name.includes("polyclinic")) {
+            type = "polyclinic";
+          } else if (name.includes("hospital")) {
+            type = "hospital";
+          }
+          
+          return {
+            id: parsed["HCI_CODE"] || `clinic-${index}`,
+            name: parsed["HCI_NAME"] || "Unknown Clinic",
+            type,
+            address: formatAddress(parsed),
+            postalCode,
+            phone: formatPhone(parsed["HCI_TEL"] || ""),
+            hours: "Mon-Fri: 9AM-5PM", // Default hours since not in dataset
+            region,
+            programmes,
+          };
+        });
+        
+        // Sort alphabetically by name
+        parsedClinics.sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Extract unique regions
+        const uniqueRegions = ["all", ...new Set(parsedClinics.map(c => c.region))].sort();
+        setRegions(uniqueRegions);
+        
+        setClinics(parsedClinics);
+      } catch (error) {
+        console.error("Failed to load clinics data:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    loadClinics();
+  }, []);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -209,7 +208,7 @@ export default function FindCare() {
     }
   };
 
-  const filteredClinics = chasClinics.filter((clinic) => {
+  const filteredClinics = clinics.filter((clinic) => {
     const matchesType = filterType === "all" || clinic.type === filterType;
     const matchesRegion = selectedRegion === "all" || clinic.region === selectedRegion;
     const matchesSearch =
@@ -340,7 +339,7 @@ export default function FindCare() {
 
           {/* Filter buttons - Region */}
           <div className="flex flex-wrap gap-2">
-            {["all", "East", "West", "North", "Central"].map((region) => (
+            {regions.map((region) => (
               <Button
                 key={region}
                 variant={selectedRegion === region ? "secondary" : "outline"}
@@ -357,81 +356,114 @@ export default function FindCare() {
 
           {/* Results count */}
           <p className="text-sm text-muted-foreground">
-            {t("findcare.resultsCount").replace("{count}", filteredClinics.length.toString())}
+            {isLoading 
+              ? t("common.loading") || "Loading..."
+              : t("findcare.resultsCount").replace("{count}", filteredClinics.length.toString())
+            }
           </p>
 
+          {/* Loading state */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+          )}
+
           {/* Clinics list */}
-          <div className="space-y-4">
-            {filteredClinics.map((clinic) => (
-              <Card key={clinic.id} className="p-4 space-y-4">
-                <div className="flex items-start gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    {getClinicIcon(clinic.type)}
+          {!isLoading && (
+            <div className="space-y-4">
+              {filteredClinics.slice(0, 50).map((clinic) => (
+                <Card key={clinic.id} className="p-4 space-y-4">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      {getClinicIcon(clinic.type)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3
+                          className="font-bold text-foreground cursor-default text-lg"
+                          onMouseEnter={() => handleSpeak(clinic.name)}
+                        >
+                          {clinic.name}
+                        </h3>
+                        <span className="text-xs bg-muted px-2 py-1 rounded-full flex-shrink-0">
+                          {getClinicTypeLabel(clinic.type)}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{clinic.region}</p>
+                      {clinic.programmes.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {clinic.programmes.map((prog) => (
+                            <span key={prog} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                              {prog}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <h3
-                        className="font-bold text-foreground cursor-default text-lg"
-                        onMouseEnter={() => handleSpeak(clinic.name)}
-                      >
-                        {clinic.name}
-                      </h3>
-                      <span className="text-xs bg-muted px-2 py-1 rounded-full flex-shrink-0">
-                        {getClinicTypeLabel(clinic.type)}
+
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-start gap-2 text-muted-foreground">
+                      <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>
+                        {clinic.address}, Singapore {clinic.postalCode}
                       </span>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{clinic.region}</p>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock className="w-4 h-4 flex-shrink-0" />
+                      <span>{clinic.hours}</span>
+                    </div>
+                    {clinic.phone && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Phone className="w-4 h-4 flex-shrink-0" />
+                        <span>{clinic.phone}</span>
+                      </div>
+                    )}
                   </div>
-                </div>
 
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-start gap-2 text-muted-foreground">
-                    <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                    <span>
-                      {clinic.address}, Singapore {clinic.postalCode}
-                    </span>
+                  <div className="flex gap-2 pt-2">
+                    {clinic.phone && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleCall(clinic.phone)}
+                        onMouseEnter={() => handleSpeak(t("findcare.call"))}
+                        className="flex-1"
+                      >
+                        <Phone className="w-4 h-4 mr-2" />
+                        {t("findcare.call")}
+                      </Button>
+                    )}
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={() => handleOpenMaps(clinic.address, clinic.postalCode)}
+                      onMouseEnter={() => handleSpeak(t("findcare.directions"))}
+                      className="flex-1"
+                    >
+                      <Navigation className="w-4 h-4 mr-2" />
+                      {t("findcare.directions")}
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Clock className="w-4 h-4 flex-shrink-0" />
-                    <span>{clinic.hours}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Phone className="w-4 h-4 flex-shrink-0" />
-                    <span>{clinic.phone}</span>
-                  </div>
-                </div>
+                </Card>
+              ))}
 
-                <div className="flex gap-2 pt-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleCall(clinic.phone)}
-                    onMouseEnter={() => handleSpeak(t("findcare.call"))}
-                    className="flex-1"
-                  >
-                    <Phone className="w-4 h-4 mr-2" />
-                    {t("findcare.call")}
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={() => handleOpenMaps(clinic.address, clinic.postalCode)}
-                    onMouseEnter={() => handleSpeak(t("findcare.directions"))}
-                    className="flex-1"
-                  >
-                    <Navigation className="w-4 h-4 mr-2" />
-                    {t("findcare.directions")}
-                  </Button>
-                </div>
-              </Card>
-            ))}
+              {filteredClinics.length > 50 && (
+                <Card className="p-4 text-center bg-muted/50">
+                  <p className="text-sm text-muted-foreground">
+                    Showing 50 of {filteredClinics.length} results. Use search to find specific clinics.
+                  </p>
+                </Card>
+              )}
 
-            {filteredClinics.length === 0 && (
-              <Card className="p-8 text-center">
-                <p className="text-muted-foreground">{t("findcare.noResults")}</p>
-              </Card>
-            )}
-          </div>
+              {filteredClinics.length === 0 && !isLoading && (
+                <Card className="p-8 text-center">
+                  <p className="text-muted-foreground">{t("findcare.noResults")}</p>
+                </Card>
+              )}
+            </div>
+          )}
 
           {/* CHAS info notice */}
           <Card className="p-4 bg-primary/5 border-primary/20">
