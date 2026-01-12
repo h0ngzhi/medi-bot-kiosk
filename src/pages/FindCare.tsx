@@ -202,16 +202,17 @@ export default function FindCare() {
   useEffect(() => {
     const loadClinics = async () => {
       try {
-        // Load both datasets in parallel
-        const [geoResponse, hoursResponse] = await Promise.all([
+        // Load GeoJSON, hours JSON, and cached hours from database in parallel
+        const [geoResponse, hoursResponse, cachedHoursResult] = await Promise.all([
           fetch("/data/CHASClinics.geojson"),
-          fetch("/data/ClinicHours.json")
+          fetch("/data/ClinicHours.json"),
+          supabase.from("clinic_hours_cache").select("*")
         ]);
         
         const geoData: GeoJSONData = await geoResponse.json();
         const hoursData: ClinicHoursData[] = await hoursResponse.json();
         
-        // Create a map of phone number to operation hours for quick lookup
+        // Create maps for quick lookup
         const hoursMap = new Map<string, string>();
         hoursData.forEach(clinic => {
           if (clinic.Phone) {
@@ -222,15 +223,38 @@ export default function FindCare() {
             }
           }
         });
+
+        // Create map from cached database hours
+        const cachedHoursMap = new Map<string, { hours: string; phone: string; name: string; status: string }>();
+        if (cachedHoursResult.data) {
+          cachedHoursResult.data.forEach(cached => {
+            cachedHoursMap.set(cached.clinic_id, {
+              hours: cached.hours || "",
+              phone: cached.phone || "",
+              name: cached.clinic_name,
+              status: cached.status
+            });
+          });
+        }
         
-        const parsedClinics: Clinic[] = geoData.features.map((feature, index) => {
+        const parsedClinics: Clinic[] = [];
+        
+        geoData.features.forEach((feature, index) => {
           const parsed = parseDescription(feature.properties.Description);
+          const clinicId = parsed["HCI_CODE"] || `clinic-${index}`;
+          
+          // Check if this clinic is marked as closed in cache
+          const cached = cachedHoursMap.get(clinicId);
+          if (cached?.status === "closed") {
+            return; // Skip closed clinics
+          }
+          
           const postalCode = parsed["POSTAL_CD"] || "";
           const region = getRegionFromPostal(postalCode);
           const licenceType = parsed["LICENCE_TYPE"] || "";
           const programmes = (parsed["CLINIC_PROGRAMME_CODE"] || "").split(",").map(p => p.trim()).filter(Boolean);
           
-          // Determine clinic type based on licence type and name
+          // Determine clinic type
           let type: Clinic["type"] = "gp";
           const name = (parsed["HCI_NAME"] || "").toLowerCase();
           if (name.includes("dental") || licenceType === "DC") {
@@ -244,19 +268,31 @@ export default function FindCare() {
           // Get phone and match with hours data
           const rawPhone = parsed["HCI_TEL"] || "";
           const cleanedPhone = rawPhone.replace(/\D/g, "");
-          const matchedHours = hoursMap.get(cleanedPhone) || "";
           
-          return {
-            id: parsed["HCI_CODE"] || `clinic-${index}`,
-            name: parsed["HCI_NAME"] || "Unknown Clinic",
+          // Priority: 1. Database cache, 2. JSON file, 3. Empty
+          let matchedHours = "";
+          let finalPhone = formatPhone(rawPhone);
+          let finalName = parsed["HCI_NAME"] || "Unknown Clinic";
+          
+          if (cached?.hours) {
+            matchedHours = cached.hours;
+            if (cached.phone) finalPhone = cached.phone;
+            if (cached.name) finalName = cached.name;
+          } else {
+            matchedHours = hoursMap.get(cleanedPhone) || "";
+          }
+          
+          parsedClinics.push({
+            id: clinicId,
+            name: finalName,
             type,
             address: formatAddress(parsed),
             postalCode,
-            phone: formatPhone(rawPhone),
+            phone: finalPhone,
             hours: matchedHours,
             region,
             programmes,
-          };
+          });
         });
         
         // Sort alphabetically by name
@@ -283,7 +319,7 @@ export default function FindCare() {
     }
   };
 
-  // Fetch missing hours from Google Places API
+  // Fetch missing hours from Google Places API and cache to database
   const fetchMissingHours = async () => {
     const clinicsWithoutHours = clinics.filter(c => !c.hours);
     if (clinicsWithoutHours.length === 0) {
@@ -317,20 +353,48 @@ export default function FindCare() {
           continue;
         }
 
+        // Save to database cache
         if (data.status === "closed") {
+          await supabase.from("clinic_hours_cache").upsert({
+            clinic_id: clinic.id,
+            clinic_name: clinic.name,
+            status: "closed",
+            hours: null,
+            phone: clinic.phone,
+          }, { onConflict: "clinic_id" });
+          
           closedClinicIds.push(clinic.id);
           closedCount++;
-        } else if (data.status === "open" && data.data?.hours) {
-          const clinicIndex = updatedClinics.findIndex(c => c.id === clinic.id);
-          if (clinicIndex !== -1) {
-            updatedClinics[clinicIndex] = {
-              ...updatedClinics[clinicIndex],
-              hours: data.data.hours,
-              phone: data.data.phone || updatedClinics[clinicIndex].phone,
-              name: data.data.name || updatedClinics[clinicIndex].name,
-            };
-            successCount++;
+        } else if (data.status === "open") {
+          await supabase.from("clinic_hours_cache").upsert({
+            clinic_id: clinic.id,
+            clinic_name: data.data?.name || clinic.name,
+            status: "open",
+            hours: data.data?.hours || null,
+            phone: data.data?.phone || clinic.phone,
+          }, { onConflict: "clinic_id" });
+
+          if (data.data?.hours) {
+            const clinicIndex = updatedClinics.findIndex(c => c.id === clinic.id);
+            if (clinicIndex !== -1) {
+              updatedClinics[clinicIndex] = {
+                ...updatedClinics[clinicIndex],
+                hours: data.data.hours,
+                phone: data.data.phone || updatedClinics[clinicIndex].phone,
+                name: data.data.name || updatedClinics[clinicIndex].name,
+              };
+              successCount++;
+            }
           }
+        } else if (data.status === "not_found") {
+          // Cache not found status to avoid re-querying
+          await supabase.from("clinic_hours_cache").upsert({
+            clinic_id: clinic.id,
+            clinic_name: clinic.name,
+            status: "not_found",
+            hours: null,
+            phone: clinic.phone,
+          }, { onConflict: "clinic_id" });
         }
 
         // Small delay to avoid rate limiting
@@ -340,13 +404,13 @@ export default function FindCare() {
       }
     }
 
-    // Remove closed clinics
+    // Remove closed clinics from UI
     const finalClinics = updatedClinics.filter(c => !closedClinicIds.includes(c.id));
     setClinics(finalClinics);
     setIsFetchingHours(false);
 
     toast.success(
-      `Done! Updated ${successCount} clinics, removed ${closedCount} closed clinics.`,
+      `Done! Updated ${successCount} clinics, removed ${closedCount} closed clinics. Results saved to database.`,
       { duration: 8000 }
     );
   };
