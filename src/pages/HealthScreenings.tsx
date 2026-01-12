@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
+import { ProgrammeRecommendations } from '@/components/health/ProgrammeRecommendations';
 import { supabase } from '@/integrations/supabase/client';
 import { speakText } from '@/utils/speechUtils';
 import { toast } from 'sonner';
@@ -346,8 +347,8 @@ export default function HealthScreenings() {
 
         {/* Result state */}
         {state === 'result' && result && (
-          <div className="animate-fade-in">
-            <div className="bg-card rounded-3xl shadow-medium p-8 mb-6">
+          <div className="animate-fade-in space-y-6">
+            <div className="bg-card rounded-3xl shadow-medium p-8">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
                   <CheckCircle2 className="w-10 h-10 text-success" />
@@ -400,6 +401,23 @@ export default function HealthScreenings() {
                 {t('health.date')}: {result.date}
               </p>
             </div>
+
+            {/* AI Programme Recommendations */}
+            <ProgrammeRecommendations 
+              healthData={
+                result.type === 'bp' 
+                  ? {
+                      systolic: result.values.systolic as number,
+                      diastolic: result.values.diastolic as number,
+                      pulse: result.values.pulse as number,
+                    }
+                  : {
+                      height: result.values.height as number,
+                      weight: result.values.weight as number,
+                      bmi: result.values.bmi as number,
+                    }
+              }
+            />
 
             <Button
               variant="default"
