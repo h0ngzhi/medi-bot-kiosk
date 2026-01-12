@@ -364,6 +364,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.tierLocked': 'Tier Locked',
     'profile.attendMoreEvents': 'Attend events to unlock. Required:',
     'profile.eventsRequired': 'events required',
+    'profile.equipped': 'Equipped',
+    'profile.unequipMedal': 'Unequip Medal',
+    'profile.print': 'Print',
+    'profile.maxedOut': 'Max Redeemed',
     
     // Accessibility
     'access.translate': 'Translate',
@@ -704,6 +708,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.tierLocked': '等级锁定',
     'profile.attendMoreEvents': '参加活动以解锁。需要：',
     'profile.eventsRequired': '个活动',
+    'profile.equipped': '已装备',
+    'profile.unequipMedal': '卸下徽章',
+    'profile.print': '打印',
+    'profile.maxedOut': '已达上限',
     
     'access.translate': '翻译',
     'access.voice': '语音指南',
@@ -1042,6 +1050,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.tierLocked': 'Tahap Dikunci',
     'profile.attendMoreEvents': 'Hadiri acara untuk membuka. Diperlukan:',
     'profile.eventsRequired': 'acara diperlukan',
+    'profile.equipped': 'Dilengkapi',
+    'profile.unequipMedal': 'Tanggalkan Pingat',
+    'profile.print': 'Cetak',
+    'profile.maxedOut': 'Had Ditebus',
     
     'access.translate': 'Terjemah',
     'access.voice': 'Panduan Suara',
@@ -1379,6 +1391,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.tierLocked': 'நிலை பூட்டப்பட்டுள்ளது',
     'profile.attendMoreEvents': 'திறக்க நிகழ்வுகளில் கலந்துகொள்ளுங்கள். தேவை:',
     'profile.eventsRequired': 'நிகழ்வுகள் தேவை',
+    'profile.equipped': 'பொருத்தப்பட்டது',
+    'profile.unequipMedal': 'பதக்கத்தை அகற்று',
+    'profile.print': 'அச்சிடு',
+    'profile.maxedOut': 'அதிகபட்சம் பெறப்பட்டது',
     
     'access.translate': 'மொழிபெயர்',
     'access.voice': 'குரல் வழிகாட்டி',
