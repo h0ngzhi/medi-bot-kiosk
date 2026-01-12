@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
 import { ProgrammeRecommendations } from '@/components/health/ProgrammeRecommendations';
 import { supabase } from '@/integrations/supabase/client';
-import { speakText } from '@/utils/speechUtils';
+import { useDebouncedSpeak } from '@/hooks/useDebouncedSpeak';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, 
@@ -67,11 +67,7 @@ export default function HealthScreenings() {
   const [pastResults, setPastResults] = useState<PastResult[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const handleSpeak = (text: string) => {
-    if (isTtsEnabled) {
-      speakText(text, language);
-    }
-  };
+  const { handleMouseEnter, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
 
   // Fetch past results on mount
   useEffect(() => {
@@ -201,12 +197,13 @@ export default function HealthScreenings() {
             variant="ghost"
             size="icon"
             onClick={handleBack}
-            onMouseEnter={() => handleSpeak(t('common.back'))}
+            onMouseEnter={() => handleMouseEnter(t('common.back'))}
+            onMouseLeave={handleMouseLeave}
             className="w-14 h-14 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <h1 className="text-heading text-foreground cursor-default" onMouseEnter={() => handleSpeak(t('health.title'))}>{t('health.title')}</h1>
+          <h1 className="text-heading text-foreground cursor-default" onMouseEnter={() => handleMouseEnter(t('health.title'))} onMouseLeave={handleMouseLeave}>{t('health.title')}</h1>
         </div>
       </header>
 
@@ -222,14 +219,15 @@ export default function HealthScreenings() {
                   variant="menu"
                   size="menu"
                   onClick={() => handleSelectScreening(option.id)}
-                  onMouseEnter={() => handleSpeak(t(option.titleKey))}
+                  onMouseEnter={() => handleMouseEnter(t(option.titleKey))}
+                  onMouseLeave={handleMouseLeave}
                   className="w-full animate-slide-up"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <div className={`w-16 h-16 rounded-2xl ${option.bgColor} flex items-center justify-center flex-shrink-0`}>
                     <option.icon className={`w-8 h-8 ${option.color}`} />
                   </div>
-                  <div className="flex-1 min-w-0" onMouseEnter={() => handleSpeak(`${t(option.titleKey)}. ${t(option.descKey)}`)}>
+                  <div className="flex-1 min-w-0" onMouseEnter={() => handleMouseEnter(`${t(option.titleKey)}. ${t(option.descKey)}`)} onMouseLeave={handleMouseLeave}>
                     <h3 className="text-xl font-bold text-foreground">{t(option.titleKey)}</h3>
                     <p className="text-base text-muted-foreground">{t(option.descKey)}</p>
                   </div>
@@ -240,7 +238,7 @@ export default function HealthScreenings() {
             {/* Past Results Section */}
             {!loading && (bpResults.length > 0 || weightResults.length > 0) && (
               <div className="mt-8 animate-fade-in">
-                <div className="flex items-center gap-2 mb-4" onMouseEnter={() => handleSpeak(t('health.pastResults'))}>
+                <div className="flex items-center gap-2 mb-4" onMouseEnter={() => handleMouseEnter(t('health.pastResults'))} onMouseLeave={handleMouseLeave}>
                   <History className="w-5 h-5 text-muted-foreground" />
                   <h2 className="text-lg font-semibold text-foreground cursor-default">{t('health.pastResults')}</h2>
                 </div>
@@ -327,13 +325,15 @@ export default function HealthScreenings() {
             </div>
             <p 
               className="text-heading text-foreground mb-2 cursor-default"
-              onMouseEnter={() => handleSpeak(selectedType === 'bp' ? t('health.bp') : t('health.weight'))}
+              onMouseEnter={() => handleMouseEnter(selectedType === 'bp' ? t('health.bp') : t('health.weight'))}
+              onMouseLeave={handleMouseLeave}
             >
               {selectedType === 'bp' ? t('health.bp') : t('health.weight')}
             </p>
             <p 
               className="text-body-large text-muted-foreground cursor-default"
-              onMouseEnter={() => handleSpeak(t('scan.scanning'))}
+              onMouseEnter={() => handleMouseEnter(t('scan.scanning'))}
+              onMouseLeave={handleMouseLeave}
             >
               {t('scan.scanning')}
             </p>
@@ -353,7 +353,7 @@ export default function HealthScreenings() {
                 <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
                   <CheckCircle2 className="w-10 h-10 text-success" />
                 </div>
-                <div onMouseEnter={() => handleSpeak(`${t('health.result')}: ${t('health.normal')}`)}>
+                <div onMouseEnter={() => handleMouseEnter(`${t('health.result')}: ${t('health.normal')}`)} onMouseLeave={handleMouseLeave}>
                   <p className="text-lg text-muted-foreground cursor-default">{t('health.result')}</p>
                   <p className="text-2xl font-bold text-success cursor-default">{t('health.normal')}</p>
                 </div>
@@ -423,7 +423,8 @@ export default function HealthScreenings() {
               variant="default"
               size="xl"
               onClick={handleBack}
-              onMouseEnter={() => handleSpeak(t('common.done'))}
+              onMouseEnter={() => handleMouseEnter(t('common.done'))}
+              onMouseLeave={handleMouseLeave}
               className="w-full"
             >
               {t('common.done')}

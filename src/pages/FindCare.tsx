@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { AccessibilityBar } from "@/components/AccessibilityBar";
-import { speakText } from "@/utils/speechUtils";
+import { useDebouncedSpeak } from "@/hooks/useDebouncedSpeak";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -400,11 +400,7 @@ export default function FindCare() {
     return result;
   }, [clinicsWithDistance, filterType, searchQuery, distanceFilter, userLocation]);
 
-  const handleSpeak = (text: string) => {
-    if (isTtsEnabled) {
-      speakText(text, language);
-    }
-  };
+  const { handleMouseEnter, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
 
   const handleOpenMaps = (address: string, postalCode: string) => {
     const query = encodeURIComponent(`${address}, Singapore ${postalCode}`);
@@ -427,12 +423,13 @@ export default function FindCare() {
             variant="ghost"
             size="icon"
             onClick={() => navigate("/dashboard")}
-            onMouseEnter={() => handleSpeak(t("common.back"))}
+            onMouseEnter={() => handleMouseEnter(t("common.back"))}
+            onMouseLeave={handleMouseLeave}
             className="w-12 h-12 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
           </Button>
-          <div className="flex-1" onMouseEnter={() => handleSpeak(`${t("findcare.title")}. ${t("findcare.subtitle")}`)}>
+          <div className="flex-1" onMouseEnter={() => handleMouseEnter(`${t("findcare.title")}. ${t("findcare.subtitle")}`)} onMouseLeave={handleMouseLeave}>
             <div className="flex items-center gap-2">
               <Heart className="w-6 h-6 text-primary" />
               <h1 className="text-xl font-bold text-foreground">{t("findcare.title")}</h1>
@@ -468,7 +465,7 @@ export default function FindCare() {
       <div className="bg-primary/5 border-b border-primary/20 px-4 py-3 flex-shrink-0">
         <div className="max-w-7xl mx-auto space-y-3">
           {/* Intro text */}
-          <div className="text-base text-foreground leading-relaxed" onMouseEnter={() => handleSpeak(`${t("findcare.ccnIntro1")} ${t("findcare.ccnIntro2")}`)}>
+          <div className="text-base text-foreground leading-relaxed" onMouseEnter={() => handleMouseEnter(`${t("findcare.ccnIntro1")} ${t("findcare.ccnIntro2")}`)} onMouseLeave={handleMouseLeave}>
             <p>{t("findcare.ccnIntro1")}</p>
             <p className="text-muted-foreground mt-1">{t("findcare.ccnIntro2")}</p>
           </div>
@@ -505,7 +502,7 @@ export default function FindCare() {
           
           {/* How It Works expanded content */}
           {showHowItWorks && (
-            <div className="bg-card rounded-xl p-4 border shadow-sm space-y-2" onMouseEnter={() => handleSpeak(`${t("findcare.howItWorks1")}. ${t("findcare.howItWorks2")}. ${t("findcare.howItWorks3")}`)}>
+            <div className="bg-card rounded-xl p-4 border shadow-sm space-y-2" onMouseEnter={() => handleMouseEnter(`${t("findcare.howItWorks1")}. ${t("findcare.howItWorks2")}. ${t("findcare.howItWorks3")}`)} onMouseLeave={handleMouseLeave}>
               <ul className="space-y-2 text-base">
                 <li className="flex items-start gap-3">
                   <Stethoscope className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
@@ -525,7 +522,7 @@ export default function FindCare() {
           
           {/* Why It Matters expanded content */}
           {showWhyMatters && (
-            <div className="bg-card rounded-xl p-4 border shadow-sm" onMouseEnter={() => handleSpeak(t("findcare.whyMattersText"))}>
+            <div className="bg-card rounded-xl p-4 border shadow-sm" onMouseEnter={() => handleMouseEnter(t("findcare.whyMattersText"))} onMouseLeave={handleMouseLeave}>
               <p className="text-base text-foreground">{t("findcare.whyMattersText")}</p>
             </div>
           )}
@@ -724,7 +721,8 @@ export default function FindCare() {
                 onClinicSelect={setSelectedClinic}
                 onShowPhone={handleShowPhone}
                 t={t}
-                handleSpeak={handleSpeak}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
               />
             </div>
           </div>
@@ -738,7 +736,8 @@ export default function FindCare() {
                 onClinicSelect={setSelectedClinic}
                 onShowPhone={handleShowPhone}
                 t={t}
-                handleSpeak={handleSpeak}
+                handleMouseEnter={handleMouseEnter}
+                handleMouseLeave={handleMouseLeave}
               />
             </div>
           </div>

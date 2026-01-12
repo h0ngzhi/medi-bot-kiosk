@@ -8,7 +8,7 @@ import { ProgrammeSignupForm } from '@/components/community/ProgrammeSignupForm'
 import { ProgrammeFeedbackForm } from '@/components/community/ProgrammeFeedbackForm';
 import { ProgrammeFeedbackDisplay } from '@/components/community/ProgrammeFeedbackDisplay';
 import { ProgrammeDetailModal } from '@/components/community/ProgrammeDetailModal';
-import { speakText } from '@/utils/speechUtils';
+import { useDebouncedSpeak } from '@/hooks/useDebouncedSpeak';
 import { supabase } from '@/integrations/supabase/client';
 import { isRegistrationOpen, getProgrammeStatus } from '@/utils/programmeUtils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -84,11 +84,7 @@ export default function CommunityProgrammes() {
     checkAdminStatus();
   }, [user?.id]);
 
-  const handleSpeak = (text: string) => {
-    if (isTtsEnabled) {
-      speakText(text, language);
-    }
-  };
+  const { handleMouseEnter, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
 
   // Fetch programmes from database
   useEffect(() => {
@@ -297,7 +293,8 @@ export default function CommunityProgrammes() {
             variant="ghost"
             size="icon"
             onClick={() => navigate('/dashboard')}
-            onMouseEnter={() => handleSpeak(t('common.back'))}
+            onMouseEnter={() => handleMouseEnter(t('common.back'))}
+            onMouseLeave={handleMouseLeave}
             className="w-14 h-14 rounded-full"
           >
             <ArrowLeft className="w-6 h-6" />
@@ -305,7 +302,8 @@ export default function CommunityProgrammes() {
           <div>
             <h1 
               className="text-heading text-foreground cursor-default" 
-              onMouseEnter={() => handleSpeak(t('community.title'))}
+              onMouseEnter={() => handleMouseEnter(t('community.title'))}
+              onMouseLeave={handleMouseLeave}
             >
               {t('community.title')}
             </h1>
@@ -321,7 +319,8 @@ export default function CommunityProgrammes() {
             <TabsTrigger 
               value="all" 
               className="h-full rounded-xl text-lg font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center justify-center gap-2"
-              onMouseEnter={() => handleSpeak(t('community.allProgrammes'))}
+              onMouseEnter={() => handleMouseEnter(t('community.allProgrammes'))}
+              onMouseLeave={handleMouseLeave}
             >
               <ClipboardList className="w-5 h-5" />
               {t('community.allProgrammes')}
@@ -334,7 +333,8 @@ export default function CommunityProgrammes() {
             <TabsTrigger 
               value="completed" 
               className="h-full rounded-xl text-lg font-semibold data-[state=active]:bg-primary data-[state=active]:text-primary-foreground flex items-center justify-center gap-2"
-              onMouseEnter={() => handleSpeak(t('community.completedProgrammes'))}
+              onMouseEnter={() => handleMouseEnter(t('community.completedProgrammes'))}
+              onMouseLeave={handleMouseLeave}
             >
               <History className="w-5 h-5" />
               {t('community.completedProgrammes')}
@@ -360,7 +360,8 @@ export default function CommunityProgrammes() {
                 variant={isActive ? 'default' : 'outline'}
                 size="lg"
                 onClick={() => setActiveCategory(cat.id)}
-                onMouseEnter={() => handleSpeak(t(cat.labelKey))}
+                onMouseEnter={() => handleMouseEnter(t(cat.labelKey))}
+                onMouseLeave={handleMouseLeave}
                 className={`flex items-center gap-2 whitespace-nowrap px-4 py-2 ${
                   isActive ? '' : 'bg-card'
                 }`}
@@ -382,7 +383,8 @@ export default function CommunityProgrammes() {
               <div className="bg-success/10 border-2 border-success/30 rounded-3xl p-6">
                 <h2 
                   className="text-xl font-bold text-success mb-4 flex items-center gap-3"
-                  onMouseEnter={() => handleSpeak(t('community.yourProgrammes'))}
+                  onMouseEnter={() => handleMouseEnter(t('community.yourProgrammes'))}
+                  onMouseLeave={handleMouseLeave}
                 >
                   <UserCheck className="w-7 h-7" />
                   {t('community.yourProgrammes')}
