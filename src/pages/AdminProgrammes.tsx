@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useProgrammeAdmin } from "@/contexts/ProgrammeAdminContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -50,6 +51,11 @@ import {
   ClipboardList,
   CheckCircle,
   Star,
+  LogOut,
+  Shield,
+  Eye,
+  Crown,
+  Lock,
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { AttendanceDialog } from "@/components/admin/AttendanceDialog";
@@ -84,6 +90,7 @@ interface Programme {
   serial_id: string | null;
   series_id: string;
   recurrence_type: string | null;
+  created_by_admin_id: string | null;
 }
 
 interface ExistingSeries {
@@ -195,6 +202,8 @@ const emptyForm: ProgrammeForm = {
 const AdminProgrammes = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { admin, loading: authLoading, logout, canEdit, canDelete, canCreate, isViewer, isSuperAdmin } = useProgrammeAdmin();
+  
   const [programmes, setProgrammes] = useState<Programme[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -207,9 +216,18 @@ const AdminProgrammes = () => {
   const [existingSeries, setExistingSeries] = useState<ExistingSeries[]>([]);
   const [reviewCounts, setReviewCounts] = useState<Record<string, number>>({});
 
+  // Redirect to login if not authenticated
   useEffect(() => {
-    fetchProgrammes();
-  }, []);
+    if (!authLoading && !admin) {
+      navigate("/admin/programmes/login");
+    }
+  }, [admin, authLoading, navigate]);
+
+  useEffect(() => {
+    if (admin) {
+      fetchProgrammes();
+    }
+  }, [admin]);
 
   // Check for completed recurring programmes and create new entries
   const checkAndCreateRecurringProgrammes = async (programmes: Programme[]) => {
@@ -438,6 +456,7 @@ const AdminProgrammes = () => {
         id: newId,
         series_id: seriesId,
         recurrence_type: form.recurrence_type,
+        created_by_admin_id: admin?.id || null,
       };
       
       const { error } = await supabase
@@ -565,6 +584,31 @@ const AdminProgrammes = () => {
     setAttendanceDialogOpen(true);
   };
 
+  const getRoleIcon = () => {
+    if (isSuperAdmin()) return <Crown className="h-4 w-4 text-amber-500" />;
+    if (isViewer()) return <Eye className="h-4 w-4 text-muted-foreground" />;
+    return <Pencil className="h-4 w-4 text-primary" />;
+  };
+
+  const getRoleName = () => {
+    if (isSuperAdmin()) return "Super Admin";
+    if (isViewer()) return "Viewer";
+    return "Editor";
+  };
+
+  // Show loading or redirect if not authenticated
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
+    );
+  }
+
+  if (!admin) {
+    return null; // Will redirect via useEffect
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -583,18 +627,34 @@ const AdminProgrammes = () => {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-3">
+            {/* User Info */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-muted rounded-lg">
+              {getRoleIcon()}
+              <span className="text-sm font-medium">{admin.display_name}</span>
+              <Badge variant="outline" className="text-xs">
+                {getRoleName()}
+              </Badge>
+            </div>
+            
             <Button variant="outline" size="sm" onClick={fetchProgrammes}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
             </Button>
+            
+            {canCreate() && (
+              <Button onClick={openNewDialog}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Programme
+              </Button>
+            )}
+            
+            <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground">
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
+            
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openNewDialog}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Programme
-                </Button>
-              </DialogTrigger>
               <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>
@@ -1217,47 +1277,71 @@ const AdminProgrammes = () => {
 
                       {/* Actions */}
                       <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openAttendanceDialog(programme)}
-                          className="gap-1"
-                        >
-                          <ClipboardList className="h-4 w-4" />
-                          <span className="hidden sm:inline">Signups</span>
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => handleEdit(programme)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="outline" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Programme?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently delete "{programme.title}" and
-                                cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => handleDelete(programme.id)}
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                        {!isViewer() && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openAttendanceDialog(programme)}
+                            className="gap-1"
+                          >
+                            <ClipboardList className="h-4 w-4" />
+                            <span className="hidden sm:inline">Signups</span>
+                          </Button>
+                        )}
+                        {canEdit(programme.created_by_admin_id) ? (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => handleEdit(programme)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            disabled
+                            title="You can only edit programmes you created"
+                          >
+                            <Lock className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        )}
+                        {canDelete(programme.created_by_admin_id) ? (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="outline" size="icon">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Programme?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently delete "{programme.title}" and
+                                  cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => handleDelete(programme.id)}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            disabled
+                            title="You can only delete programmes you created"
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -1323,31 +1407,44 @@ const AdminProgrammes = () => {
                           <ProgrammeFeedbackDisplay programmeId={programme.id} seriesId={programme.series_id} />
                         </div>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm" onClick={() => openFeedbackDialog(programme)} className="gap-1">
-                            <Star className="h-4 w-4" />
-                            Manage Feedback
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="icon">
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Programme?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  This will permanently delete "{programme.title}" and cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDelete(programme.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                          {!isViewer() && (
+                            <Button variant="outline" size="sm" onClick={() => openFeedbackDialog(programme)} className="gap-1">
+                              <Star className="h-4 w-4" />
+                              Manage Feedback
+                            </Button>
+                          )}
+                          {canDelete(programme.created_by_admin_id) ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="outline" size="icon">
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Programme?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    This will permanently delete "{programme.title}" and cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(programme.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              disabled
+                              title="You can only delete programmes you created"
+                            >
+                              <Trash2 className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </CardContent>
