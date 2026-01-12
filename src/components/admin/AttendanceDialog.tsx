@@ -3,6 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +23,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Phone, CheckCircle2, Clock, Award, Trash2 } from "lucide-react";
+import { Users, Phone, CheckCircle2, Clock, Award, Trash2, XCircle } from "lucide-react";
 import { format } from "date-fns";
 
 interface Signup {
@@ -56,6 +58,9 @@ export const AttendanceDialog = ({
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [marking, setMarking] = useState(false);
+  const [markingAbsent, setMarkingAbsent] = useState(false);
+  const [absentPointsDeduction, setAbsentPointsDeduction] = useState(5);
+  const [showAbsentConfirm, setShowAbsentConfirm] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -236,8 +241,78 @@ export const AttendanceDialog = ({
     }
   };
 
-  const pendingCount = signups.filter((s) => s.status !== "attended").length;
+  const handleMarkAbsent = async () => {
+    if (selectedIds.size === 0) {
+      toast({
+        title: "No Selection",
+        description: "Please select participants to mark as absent",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setMarkingAbsent(true);
+
+    try {
+      // Get the selected signups to find their kiosk_user_ids
+      const selectedSignups = signups.filter((s) => selectedIds.has(s.id));
+      const kioskUserIds = selectedSignups.map((s) => s.kiosk_user_id);
+
+      // Update signup status to absent
+      const { error: updateError } = await supabase
+        .from("user_programme_signups")
+        .update({
+          status: "absent",
+          attended_at: null,
+        })
+        .in("id", Array.from(selectedIds));
+
+      if (updateError) throw updateError;
+
+      // Deduct points from each user
+      for (const kioskUserId of kioskUserIds) {
+        const { data: userData, error: fetchError } = await supabase
+          .from("kiosk_users")
+          .select("points")
+          .eq("id", kioskUserId)
+          .maybeSingle();
+
+        if (fetchError) throw fetchError;
+
+        if (userData) {
+          const newPoints = Math.max(0, (userData.points || 0) - absentPointsDeduction);
+          const { error: pointsError } = await supabase
+            .from("kiosk_users")
+            .update({ points: newPoints })
+            .eq("id", kioskUserId);
+
+          if (pointsError) throw pointsError;
+        }
+      }
+
+      toast({
+        title: "Marked Absent",
+        description: `Marked ${selectedIds.size} participant(s) as absent. ${absentPointsDeduction} points deducted from each.`,
+      });
+
+      setSelectedIds(new Set());
+      setShowAbsentConfirm(false);
+      fetchSignups();
+      onAttendanceMarked();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to mark participants as absent",
+        variant: "destructive",
+      });
+    } finally {
+      setMarkingAbsent(false);
+    }
+  };
+
+  const pendingCount = signups.filter((s) => s.status === "pending" || s.status !== "attended" && s.status !== "absent").length;
   const attendedCount = signups.filter((s) => s.status === "attended").length;
+  const absentCount = signups.filter((s) => s.status === "absent").length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -251,7 +326,7 @@ export const AttendanceDialog = ({
         </DialogHeader>
 
         {/* Stats */}
-        <div className="flex gap-4 py-3 border-b">
+        <div className="flex flex-wrap gap-4 py-3 border-b">
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4 text-warning" />
             <span>{pendingCount} pending</span>
@@ -259,6 +334,10 @@ export const AttendanceDialog = ({
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="h-4 w-4 text-success" />
             <span>{attendedCount} attended</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm">
+            <XCircle className="h-4 w-4 text-destructive" />
+            <span>{absentCount} absent</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Award className="h-4 w-4 text-primary" />
@@ -280,6 +359,8 @@ export const AttendanceDialog = ({
             <div className="space-y-2">
               {signups.map((signup) => {
                 const isAttended = signup.status === "attended";
+                const isAbsent = signup.status === "absent";
+                const isPending = !isAttended && !isAbsent;
                 const isSelected = selectedIds.has(signup.id);
 
                 return (
@@ -288,12 +369,14 @@ export const AttendanceDialog = ({
                     className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
                       isAttended
                         ? "bg-success/5 border-success/20"
+                        : isAbsent
+                        ? "bg-destructive/5 border-destructive/20"
                         : isSelected
                         ? "bg-primary/5 border-primary/30"
                         : "bg-card border-border hover:border-primary/20"
                     }`}
                   >
-                    {!isAttended && (
+                    {isPending && (
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleSelect(signup.id)}
@@ -301,6 +384,9 @@ export const AttendanceDialog = ({
                     )}
                     {isAttended && (
                       <CheckCircle2 className="h-5 w-5 text-success" />
+                    )}
+                    {isAbsent && (
+                      <XCircle className="h-5 w-5 text-destructive" />
                     )}
 
                     <div className="flex-1 min-w-0">
@@ -323,14 +409,16 @@ export const AttendanceDialog = ({
 
                     <div className="flex items-center gap-2">
                       <Badge
-                        variant={isAttended ? "default" : "secondary"}
+                        variant={isAttended ? "default" : isAbsent ? "destructive" : "secondary"}
                         className={
                           isAttended
                             ? "bg-success text-success-foreground"
+                            : isAbsent
+                            ? "bg-destructive text-destructive-foreground"
                             : "bg-warning/10 text-warning"
                         }
                       >
-                        {isAttended ? "Attended" : "Pending"}
+                        {isAttended ? "Attended" : isAbsent ? "Absent" : "Pending"}
                       </Badge>
 
                       <AlertDialog>
@@ -372,29 +460,82 @@ export const AttendanceDialog = ({
 
         {/* Actions */}
         {signups.length > 0 && pendingCount > 0 && (
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={selectAllPending}>
-                Select All Pending ({pendingCount})
-              </Button>
-              {selectedIds.size > 0 && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedIds(new Set())}
-                >
-                  Clear Selection
+          <div className="flex flex-col gap-3 pt-4 border-t">
+            <div className="flex items-center justify-between">
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={selectAllPending}>
+                  Select All Pending ({pendingCount})
                 </Button>
-              )}
+                {selectedIds.size > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedIds(new Set())}
+                  >
+                    Clear Selection
+                  </Button>
+                )}
+              </div>
             </div>
-            <Button
-              onClick={handleMarkAttendance}
-              disabled={selectedIds.size === 0 || marking}
-              className="bg-success hover:bg-success/90 text-success-foreground"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              Mark Attendance ({selectedIds.size})
-            </Button>
+            
+            <div className="flex items-center justify-between gap-3">
+              <AlertDialog open={showAbsentConfirm} onOpenChange={setShowAbsentConfirm}>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    disabled={selectedIds.size === 0 || markingAbsent}
+                    className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                  >
+                    <XCircle className="h-4 w-4 mr-2" />
+                    Mark Absent ({selectedIds.size})
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Mark as Absent?</AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-4">
+                        <p>
+                          Mark {selectedIds.size} participant(s) as absent and deduct points from their accounts.
+                        </p>
+                        <div className="flex items-center gap-3">
+                          <Label htmlFor="absentPoints" className="whitespace-nowrap">
+                            Points to deduct:
+                          </Label>
+                          <Input
+                            id="absentPoints"
+                            type="number"
+                            min="0"
+                            value={absentPointsDeduction}
+                            onChange={(e) => setAbsentPointsDeduction(Math.max(0, parseInt(e.target.value) || 0))}
+                            className="w-24"
+                          />
+                        </div>
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleMarkAbsent}
+                      disabled={markingAbsent}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      {markingAbsent ? "Marking..." : `Deduct ${absentPointsDeduction} pts & Mark Absent`}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              
+              <Button
+                onClick={handleMarkAttendance}
+                disabled={selectedIds.size === 0 || marking}
+                className="bg-success hover:bg-success/90 text-success-foreground"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                Mark Attendance ({selectedIds.size})
+              </Button>
+            </div>
           </div>
         )}
       </DialogContent>
