@@ -31,21 +31,21 @@ export function ClinicListPanel({
     switch (type) {
       case "gp":
         return <Stethoscope className="w-5 h-5 text-primary" />;
-      case "dental":
-        return <Building2 className="w-5 h-5 text-orange-500" />;
       case "polyclinic":
         return <Building2 className="w-5 h-5 text-purple-500" />;
       case "hospital":
         return <Hospital className="w-5 h-5 text-red-500" />;
+      default:
+        return <Stethoscope className="w-5 h-5 text-primary" />;
     }
   };
 
   const getTypeLabel = (type: MapClinic["type"]) => {
     switch (type) {
       case "gp": return t("findcare.gpClinic");
-      case "dental": return t("findcare.dentalClinic");
       case "polyclinic": return t("findcare.polyclinic");
       case "hospital": return t("findcare.hospital");
+      default: return t("findcare.gpClinic");
     }
   };
 

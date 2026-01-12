@@ -72,15 +72,13 @@ const userIcon = L.divIcon({
 // Distinct colors for each clinic type
 const clinicIcons = {
   gp: createClinicIcon("#10b981", "#059669"),        // Emerald/Green for GP
-  dental: createClinicIcon("#f59e0b", "#d97706"),    // Amber/Orange for Dental
   polyclinic: createClinicIcon("#8b5cf6", "#7c3aed"), // Purple for Polyclinic
   hospital: createClinicIcon("#ef4444", "#dc2626"),  // Red for Hospital
 };
 
 // Color mapping for legend
-export const clinicColors = {
+export const clinicColors: Record<string, string> = {
   gp: "#10b981",
-  dental: "#f59e0b",
   polyclinic: "#8b5cf6",
   hospital: "#ef4444",
 };
@@ -88,7 +86,7 @@ export const clinicColors = {
 export interface MapClinic {
   id: string;
   name: string;
-  type: "gp" | "dental" | "polyclinic" | "hospital";
+  type: "gp" | "polyclinic" | "hospital";
   address: string;
   postalCode: string;
   phone: string;
@@ -136,9 +134,9 @@ export function ClinicMap({
   const getTypeLabel = (type: MapClinic["type"]) => {
     switch (type) {
       case "gp": return t("findcare.gpClinic");
-      case "dental": return t("findcare.dentalClinic");
       case "polyclinic": return t("findcare.polyclinic");
       case "hospital": return t("findcare.hospital");
+      default: return t("findcare.gpClinic");
     }
   };
 
