@@ -169,7 +169,7 @@ export function ClinicMap({
     };
   }, []);
 
-  // Update user location marker, circle, and auto-fit bounds
+  // Update user location marker and circle
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -183,7 +183,7 @@ export function ClinicMap({
       circleRef.current = null;
     }
 
-    // Add new user marker and circle, then fit bounds
+    // Add new user marker and circle
     if (userLocation) {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
         .addTo(mapRef.current)
@@ -199,34 +199,42 @@ export function ClinicMap({
           weight: 3,
           dashArray: "8, 8",
         }).addTo(mapRef.current);
-
-        // Auto-fit map to circle bounds with generous padding
-        // Use a fixed zoom based on distance to ensure markers are visible
-        let targetZoom = 13;
-        if (distanceFilter <= 1) targetZoom = 14;
-        else if (distanceFilter <= 3) targetZoom = 13;
-        else if (distanceFilter <= 5) targetZoom = 12;
-        else targetZoom = 11;
-
-        mapRef.current.setView([userLocation.lat, userLocation.lng], targetZoom, {
-          animate: true,
-          duration: 0.5,
-        });
-      } else {
-        // No distance filter - show user location with moderate zoom
-        mapRef.current.setView([userLocation.lat, userLocation.lng], 13, {
-          animate: true,
-          duration: 0.5,
-        });
       }
-    } else {
+    }
+  }, [userLocation, distanceFilter]);
+
+  // Center map on user location whenever distance filter changes
+  useEffect(() => {
+    if (!mapRef.current || !userLocation) return;
+
+    // Calculate zoom level based on distance
+    let targetZoom = 13;
+    if (distanceFilter) {
+      if (distanceFilter <= 1) targetZoom = 15;
+      else if (distanceFilter <= 3) targetZoom = 14;
+      else if (distanceFilter <= 5) targetZoom = 13;
+      else targetZoom = 12;
+    }
+
+    // Always center on user location when distance filter changes
+    mapRef.current.setView([userLocation.lat, userLocation.lng], targetZoom, {
+      animate: true,
+      duration: 0.5,
+    });
+  }, [distanceFilter, userLocation]);
+
+  // Initial map positioning when user location is first available
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    if (!userLocation) {
       // No user location - show all of Singapore
       mapRef.current.setView(defaultCenter, 12, {
         animate: true,
         duration: 0.5,
       });
     }
-  }, [userLocation, distanceFilter]);
+  }, [userLocation]);
 
   // Update clinic markers
   useEffect(() => {
