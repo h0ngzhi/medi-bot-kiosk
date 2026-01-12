@@ -58,6 +58,28 @@ export default function CommunityProgrammes() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingFeedback, setEditingFeedback] = useState<EditingFeedback | null>(null);
   const [feedbackRefreshKey, setFeedbackRefreshKey] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if current user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.id) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      setIsAdmin(!!data);
+    };
+    
+    checkAdminStatus();
+  }, [user?.id]);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -462,8 +484,8 @@ export default function CommunityProgrammes() {
                   onEditFeedback={(feedback) => handleEditFeedback(feedback, programme)}
                 />
 
-                {/* Leave feedback button - only for signed-up users */}
-                {programme.isSignedUp && !programme.hasSubmittedFeedback && (
+                {/* Leave feedback button - for signed-up users OR admins */}
+                {(programme.isSignedUp || isAdmin) && !programme.hasSubmittedFeedback && (
                   <Button
                     variant="outline"
                     size="lg"
@@ -475,7 +497,7 @@ export default function CommunityProgrammes() {
                   </Button>
                 )}
 
-                {programme.isSignedUp && programme.hasSubmittedFeedback && (
+                {(programme.isSignedUp || isAdmin) && programme.hasSubmittedFeedback && (
                   <Button
                     variant="outline"
                     size="lg"

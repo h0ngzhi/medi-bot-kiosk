@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ import { speakText } from '@/utils/speechUtils';
 import { getProgrammeStatus, isRegistrationOpen } from '@/utils/programmeUtils';
 import { ProgrammeFeedbackDisplay } from './ProgrammeFeedbackDisplay';
 import { Programme } from './ProgrammeCard';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProgrammeDetailModalProps {
   programme: Programme | null;
@@ -54,7 +56,29 @@ export function ProgrammeDetailModal({
   onFeedback,
   onEditFeedback
 }: ProgrammeDetailModalProps) {
-  const { t, language, isTtsEnabled } = useApp();
+  const { t, language, isTtsEnabled, user } = useApp();
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  // Check if current user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user?.id) {
+        setIsAdmin(false);
+        return;
+      }
+      
+      const { data } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .eq('role', 'admin')
+        .maybeSingle();
+      
+      setIsAdmin(!!data);
+    };
+    
+    checkAdminStatus();
+  }, [user?.id]);
 
   if (!programme) return null;
 
@@ -301,7 +325,8 @@ export function ProgrammeDetailModal({
           {/* Action buttons */}
           <div className="pt-4 border-t border-border">
             {isCompleted ? (
-              programme.isSignedUp && !programme.hasSubmittedFeedback ? (
+              // For completed programmes: allow feedback if signed up OR if admin
+              (programme.isSignedUp || isAdmin) && !programme.hasSubmittedFeedback ? (
                 <Button
                   variant="default"
                   size="lg"
@@ -314,7 +339,7 @@ export function ProgrammeDetailModal({
                   <Star className="w-6 h-6 mr-2" />
                   {t('community.leaveFeedback')}
                 </Button>
-              ) : programme.isSignedUp && programme.hasSubmittedFeedback ? (
+              ) : (programme.isSignedUp || isAdmin) && programme.hasSubmittedFeedback ? (
                 <Button
                   variant="outline"
                   size="lg"
