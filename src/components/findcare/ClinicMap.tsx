@@ -187,7 +187,7 @@ export function ClinicMap({
     if (userLocation) {
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon: userIcon })
         .addTo(mapRef.current)
-        .bindPopup("<div style='text-align: center; font-weight: bold; color: #3b82f6;'>📍 You are here</div>");
+        .bindPopup(`<div style='text-align: center; font-weight: bold; color: #3b82f6;'>📍 ${t("findcare.yourLocation")}</div>`);
 
       if (distanceFilter) {
         // Create circle for distance radius
@@ -264,89 +264,94 @@ export function ClinicMap({
       const escapedName = clinic.name.replace(/'/g, "\\'").replace(/"/g, '\\"');
       const escapedPhone = clinic.phone.replace(/'/g, "\\'").replace(/"/g, '\\"');
       
+      const distanceText = t("findcare.kmAway");
+      const callText = t("findcare.call");
+      const viewHoursText = t("findcare.viewHours");
+      
       const popupContent = `
-        <div style="min-width: 220px; padding: 8px;">
-          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+        <div style="min-width: 280px; max-width: 320px; padding: 16px; background: white; border-radius: 16px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
             <span style="
-              font-size: 11px; 
-              background: ${typeColor}20; 
+              font-size: 13px; 
+              background: ${typeColor}15; 
               color: ${typeColor}; 
-              padding: 3px 10px; 
+              padding: 6px 14px; 
               border-radius: 9999px;
-              font-weight: 600;
-              border: 1px solid ${typeColor}40;
+              font-weight: 700;
+              border: 2px solid ${typeColor}30;
             ">
               ${getTypeLabel(clinic.type)}
             </span>
             ${clinic.distance !== undefined ? `
               <span style="
-                font-size: 11px; 
+                font-size: 13px; 
                 background: #dbeafe; 
                 color: #1d4ed8; 
-                padding: 3px 10px; 
+                padding: 6px 14px; 
                 border-radius: 9999px;
-                font-weight: 600;
+                font-weight: 700;
               ">
-                ${clinic.distance.toFixed(1)} km away
+                ${clinic.distance.toFixed(1)} ${distanceText}
               </span>
             ` : ''}
           </div>
-          <h3 style="font-weight: bold; font-size: 15px; margin-bottom: 10px; line-height: 1.4; color: #1f2937;">${clinic.name}</h3>
-          <div style="font-size: 13px; color: #6b7280; margin-bottom: 14px;">
-            <div style="margin-bottom: 6px; display: flex; align-items: flex-start; gap: 6px;">
-              <span>📍</span>
+          <h3 style="font-weight: 800; font-size: 18px; margin-bottom: 14px; line-height: 1.4; color: #1f2937;">${clinic.name}</h3>
+          <div style="font-size: 15px; color: #4b5563; margin-bottom: 18px; line-height: 1.6;">
+            <div style="margin-bottom: 10px; display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 18px;">📍</span>
               <span>${clinic.address}</span>
             </div>
             ${clinic.phone ? `
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <span>📞</span>
-                <span>${clinic.phone}</span>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span style="font-size: 18px;">📞</span>
+                <span style="font-weight: 600;">${clinic.phone}</span>
               </div>
             ` : ''}
           </div>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 10px;">
             ${clinic.phone ? `
               <button 
                 onclick="window.__clinicMapShowPhone('${escapedPhone}', '${escapedName}')"
                 style="
                   flex: 1; 
-                  padding: 10px 12px; 
-                  font-size: 13px; 
-                  font-weight: 600;
+                  padding: 14px 16px; 
+                  font-size: 15px; 
+                  font-weight: 700;
                   background: white; 
-                  border: 2px solid #e5e7eb; 
-                  border-radius: 8px; 
+                  border: 3px solid #e5e7eb; 
+                  border-radius: 12px; 
                   cursor: pointer;
                   transition: all 0.2s;
                 "
                 onmouseover="this.style.borderColor='#3b82f6'; this.style.color='#3b82f6';"
                 onmouseout="this.style.borderColor='#e5e7eb'; this.style.color='inherit';"
               >
-                📞 Call
+                📞 ${callText}
               </button>
             ` : ''}
             <button 
               onclick="window.__clinicMapViewHours('${clinic.id}')"
               style="
                 flex: 1; 
-                padding: 10px 12px; 
-                font-size: 13px; 
-                font-weight: 600;
+                padding: 14px 16px; 
+                font-size: 15px; 
+                font-weight: 700;
                 background: ${typeColor}; 
                 color: white; 
                 border: none; 
-                border-radius: 8px; 
+                border-radius: 12px; 
                 cursor: pointer;
                 transition: all 0.2s;
+                box-shadow: 0 4px 12px ${typeColor}40;
               "
             >
-              🕐 View Hours
+              🕐 ${viewHoursText}
             </button>
           </div>
         </div>
       `;
 
-      marker.bindPopup(popupContent, { maxWidth: 300 });
+      marker.bindPopup(popupContent, { maxWidth: 360, className: 'clinic-popup' });
       marker.on("click", () => onClinicSelect(clinic));
       marker.addTo(markersRef.current!);
     });

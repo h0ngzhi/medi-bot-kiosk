@@ -230,4 +230,26 @@
       opacity: 1;
     }
   }
+
+  /* Leaflet popup styling for clinics */
+  .leaflet-popup-content-wrapper {
+    border-radius: 16px !important;
+    box-shadow: 0 8px 30px -8px rgba(0, 0, 0, 0.15) !important;
+    padding: 0 !important;
+    overflow: hidden;
+  }
+
+  .leaflet-popup-content {
+    margin: 0 !important;
+    min-width: 280px !important;
+  }
+
+  .clinic-popup .leaflet-popup-content-wrapper {
+    border-radius: 20px !important;
+    box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.2) !important;
+  }
+
+  .leaflet-popup-tip {
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1) !important;
+  }
 }
