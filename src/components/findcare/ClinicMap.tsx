@@ -1,64 +1,60 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Button } from "@/components/ui/button";
-import { Phone, Navigation, Clock, MapPin } from "lucide-react";
+import { Phone, Navigation, MapPin } from "lucide-react";
 
 // Fix for default marker icons in React-Leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
+const DefaultIcon = L.icon({
   iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
   shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
 });
+L.Marker.prototype.options.icon = DefaultIcon;
 
 // Custom marker icons by clinic type
-const createIcon = (color: string) => {
+const createClinicIcon = (color: string) => {
   return L.divIcon({
     html: `<div style="
       background-color: ${color};
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       border-radius: 50% 50% 50% 0;
       transform: rotate(-45deg);
       border: 3px solid white;
       box-shadow: 0 2px 5px rgba(0,0,0,0.3);
     "></div>`,
     className: "custom-marker",
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
-    popupAnchor: [0, -32],
+    iconSize: [28, 28],
+    iconAnchor: [14, 28],
+    popupAnchor: [0, -28],
   });
 };
 
 const userIcon = L.divIcon({
   html: `<div style="
     background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    border: 4px solid white;
+    border: 3px solid white;
     box-shadow: 0 0 0 3px #3b82f6, 0 4px 10px rgba(0,0,0,0.3);
-    animation: pulse 2s infinite;
-  "></div>
-  <style>
-    @keyframes pulse {
-      0% { box-shadow: 0 0 0 3px #3b82f6, 0 4px 10px rgba(0,0,0,0.3); }
-      50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.3), 0 4px 10px rgba(0,0,0,0.3); }
-      100% { box-shadow: 0 0 0 3px #3b82f6, 0 4px 10px rgba(0,0,0,0.3); }
-    }
-  </style>`,
+  "></div>`,
   className: "user-marker",
-  iconSize: [24, 24],
-  iconAnchor: [12, 12],
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
 });
 
 const clinicIcons = {
-  gp: createIcon("#14b8a6"),      // teal
-  dental: createIcon("#f97316"),   // orange
-  polyclinic: createIcon("#8b5cf6"), // purple
-  hospital: createIcon("#ef4444"),  // red
+  gp: createClinicIcon("#14b8a6"),
+  dental: createClinicIcon("#f97316"),
+  polyclinic: createClinicIcon("#8b5cf6"),
+  hospital: createClinicIcon("#ef4444"),
 };
 
 export interface MapClinic {
@@ -86,11 +82,13 @@ interface ClinicMapProps {
 }
 
 // Component to update map view when user location changes
-function MapUpdater({ center, zoom }: { center: [number, number]; zoom: number }) {
+function MapController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
+  
   useEffect(() => {
     map.setView(center, zoom);
   }, [center, zoom, map]);
+  
   return null;
 }
 
@@ -105,7 +103,9 @@ export function ClinicMap({
 }: ClinicMapProps) {
   // Singapore center as default
   const defaultCenter: [number, number] = [1.3521, 103.8198];
-  const mapCenter = userLocation ? [userLocation.lat, userLocation.lng] as [number, number] : defaultCenter;
+  const mapCenter: [number, number] = userLocation 
+    ? [userLocation.lat, userLocation.lng] 
+    : defaultCenter;
   
   // Filter clinics by distance if user location is available
   const visibleClinics = useMemo(() => {
@@ -136,16 +136,16 @@ export function ClinicMap({
       zoom={zoom}
       scrollWheelZoom={true}
       className="w-full h-full rounded-xl"
-      style={{ minHeight: "400px" }}
+      style={{ minHeight: "400px", zIndex: 0 }}
     >
-      <MapUpdater center={mapCenter} zoom={zoom} />
+      <MapController center={mapCenter} zoom={zoom} />
       
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* Distance circles */}
+      {/* Distance circle */}
       {userLocation && distanceFilter && (
         <Circle
           center={[userLocation.lat, userLocation.lng]}
@@ -182,29 +182,29 @@ export function ClinicMap({
           }}
         >
           <Popup>
-            <div className="min-w-[250px] p-2">
+            <div className="min-w-[220px] p-1">
               <div className="flex items-start gap-2 mb-2">
-                <span className="text-xs bg-muted px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">
                   {getTypeLabel(clinic.type)}
                 </span>
-                {clinic.distance && (
+                {clinic.distance !== undefined && (
                   <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
                     {clinic.distance.toFixed(1)} km
                   </span>
                 )}
               </div>
               
-              <h3 className="font-bold text-base mb-2">{clinic.name}</h3>
+              <h3 className="font-bold text-sm mb-2 leading-tight">{clinic.name}</h3>
               
-              <div className="space-y-1 text-sm text-muted-foreground mb-3">
+              <div className="space-y-1 text-xs text-gray-600 mb-3">
                 <div className="flex items-start gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
-                  <span className="text-xs">{clinic.address}</span>
+                  <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                  <span>{clinic.address}</span>
                 </div>
                 {clinic.phone && (
                   <div className="flex items-center gap-1.5">
-                    <Phone className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span className="text-xs">{clinic.phone}</span>
+                    <Phone className="w-3 h-3 flex-shrink-0" />
+                    <span>{clinic.phone}</span>
                   </div>
                 )}
               </div>
@@ -214,7 +214,7 @@ export function ClinicMap({
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 h-8 text-xs"
+                    className="flex-1 h-7 text-xs"
                     onClick={(e) => {
                       e.stopPropagation();
                       onCall(clinic.phone);
@@ -227,14 +227,14 @@ export function ClinicMap({
                 <Button
                   variant="default"
                   size="sm"
-                  className="flex-1 h-8 text-xs"
+                  className="flex-1 h-7 text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDirections(clinic.address, clinic.postalCode);
                   }}
                 >
                   <Navigation className="w-3 h-3 mr-1" />
-                  Directions
+                  Go
                 </Button>
               </div>
             </div>
