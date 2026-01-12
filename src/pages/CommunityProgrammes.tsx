@@ -32,14 +32,13 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 
-type Category = 'all' | 'active_ageing' | 'health' | 'social' | 'caregiver' | 'digital';
+type Category = 'all' | 'active_ageing' | 'health' | 'social' | 'digital';
 
 const categories: { id: Category; icon: React.ElementType; labelKey: string }[] = [
   { id: 'all', icon: Filter, labelKey: 'community.filterAll' },
   { id: 'active_ageing', icon: Heart, labelKey: 'community.filterActive' },
   { id: 'health', icon: Brain, labelKey: 'community.filterHealth' },
   { id: 'social', icon: Users, labelKey: 'community.filterSocial' },
-  { id: 'caregiver', icon: HandHeart, labelKey: 'community.filterCaregiver' },
   { id: 'digital', icon: Smartphone, labelKey: 'community.filterDigital' },
 ];
 
@@ -271,9 +270,18 @@ export default function CommunityProgrammes() {
     ? upcomingProgrammes
     : upcomingProgrammes.filter(p => p.category === activeCategory);
 
+  // Sort completed programmes: reviewable ones first (signed up but no feedback yet)
+  const sortedCompletedProgrammes = [...completedProgrammes].sort((a, b) => {
+    const aCanReview = (a.isSignedUp || isAdmin) && !a.hasSubmittedFeedback;
+    const bCanReview = (b.isSignedUp || isAdmin) && !b.hasSubmittedFeedback;
+    if (aCanReview && !bCanReview) return -1;
+    if (!aCanReview && bCanReview) return 1;
+    return 0;
+  });
+
   const filteredCompletedProgrammes = activeCategory === 'all'
-    ? completedProgrammes
-    : completedProgrammes.filter(p => p.category === activeCategory);
+    ? sortedCompletedProgrammes
+    : sortedCompletedProgrammes.filter(p => p.category === activeCategory);
 
   // Get user's signed up programmes (only upcoming ones where registration is still open)
   const myProgrammes = upcomingProgrammes.filter(p => 

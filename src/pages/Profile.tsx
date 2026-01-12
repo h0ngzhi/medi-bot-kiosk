@@ -74,6 +74,7 @@ export default function Profile() {
   const [equippedMedalId, setEquippedMedalId] = useState<string | null>(null);
   const [equippingMedalId, setEquippingMedalId] = useState<string | null>(null);
   const [dailyBonusClaimed, setDailyBonusClaimed] = useState(false);
+  const [showingVoucherId, setShowingVoucherId] = useState<string | null>(null);
 
   // Generate a random voucher code
   const generateVoucherCode = () => {
@@ -642,31 +643,51 @@ export default function Profile() {
                     )}
                   </div>
                   
-                  {/* Barcode simulation */}
-                  <div className="bg-white rounded-lg p-4 text-center">
-                    <div className="flex justify-center items-end gap-0.5 h-16 mb-2">
-                      {/* Generate barcode-like bars */}
-                      {Array.from({ length: 40 }).map((_, i) => (
-                        <div 
-                          key={i}
-                          className="bg-black"
-                          style={{ 
-                            width: Math.random() > 0.5 ? '2px' : '3px',
-                            height: `${40 + Math.random() * 24}px`
-                          }}
-                        />
-                      ))}
-                    </div>
-                    <div className="flex items-center justify-center gap-2">
-                      <QrCode className="w-4 h-4 text-muted-foreground" />
-                      <p className="font-mono text-lg font-bold tracking-wider text-foreground">
-                        {redemption.voucher_code || generateVoucherCode()}
+                  {/* Show Barcode Button or Barcode */}
+                  {showingVoucherId === redemption.id ? (
+                    <div className="bg-white rounded-lg p-4 text-center">
+                      <div className="flex justify-center items-end gap-0.5 h-16 mb-2">
+                        {/* Generate barcode-like bars */}
+                        {Array.from({ length: 40 }).map((_, i) => (
+                          <div 
+                            key={i}
+                            className="bg-black"
+                            style={{ 
+                              width: Math.random() > 0.5 ? '2px' : '3px',
+                              height: `${40 + Math.random() * 24}px`
+                            }}
+                          />
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-center gap-2">
+                        <QrCode className="w-4 h-4 text-muted-foreground" />
+                        <p className="font-mono text-lg font-bold tracking-wider text-foreground">
+                          {redemption.voucher_code || generateVoucherCode()}
+                        </p>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {t('profile.showToRedeem')}
                       </p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowingVoucherId(null)}
+                        className="mt-3"
+                      >
+                        {t('profile.hideBarcode')}
+                      </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t('profile.showToRedeem')}
-                    </p>
-                  </div>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="lg"
+                      onClick={() => setShowingVoucherId(redemption.id)}
+                      className="w-full h-14 text-lg"
+                    >
+                      <QrCode className="w-5 h-5 mr-2" />
+                      {t('profile.showBarcode')}
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
