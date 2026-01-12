@@ -120,7 +120,7 @@ Just call navigate_to immediately. No text response.`,
               },
             ],
             tool_choice: "required",
-            temperature: 0.1,
+            temperature: 0.6,
             max_response_output_tokens: 50,
           },
         };
