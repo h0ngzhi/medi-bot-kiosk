@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Star, Trash2, User, Loader2 } from 'lucide-react';
+import { Star, Trash2, User, Loader2, Lock, Eye } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { useProgrammeAdmin } from '@/contexts/ProgrammeAdminContext';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import {
@@ -33,6 +34,7 @@ interface FeedbackManagementDialogProps {
   programmeId: string;
   programmeName: string;
   seriesId?: string;
+  createdByAdminId: string | null;
   onFeedbackDeleted?: () => void;
 }
 
@@ -42,8 +44,14 @@ export function FeedbackManagementDialog({
   programmeId,
   programmeName,
   seriesId,
+  createdByAdminId,
   onFeedbackDeleted
 }: FeedbackManagementDialogProps) {
+  const { canEdit, isViewer } = useProgrammeAdmin();
+  
+  // Check if current admin can modify this programme's feedback
+  const canModify = canEdit(createdByAdminId);
+  const viewOnly = isViewer() || !canModify;
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
@@ -121,7 +129,19 @@ export function FeedbackManagementDialog({
           <DialogTitle className="flex items-center gap-2">
             <Star className="h-5 w-5 text-warning" />
             Feedback for {programmeName}
+            {viewOnly && (
+              <Badge variant="secondary" className="ml-2 gap-1">
+                <Eye className="h-3 w-3" />
+                View Only
+              </Badge>
+            )}
           </DialogTitle>
+          {viewOnly && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              <Lock className="h-3 w-3" />
+              You can only manage feedback for programmes you created
+            </p>
+          )}
         </DialogHeader>
 
         {loading ? (
@@ -187,39 +207,51 @@ export function FeedbackManagementDialog({
                         </p>
                       )}
                     </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                          disabled={deleting === feedback.id}
-                        >
-                          {deleting === feedback.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Feedback?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This will permanently delete the feedback from {feedback.participant_name}. This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={() => handleDelete(feedback.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    {viewOnly ? (
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground cursor-not-allowed opacity-50"
+                        disabled
+                        title="You cannot manage feedback for this programme"
+                      >
+                        <Lock className="h-4 w-4" />
+                      </Button>
+                    ) : (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                            disabled={deleting === feedback.id}
                           >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                            {deleting === feedback.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Feedback?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This will permanently delete the feedback from {feedback.participant_name}. This action cannot be undone.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction 
+                              onClick={() => handleDelete(feedback.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </div>
                 </div>
               ))}

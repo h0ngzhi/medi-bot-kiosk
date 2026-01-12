@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useProgrammeAdmin } from "@/contexts/ProgrammeAdminContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -23,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Users, Phone, CheckCircle2, Clock, Award, Trash2, XCircle } from "lucide-react";
+import { Users, Phone, CheckCircle2, Clock, Award, Trash2, XCircle, Lock, Eye } from "lucide-react";
 import { format } from "date-fns";
 
 interface Signup {
@@ -42,6 +43,7 @@ interface AttendanceDialogProps {
   programmeId: string;
   programmeTitle: string;
   pointsReward: number;
+  createdByAdminId: string | null;
   onAttendanceMarked: () => void;
 }
 
@@ -51,9 +53,15 @@ export const AttendanceDialog = ({
   programmeId,
   programmeTitle,
   pointsReward,
+  createdByAdminId,
   onAttendanceMarked,
 }: AttendanceDialogProps) => {
   const { toast } = useToast();
+  const { canEdit, isViewer } = useProgrammeAdmin();
+  
+  // Check if current admin can modify this programme's signups
+  const canModify = canEdit(createdByAdminId);
+  const viewOnly = isViewer() || !canModify;
   const [signups, setSignups] = useState<Signup[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -321,8 +329,20 @@ export const AttendanceDialog = ({
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5" />
             Signups & Attendance
+            {viewOnly && (
+              <Badge variant="secondary" className="ml-2 gap-1">
+                <Eye className="h-3 w-3" />
+                View Only
+              </Badge>
+            )}
           </DialogTitle>
           <p className="text-sm text-muted-foreground">{programmeTitle}</p>
+          {viewOnly && (
+            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+              <Lock className="h-3 w-3" />
+              You can only modify signups for programmes you created
+            </p>
+          )}
         </DialogHeader>
 
         {/* Stats */}
@@ -376,11 +396,16 @@ export const AttendanceDialog = ({
                         : "bg-card border-border hover:border-primary/20"
                     }`}
                   >
-                    {isPending && (
+                    {isPending && !viewOnly && (
                       <Checkbox
                         checked={isSelected}
                         onCheckedChange={() => toggleSelect(signup.id)}
                       />
+                    )}
+                    {isPending && viewOnly && (
+                      <div className="h-5 w-5 flex items-center justify-center">
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                      </div>
                     )}
                     {isAttended && (
                       <CheckCircle2 className="h-5 w-5 text-success" />
@@ -421,35 +446,47 @@ export const AttendanceDialog = ({
                         {isAttended ? "Attended" : isAbsent ? "Absent" : "Pending"}
                       </Badge>
 
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Remove Participant?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Remove "{signup.participant_name || "Unknown"}" from this programme?
-                              {isAttended && ` Their ${pointsReward} points will also be deducted.`}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleRemoveSignup(signup.id, signup.kiosk_user_id, isAttended)}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      {viewOnly ? (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground cursor-not-allowed opacity-50"
+                          disabled
+                          title="You cannot modify signups for this programme"
+                        >
+                          <Lock className="h-4 w-4" />
+                        </Button>
+                      ) : (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
                             >
-                              Remove
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Remove Participant?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Remove "{signup.participant_name || "Unknown"}" from this programme?
+                                {isAttended && ` Their ${pointsReward} points will also be deducted.`}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleRemoveSignup(signup.id, signup.kiosk_user_id, isAttended)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Remove
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
                     </div>
                   </div>
                 );
@@ -458,8 +495,8 @@ export const AttendanceDialog = ({
           )}
         </div>
 
-        {/* Actions */}
-        {signups.length > 0 && pendingCount > 0 && (
+        {/* Actions - only show if user can modify */}
+        {signups.length > 0 && pendingCount > 0 && !viewOnly && (
           <div className="flex flex-col gap-3 pt-4 border-t">
             <div className="flex items-center justify-between">
               <div className="flex gap-2">
