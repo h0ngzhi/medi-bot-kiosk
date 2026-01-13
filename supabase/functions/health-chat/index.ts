@@ -16,7 +16,6 @@ This kiosk app has several features that you should recommend when appropriate:
 **1. Find Care (Clinic Directory)**
 - Shows nearby CHAS GP clinics, polyclinics, and hospitals on a map
 - Displays opening hours and contact information
-- Users can call clinics directly from the app
 - SUGGEST THIS WHEN: User mentions any health symptoms (headache, fever, pain, feeling unwell), needs to see a doctor, looking for a clinic, or needs medical consultation
 
 **2. Health Screenings**
@@ -35,6 +34,8 @@ This kiosk app has several features that you should recommend when appropriate:
 - Shows user's CHAS card, points balance, and reward tier
 - Users can redeem points for vouchers, certificates, and medals
 - Displays registered programmes and attendance history
+- Users can earn 5 points when they login everyday resets at 12am
+- If User fails to show up at a programme they signed up; they are bound to be deducted 5-10 points
 - SUGGEST THIS WHEN: User asks about their points, rewards, or programme history
 
 === IMPORTANT GUIDANCE ===
@@ -165,16 +166,16 @@ serve(async (req) => {
   try {
     const { messages, language, languageName } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    
+
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
     // Add language instruction to the system prompt
-    const languageInstruction = languageName 
+    const languageInstruction = languageName
       ? `\n\nIMPORTANT: The user's interface is set to ${languageName}. You MUST respond in ${languageName}. Always use ${languageName} for all your responses.`
       : "";
-    
+
     const fullSystemPrompt = SYSTEM_PROMPT + languageInstruction;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -185,10 +186,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
-        messages: [
-          { role: "system", content: fullSystemPrompt },
-          ...messages,
-        ],
+        messages: [{ role: "system", content: fullSystemPrompt }, ...messages],
         stream: true,
       }),
     });
