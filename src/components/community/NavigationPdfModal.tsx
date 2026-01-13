@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Printer, Loader2, FileText, ZoomIn, ZoomOut, ExternalLink } from 'lucide-react';
+import { X, Printer, Loader2, FileText, ExternalLink } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 
@@ -15,40 +15,35 @@ interface NavigationPdfModalProps {
 export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: NavigationPdfModalProps) {
   const { t } = useApp();
   const [isPrinting, setIsPrinting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [scale, setScale] = useState(1);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [showFallback, setShowFallback] = useState(false);
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setShowFallback(false);
+      // Show fallback after 3 seconds if PDF doesn't load
+      const timer = setTimeout(() => {
+        setShowFallback(true);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   const handlePrint = () => {
     setIsPrinting(true);
-    
-    // Open PDF in new window for printing
-    const printWindow = window.open(pdfUrl, '_blank');
-    
-    if (printWindow) {
-      printWindow.onload = () => {
-        printWindow.print();
-      };
-    }
-    
-    // Simulate printing completion
+    window.open(pdfUrl, '_blank');
     setTimeout(() => {
       setIsPrinting(false);
       toast.success(t('community.printSuccess'));
     }, 2000);
   };
 
-  const handleZoomIn = () => {
-    setScale(prev => Math.min(prev + 0.25, 2));
+  const handleOpenInNewTab = () => {
+    window.open(pdfUrl, '_blank');
   };
 
-  const handleZoomOut = () => {
-    setScale(prev => Math.max(prev - 0.25, 0.5));
-  };
-
-  const handleIframeLoad = () => {
-    setIsLoading(false);
-  };
+  // Use Google Docs viewer as a fallback for cross-origin PDFs
+  const googleDocsViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -76,33 +71,21 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
 
         {/* Controls */}
         <div className="flex items-center justify-between px-6 py-3 border-b bg-background">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomOut}
-              disabled={scale <= 0.5}
-            >
-              <ZoomOut className="w-4 h-4" />
-            </Button>
-            <span className="text-sm text-muted-foreground min-w-[60px] text-center">
-              {Math.round(scale * 100)}%
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleZoomIn}
-              disabled={scale >= 2}
-            >
-              <ZoomIn className="w-4 h-4" />
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={handleOpenInNewTab}
+            className="h-12 px-6"
+          >
+            <ExternalLink className="w-5 h-5 mr-2" />
+            {t('community.openPdfNewTab')}
+          </Button>
 
           <Button
             variant="default"
             size="lg"
             onClick={handlePrint}
-            disabled={isPrinting || isLoading}
+            disabled={isPrinting}
             className="h-12 px-6 text-lg"
           >
             {isPrinting ? (
@@ -120,51 +103,21 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
         </div>
 
         {/* PDF Viewer */}
-        <div className="flex-1 overflow-auto bg-muted/30 p-4">
-          <div 
-            className="bg-white rounded-lg shadow-lg mx-auto overflow-hidden"
-            style={{
-              transform: `scale(${scale})`,
-              transformOrigin: 'top center',
-              transition: 'transform 0.2s ease',
-              maxWidth: '100%',
-            }}
-          >
-            {isLoading && (
-              <div className="flex items-center justify-center h-[600px] bg-muted/20">
-                <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-10 h-10 animate-spin text-primary" />
-                  <p className="text-muted-foreground">{t('community.loadingNavCard')}</p>
-                </div>
+        <div className="flex-1 overflow-hidden bg-muted/30">
+          {!showFallback ? (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                <p className="text-muted-foreground">{t('community.loadingNavCard')}</p>
               </div>
-            )}
-            <object
-              data={pdfUrl}
-              type="application/pdf"
-              className="w-full"
-              style={{ 
-                display: isLoading ? 'none' : 'block',
-                height: '70vh',
-                minHeight: '600px',
-              }}
-              onLoad={handleIframeLoad}
-            >
-              {/* Fallback for browsers that can't display PDF inline */}
-              <div className="flex flex-col items-center justify-center h-[600px] bg-muted/10 p-8 text-center">
-                <FileText className="w-16 h-16 text-primary mb-4" />
-                <p className="text-lg font-medium mb-4">{t('community.pdfCannotDisplay')}</p>
-                <Button
-                  variant="default"
-                  size="lg"
-                  onClick={() => window.open(pdfUrl, '_blank')}
-                  className="h-12 px-6"
-                >
-                  <ExternalLink className="w-5 h-5 mr-2" />
-                  {t('community.openPdfNewTab')}
-                </Button>
-              </div>
-            </object>
-          </div>
+            </div>
+          ) : (
+            <iframe
+              src={googleDocsViewerUrl}
+              className="w-full h-full border-0"
+              title="Navigation PDF"
+            />
+          )}
         </div>
 
         {/* Footer */}
