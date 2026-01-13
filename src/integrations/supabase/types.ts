@@ -72,6 +72,7 @@ export type Database = {
           learning_objectives: string[] | null
           location: string | null
           max_capacity: number | null
+          navigation_pdf_url: string | null
           online_link: string | null
           points_reward: number
           recurrence_type: string | null
@@ -108,6 +109,7 @@ export type Database = {
           learning_objectives?: string[] | null
           location?: string | null
           max_capacity?: number | null
+          navigation_pdf_url?: string | null
           online_link?: string | null
           points_reward?: number
           recurrence_type?: string | null
@@ -144,6 +146,7 @@ export type Database = {
           learning_objectives?: string[] | null
           location?: string | null
           max_capacity?: number | null
+          navigation_pdf_url?: string | null
           online_link?: string | null
           points_reward?: number
           recurrence_type?: string | null
