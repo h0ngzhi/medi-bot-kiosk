@@ -138,6 +138,7 @@ type ProgrammeForm = {
   recurrence_type: string;
   series_mode: 'new' | 'existing';
   selected_series_id: string;
+  navigation_pdf_url: string;
 };
 
 // Helper to convert hours + minutes to duration string for storage
@@ -215,6 +216,7 @@ const emptyForm: ProgrammeForm = {
   recurrence_type: "one_time",
   series_mode: 'new',
   selected_series_id: "",
+  navigation_pdf_url: "",
 };
 
 const AdminProgrammes = () => {
@@ -447,6 +449,7 @@ const AdminProgrammes = () => {
       languages: form.languages ? form.languages.split(',').map(l => l.trim()).filter(Boolean) : null,
       learning_objectives: form.learning_objectives ? form.learning_objectives.split('\n').map(l => l.trim()).filter(Boolean) : null,
       guest_option: form.guest_option || null,
+      navigation_pdf_url: form.is_online ? null : (form.navigation_pdf_url || null),
     };
 
     if (editingId) {
@@ -541,6 +544,7 @@ const AdminProgrammes = () => {
       recurrence_type: programme.recurrence_type || "one_time",
       series_mode: 'new', // When editing, we don't change series
       selected_series_id: programme.series_id || "",
+      navigation_pdf_url: (programme as any).navigation_pdf_url || "",
     });
     setDialogOpen(true);
   };
@@ -1159,6 +1163,20 @@ const AdminProgrammes = () => {
                               ))}
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="navigation_pdf_url">Navigation Card PDF (Optional)</Label>
+                          <Input
+                            id="navigation_pdf_url"
+                            value={form.navigation_pdf_url}
+                            onChange={(e) =>
+                              setForm({ ...form, navigation_pdf_url: e.target.value })
+                            }
+                            placeholder="https://example.com/navigation-card.pdf"
+                          />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            URL to PDF with directions/map for venue. Users can view and print this.
+                          </p>
                         </div>
                       </>
                     )}
