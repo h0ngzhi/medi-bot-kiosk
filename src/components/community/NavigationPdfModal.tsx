@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Printer, ChevronLeft, ChevronRight, Loader2, FileText, ZoomIn, ZoomOut } from 'lucide-react';
+import { X, Printer, Loader2, FileText, ZoomIn, ZoomOut, ExternalLink } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 
@@ -138,17 +138,32 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
                 </div>
               </div>
             )}
-            <iframe
-              ref={iframeRef}
-              src={`${pdfUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-              className="w-full min-h-[600px]"
+            <object
+              data={pdfUrl}
+              type="application/pdf"
+              className="w-full"
               style={{ 
                 display: isLoading ? 'none' : 'block',
                 height: '70vh',
+                minHeight: '600px',
               }}
               onLoad={handleIframeLoad}
-              title="Navigation PDF"
-            />
+            >
+              {/* Fallback for browsers that can't display PDF inline */}
+              <div className="flex flex-col items-center justify-center h-[600px] bg-muted/10 p-8 text-center">
+                <FileText className="w-16 h-16 text-primary mb-4" />
+                <p className="text-lg font-medium mb-4">{t('community.pdfCannotDisplay')}</p>
+                <Button
+                  variant="default"
+                  size="lg"
+                  onClick={() => window.open(pdfUrl, '_blank')}
+                  className="h-12 px-6"
+                >
+                  <ExternalLink className="w-5 h-5 mr-2" />
+                  {t('community.openPdfNewTab')}
+                </Button>
+              </div>
+            </object>
           </div>
         </div>
 
