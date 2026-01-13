@@ -47,7 +47,7 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 gap-0 [&>button]:hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b bg-muted/50">
           <div className="flex items-center gap-3">
