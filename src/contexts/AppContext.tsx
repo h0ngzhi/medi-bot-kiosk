@@ -442,6 +442,10 @@ const translations: Record<Language, Record<string, string>> = {
     'access.voiceOn': 'Voice On',
     'access.voiceOff': 'Voice Off',
     
+    // Session
+    'session.timedOut': 'Session Timed Out',
+    'session.signedOutInactivity': 'You have been signed out due to inactivity.',
+    
     // Common
     'common.back': 'Back',
     'common.next': 'Next',
@@ -853,6 +857,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.collectCertificate': '请从打印机取走您的证书。',
     'profile.equipFailed': '装备徽章失败',
     'profile.alreadyRedeemed': '您已兑换达到最大数量。',
+    
+    // Session
+    'session.timedOut': '会话超时',
+    'session.signedOutInactivity': '由于无操作，您已被登出。',
     
     'access.translate': '翻译',
     'access.voice': '语音指南',
@@ -1270,6 +1278,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.equipFailed': 'Gagal melengkapi pingat',
     'profile.alreadyRedeemed': 'Anda telah menebus kuantiti maksimum.',
     
+    // Session
+    'session.timedOut': 'Sesi Tamat Tempoh',
+    'session.signedOutInactivity': 'Anda telah dilog keluar kerana tidak aktif.',
+    
     'access.translate': 'Terjemah',
     'access.voice': 'Panduan Suara',
     'access.voiceOn': 'Suara Hidup',
@@ -1684,6 +1696,10 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.collectCertificate': 'உங்கள் சான்றிதழை அச்சுப்பொறியிலிருந்து எடுக்கவும்.',
     'profile.equipFailed': 'பதக்கத்தை பொருத்த முடியவில்லை',
     'profile.alreadyRedeemed': 'நீங்கள் ஏற்கனவே அதிகபட்ச அளவை பெற்றுவிட்டீர்கள்.',
+    
+    // Session
+    'session.timedOut': 'அமர்வு காலாவதியானது',
+    'session.signedOutInactivity': 'செயலற்ற நிலையின் காரணமாக நீங்கள் வெளியேற்றப்பட்டீர்கள்.',
     
     'access.translate': 'மொழிபெயர்',
     'access.voice': 'குரல் வழிகாட்டி',

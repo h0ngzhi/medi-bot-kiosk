@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { X, Check } from 'lucide-react';
+import { X, Check, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { useApp } from '@/contexts/AppContext';
@@ -16,7 +16,7 @@ interface VoiceNavigatorProps {
 const translations = {
   en: {
     voiceGuideReady: "Voice Guide Ready",
-    sayWhereToGo: "Say where you want to go",
+    sayWhereToGo: "Say where you want to go, or 'sign out' to exit",
     microphoneError: "Microphone Error",
     allowMicAccess: "Please allow microphone access",
     connectionError: "Connection Error",
@@ -29,7 +29,9 @@ const translations = {
     connecting: "Connecting...",
     goingTo: "Going to",
     youSaid: "You said:",
-    tryExample: 'Try: "Go to community programmes" or "Show me health screenings"',
+    tryExample: 'Try: "Go to community programmes" or "Sign out"',
+    signingOut: "Signing out...",
+    signedOut: "Signed Out",
     pageLabels: {
       'home': 'Home',
       'scan': 'Scan Card',
@@ -45,7 +47,7 @@ const translations = {
   },
   zh: {
     voiceGuideReady: "语音导航已就绪",
-    sayWhereToGo: "请说出您想去的页面",
+    sayWhereToGo: "请说出您想去的页面，或说'退出'登出",
     microphoneError: "麦克风错误",
     allowMicAccess: "请允许麦克风访问",
     connectionError: "连接错误",
@@ -58,7 +60,9 @@ const translations = {
     connecting: "正在连接...",
     goingTo: "前往",
     youSaid: "您说：",
-    tryExample: '试试说："去社区活动" 或 "显示健康检查"',
+    tryExample: '试试说："去社区活动" 或 "退出"',
+    signingOut: "正在退出...",
+    signedOut: "已登出",
     pageLabels: {
       'home': '主页',
       'scan': '扫描卡片',
@@ -74,7 +78,7 @@ const translations = {
   },
   ms: {
     voiceGuideReady: "Panduan Suara Sedia",
-    sayWhereToGo: "Sebut destinasi anda",
+    sayWhereToGo: "Sebut destinasi anda, atau 'keluar' untuk log keluar",
     microphoneError: "Ralat Mikrofon",
     allowMicAccess: "Sila benarkan akses mikrofon",
     connectionError: "Ralat Sambungan",
@@ -87,7 +91,9 @@ const translations = {
     connecting: "Menyambung...",
     goingTo: "Menuju ke",
     youSaid: "Anda berkata:",
-    tryExample: 'Cuba: "Pergi ke program komuniti" atau "Tunjukkan pemeriksaan kesihatan"',
+    tryExample: 'Cuba: "Pergi ke program komuniti" atau "Log keluar"',
+    signingOut: "Melog keluar...",
+    signedOut: "Dilog Keluar",
     pageLabels: {
       'home': 'Laman Utama',
       'scan': 'Imbas Kad',
@@ -103,7 +109,7 @@ const translations = {
   },
   ta: {
     voiceGuideReady: "குரல் வழிகாட்டி தயார்",
-    sayWhereToGo: "எங்கு செல்ல விரும்புகிறீர்கள் என்று சொல்லுங்கள்",
+    sayWhereToGo: "எங்கு செல்ல விரும்புகிறீர்கள் என்று சொல்லுங்கள், அல்லது 'வெளியேறு'",
     microphoneError: "மைக்ரோஃபோன் பிழை",
     allowMicAccess: "மைக்ரோஃபோன் அணுகலை அனுமதிக்கவும்",
     connectionError: "இணைப்பு பிழை",
@@ -116,7 +122,9 @@ const translations = {
     connecting: "இணைக்கிறது...",
     goingTo: "செல்கிறது",
     youSaid: "நீங்கள் சொன்னது:",
-    tryExample: 'முயற்சிக்கவும்: "சமூக நிகழ்ச்சிகளுக்கு செல்" அல்லது "சுகாதார பரிசோதனைகளைக் காட்டு"',
+    tryExample: 'முயற்சிக்கவும்: "சமூக நிகழ்ச்சிகளுக்கு செல்" அல்லது "வெளியேறு"',
+    signingOut: "வெளியேறுகிறது...",
+    signedOut: "வெளியேறியது",
     pageLabels: {
       'home': 'முகப்பு',
       'scan': 'கார்டு ஸ்கேன்',
@@ -135,17 +143,32 @@ const translations = {
 const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { language } = useApp();
+  const { language, setUser } = useApp();
   const t = translations[language];
   
   const [isConnected, setIsConnected] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [commandRecognized, setCommandRecognized] = useState<string | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   
   const wsRef = useRef<WebSocket | null>(null);
   const recorderRef = useRef<AudioRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+
+  const executeSignOut = useCallback(() => {
+    console.log('Executing sign out');
+    setIsSigningOut(true);
+    
+    // Show visual feedback then sign out
+    setTimeout(() => {
+      setUser(null);
+      localStorage.removeItem('kioskUser');
+      setIsSigningOut(false);
+      onClose();
+      navigate('/scan');
+    }, 800);
+  }, [setUser, navigate, onClose]);
 
   const executeNavigation = useCallback((page: string) => {
     const routes: Record<string, string> = {
@@ -200,10 +223,17 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         break;
 
       case 'response.function_call_arguments.done':
-        // Handle navigation tool call - navigate immediately
+        // Handle function calls
         try {
-          const args = JSON.parse(data.arguments);
-          if (args.page) {
+          const functionName = data.name;
+          const args = JSON.parse(data.arguments || '{}');
+          
+          if (functionName === 'sign_out') {
+            executeSignOut();
+          } else if (functionName === 'navigate_to' && args.page) {
+            executeNavigation(args.page);
+          } else if (args.page) {
+            // Fallback for navigate_to without explicit name
             executeNavigation(args.page);
           }
         } catch (e) {
@@ -220,7 +250,7 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
         });
         break;
     }
-  }, [executeNavigation, toast, t.voiceError]);
+  }, [executeNavigation, executeSignOut, toast, t.voiceError]);
 
   const connect = useCallback(async () => {
     try {
@@ -336,8 +366,23 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       {/* Subtle backdrop */}
       <div className="absolute inset-0 bg-background/10" />
       
+      {/* Sign Out Overlay */}
+      {isSigningOut && (
+        <div className="absolute inset-0 flex items-center justify-center bg-destructive/20 backdrop-blur-sm pointer-events-auto animate-in fade-in duration-200">
+          <div className="bg-card rounded-3xl p-10 shadow-2xl border-4 border-destructive flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
+            <div className="w-24 h-24 rounded-full bg-destructive flex items-center justify-center">
+              <LogOut className="w-14 h-14 text-destructive-foreground" strokeWidth={3} />
+            </div>
+            <div className="text-center">
+              <p className="text-xl text-muted-foreground mb-2">{t.signingOut}</p>
+              <p className="text-4xl font-bold text-card-foreground">{t.signedOut}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Command Recognized Overlay - Full Screen Visual Feedback */}
-      {commandRecognized && (
+      {commandRecognized && !isSigningOut && (
         <div className="absolute inset-0 flex items-center justify-center bg-primary/20 backdrop-blur-sm pointer-events-auto animate-in fade-in duration-200">
           <div className="bg-card rounded-3xl p-10 shadow-2xl border-4 border-primary flex flex-col items-center gap-6 animate-in zoom-in-95 duration-300">
             <div className="w-24 h-24 rounded-full bg-primary flex items-center justify-center">
@@ -353,14 +398,16 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
       
       {/* Floating Robot Animation - Bottom Right */}
       <div className="absolute bottom-28 right-6 pointer-events-auto">
-        <div className={`relative transition-all duration-500 ${commandRecognized ? 'scale-110' : isListening ? 'scale-105' : 'scale-100'}`}>
+        <div className={`relative transition-all duration-500 ${commandRecognized || isSigningOut ? 'scale-110' : isListening ? 'scale-105' : 'scale-100'}`}>
           {/* Glow effect behind robot */}
           <div className={`absolute inset-0 rounded-full blur-2xl transition-all duration-300 ${
-            commandRecognized
-              ? 'bg-primary/60 scale-150' 
-              : isListening 
-                ? 'bg-green-500/30 scale-125' 
-                : 'bg-primary/20 scale-100'
+            isSigningOut
+              ? 'bg-destructive/60 scale-150'
+              : commandRecognized
+                ? 'bg-primary/60 scale-150' 
+                : isListening 
+                  ? 'bg-green-500/30 scale-125' 
+                  : 'bg-primary/20 scale-100'
           }`} />
           
           {/* Robot Animation */}
@@ -368,19 +415,21 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
             <Lottie 
               animationData={robotAnimation} 
               loop={true}
-              className={`w-full h-full drop-shadow-2xl ${commandRecognized || isListening ? '' : 'opacity-80'}`}
+              className={`w-full h-full drop-shadow-2xl ${commandRecognized || isListening || isSigningOut ? '' : 'opacity-80'}`}
             />
           </div>
           
           {/* Status indicator ring */}
           <div className={`absolute -inset-3 rounded-full border-4 transition-all duration-300 ${
-            commandRecognized 
-              ? 'border-primary animate-pulse' 
-              : isListening 
-                ? 'border-green-500 animate-pulse' 
-                : isConnected 
-                  ? 'border-primary/30' 
-                  : 'border-muted'
+            isSigningOut
+              ? 'border-destructive animate-pulse'
+              : commandRecognized 
+                ? 'border-primary animate-pulse' 
+                : isListening 
+                  ? 'border-green-500 animate-pulse' 
+                  : isConnected 
+                    ? 'border-primary/30' 
+                    : 'border-muted'
           }`} />
         </div>
       </div>
@@ -392,22 +441,26 @@ const VoiceNavigator = ({ isOpen, onClose }: VoiceNavigatorProps) => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <div className={`w-5 h-5 rounded-full ${
-                commandRecognized 
-                  ? 'bg-primary animate-pulse' 
-                  : isListening 
-                    ? 'bg-green-500 animate-pulse' 
-                    : isConnected 
-                      ? 'bg-primary/60' 
-                      : 'bg-muted-foreground'
+                isSigningOut
+                  ? 'bg-destructive animate-pulse'
+                  : commandRecognized 
+                    ? 'bg-primary animate-pulse' 
+                    : isListening 
+                      ? 'bg-green-500 animate-pulse' 
+                      : isConnected 
+                        ? 'bg-primary/60' 
+                        : 'bg-muted-foreground'
               }`} />
               <span className="text-xl font-semibold text-card-foreground">
-                {commandRecognized 
-                  ? `${t.goingTo} ${t.pageLabels[commandRecognized as keyof typeof t.pageLabels]}...`
-                  : isListening 
-                    ? t.listening
-                    : isConnected 
-                      ? t.readySpeak
-                      : t.connecting}
+                {isSigningOut
+                  ? t.signingOut
+                  : commandRecognized 
+                    ? `${t.goingTo} ${t.pageLabels[commandRecognized as keyof typeof t.pageLabels]}...`
+                    : isListening 
+                      ? t.listening
+                      : isConnected 
+                        ? t.readySpeak
+                        : t.connecting}
               </span>
             </div>
             <Button 
