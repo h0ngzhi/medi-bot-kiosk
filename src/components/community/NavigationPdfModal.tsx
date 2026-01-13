@@ -70,17 +70,7 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
         </div>
 
         {/* Controls */}
-        <div className="flex items-center justify-between px-6 py-3 border-b bg-background">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleOpenInNewTab}
-            className="h-12 px-6"
-          >
-            <ExternalLink className="w-5 h-5 mr-2" />
-            {t('community.openPdfNewTab')}
-          </Button>
-
+        <div className="flex items-center justify-end px-6 py-3 border-b bg-background">
           <Button
             variant="default"
             size="lg"
