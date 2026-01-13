@@ -585,7 +585,9 @@ export default function CommunityProgrammes() {
             event_date: selectedProgramme.event_date,
             location: selectedProgramme.location,
             admin_email: selectedProgramme.admin_email,
-            contact_number: selectedProgramme.contact_number
+            contact_number: selectedProgramme.contact_number,
+            is_online: selectedProgramme.is_online,
+            navigation_pdf_url: selectedProgramme.navigation_pdf_url
           }}
           onSuccess={handleSignupSuccess}
         />

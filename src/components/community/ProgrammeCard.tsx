@@ -60,6 +60,8 @@ export interface Programme {
   // Serial ID and series
   serial_id?: string | null;
   series_id?: string | null;
+  // Navigation PDF for physical events
+  navigation_pdf_url?: string | null;
   // Local state
   isSignedUp?: boolean;
   hasSubmittedFeedback?: boolean;
