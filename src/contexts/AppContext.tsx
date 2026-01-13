@@ -425,6 +425,8 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.vouchers': 'Vouchers',
     'profile.redeemedOn': 'Redeemed on',
     'profile.showToRedeem': 'Show this barcode at the counter to redeem',
+    'profile.registered': 'Registered',
+    'profile.attended': 'Attended',
     
     // Accessibility
     'access.translate': 'Translate',
@@ -833,6 +835,8 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.vouchers': '礼券',
     'profile.redeemedOn': '兑换于',
     'profile.showToRedeem': '在柜台出示此条形码即可兑换',
+    'profile.registered': '已报名',
+    'profile.attended': '已出席',
     
     'access.translate': '翻译',
     'access.voice': '语音指南',
@@ -1239,6 +1243,8 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.vouchers': 'Baucar',
     'profile.redeemedOn': 'Ditebus pada',
     'profile.showToRedeem': 'Tunjukkan kod bar ini di kaunter untuk menebus',
+    'profile.registered': 'Berdaftar',
+    'profile.attended': 'Hadir',
     
     'access.translate': 'Terjemah',
     'access.voice': 'Panduan Suara',
@@ -1644,6 +1650,8 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.vouchers': 'வவுச்சர்கள்',
     'profile.redeemedOn': 'பெற்ற தேதி',
     'profile.showToRedeem': 'பெற்றுக்கொள்ள இந்த பார்கோடை கவுண்டரில் காட்டவும்',
+    'profile.registered': 'பதிவு செய்யப்பட்டது',
+    'profile.attended': 'கலந்து கொண்டது',
     
     'access.translate': 'மொழிபெயர்',
     'access.voice': 'குரல் வழிகாட்டி',
