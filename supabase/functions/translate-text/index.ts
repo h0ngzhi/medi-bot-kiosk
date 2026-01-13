@@ -35,7 +35,7 @@ serve(async (req) => {
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const response = await fetch('https://api.lovable.dev/api/v1/chat', {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${LOVABLE_API_KEY}`,
@@ -55,9 +55,7 @@ If the text is already in ${targetLangName}, just return it as is.`
             role: 'user',
             content: text
           }
-        ],
-        max_tokens: 500,
-        temperature: 0.3
+        ]
       }),
     });
 
