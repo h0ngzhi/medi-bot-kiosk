@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppProvider } from "@/contexts/AppContext";
 import { ProgrammeAdminProvider } from "@/contexts/ProgrammeAdminContext";
 import { PrototypeGate } from "@/components/PrototypeGate";
+import { TtsWrapper } from "@/components/TtsWrapper";
 import IdleScreen from "./pages/IdleScreen";
 import ScanCard from "./pages/ScanCard";
 import LanguageSelection from "./pages/LanguageSelection";
@@ -33,26 +34,28 @@ const App = () => (
           <TooltipProvider>
             <Toaster />
             <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<IdleScreen />} />
-                <Route path="/scan" element={<ScanCard />} />
-                <Route path="/language" element={<LanguageSelection />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/health" element={<HealthScreenings />} />
-                <Route path="/findcare" element={<FindCare />} />
-                <Route path="/community" element={<CommunityProgrammes />} />
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/profile/history" element={<ProfileHistory />} />
-                <Route path="/admin/programmes/login" element={<AdminProgrammesLogin />} />
-                <Route path="/admin/programmes" element={<AdminProgrammes />} />
-                <Route path="/admin/slideshow" element={<AdminSlideshow />} />
-                <Route path="/admin/rewards" element={<AdminRewards />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-              <HealthChatBot />
-              
-            </BrowserRouter>
+            <TtsWrapper>
+              <BrowserRouter>
+                <Routes>
+                  <Route path="/" element={<IdleScreen />} />
+                  <Route path="/scan" element={<ScanCard />} />
+                  <Route path="/language" element={<LanguageSelection />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/health" element={<HealthScreenings />} />
+                  <Route path="/findcare" element={<FindCare />} />
+                  <Route path="/community" element={<CommunityProgrammes />} />
+                  <Route path="/profile" element={<Profile />} />
+                  <Route path="/profile/history" element={<ProfileHistory />} />
+                  <Route path="/admin/programmes/login" element={<AdminProgrammesLogin />} />
+                  <Route path="/admin/programmes" element={<AdminProgrammes />} />
+                  <Route path="/admin/slideshow" element={<AdminSlideshow />} />
+                  <Route path="/admin/rewards" element={<AdminRewards />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+                <HealthChatBot />
+                
+              </BrowserRouter>
+            </TtsWrapper>
           </TooltipProvider>
         </ProgrammeAdminProvider>
       </AppProvider>
