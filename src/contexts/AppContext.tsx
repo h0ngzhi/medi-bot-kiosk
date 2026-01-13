@@ -411,6 +411,9 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.tierUnlocked': 'Tier Unlocked',
     'profile.attendEventsToUnlock': 'Attend {count} events to unlock this tier',
     'profile.noRewardsInTier': 'No rewards available in this tier yet',
+    'profile.vouchers': 'Vouchers',
+    'profile.redeemedOn': 'Redeemed on',
+    'profile.showToRedeem': 'Show this barcode at the counter to redeem',
     
     // Accessibility
     'access.translate': 'Translate',
@@ -805,6 +808,9 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.tierUnlocked': '等级已解锁',
     'profile.attendEventsToUnlock': '参加{count}个活动以解锁此等级',
     'profile.noRewardsInTier': '此等级暂无奖励',
+    'profile.vouchers': '礼券',
+    'profile.redeemedOn': '兑换于',
+    'profile.showToRedeem': '在柜台出示此条形码即可兑换',
     
     'access.translate': '翻译',
     'access.voice': '语音指南',
@@ -1197,6 +1203,9 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.tierUnlocked': 'Tahap Dibuka',
     'profile.attendEventsToUnlock': 'Hadiri {count} acara untuk membuka tahap ini',
     'profile.noRewardsInTier': 'Tiada ganjaran dalam tahap ini lagi',
+    'profile.vouchers': 'Baucar',
+    'profile.redeemedOn': 'Ditebus pada',
+    'profile.showToRedeem': 'Tunjukkan kod bar ini di kaunter untuk menebus',
     
     'access.translate': 'Terjemah',
     'access.voice': 'Panduan Suara',
@@ -1588,6 +1597,9 @@ const translations: Record<Language, Record<string, string>> = {
     'profile.tierUnlocked': 'நிலை திறக்கப்பட்டது',
     'profile.attendEventsToUnlock': 'இந்த நிலையைத் திறக்க {count} நிகழ்வுகளில் கலந்துகொள்ளுங்கள்',
     'profile.noRewardsInTier': 'இந்த நிலையில் இன்னும் வெகுமதிகள் இல்லை',
+    'profile.vouchers': 'வவுச்சர்கள்',
+    'profile.redeemedOn': 'பெற்ற தேதி',
+    'profile.showToRedeem': 'பெற்றுக்கொள்ள இந்த பார்கோடை கவுண்டரில் காட்டவும்',
     
     'access.translate': 'மொழிபெயர்',
     'access.voice': 'குரல் வழிகாட்டி',
