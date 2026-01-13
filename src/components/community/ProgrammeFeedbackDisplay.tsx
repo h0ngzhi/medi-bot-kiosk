@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Star, User, Pencil, Trash2, Loader2, Trophy, Calendar } from 'lucide-react';
+import { Star, User, Pencil, Trash2, Loader2, Trophy, Calendar, Globe } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
@@ -45,11 +45,44 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [userProfiles, setUserProfiles] = useState<Record<string, UserProfileInfo>>({});
+  
+  // Translation state
+  const [translations, setTranslations] = useState<Record<string, string>>({});
+  const [translating, setTranslating] = useState<Record<string, boolean>>({});
+  const [showTranslation, setShowTranslation] = useState<Record<string, boolean>>({});
 
   const getLocalizedTitle = (reward: { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null }) => {
     if (language === 'en') return reward.title;
     const langKey = `title_${language}` as keyof typeof reward;
     return (reward[langKey] as string | null) || reward.title;
+  };
+
+  const translateComment = async (feedbackId: string, text: string) => {
+    // If already translated, just toggle visibility
+    if (translations[feedbackId]) {
+      setShowTranslation(prev => ({ ...prev, [feedbackId]: !prev[feedbackId] }));
+      return;
+    }
+
+    setTranslating(prev => ({ ...prev, [feedbackId]: true }));
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('translate-text', {
+        body: { text, targetLanguage: language }
+      });
+
+      if (error) throw error;
+
+      if (data.translatedText) {
+        setTranslations(prev => ({ ...prev, [feedbackId]: data.translatedText }));
+        setShowTranslation(prev => ({ ...prev, [feedbackId]: true }));
+      }
+    } catch (error) {
+      console.error('Translation error:', error);
+      toast.error(t('community.translationError'));
+    } finally {
+      setTranslating(prev => ({ ...prev, [feedbackId]: false }));
+    }
   };
 
   const fetchFeedbacks = async () => {
@@ -146,6 +179,12 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
     fetchFeedbacks();
   }, [programmeId, seriesId]);
 
+  // Clear translations when language changes
+  useEffect(() => {
+    setTranslations({});
+    setShowTranslation({});
+  }, [language]);
+
   const handleDelete = async (feedbackId: string) => {
     setDeleting(feedbackId);
     try {
@@ -223,6 +262,9 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
         {feedbacks.slice(0, 5).map((feedback) => {
           const isOwner = user?.id === feedback.kiosk_user_id;
           const profile = userProfiles[feedback.kiosk_user_id];
+          const isTranslating = translating[feedback.id];
+          const translatedText = translations[feedback.id];
+          const isShowingTranslation = showTranslation[feedback.id];
           
           return (
             <div key={feedback.id} className="bg-muted/50 rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
@@ -347,11 +389,52 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
                 </div>
               </div>
 
-              {/* Comment */}
+              {/* Comment with Translation */}
               {feedback.comment && (
-                <p className="text-lg text-foreground bg-background/50 rounded-xl p-3 italic">
-                  "{feedback.comment}"
-                </p>
+                <div className="space-y-2">
+                  <p className="text-lg text-foreground bg-background/50 rounded-xl p-3 italic">
+                    "{feedback.comment}"
+                  </p>
+                  
+                  {/* Translation Section */}
+                  <div className="pl-3">
+                    {/* See Translation Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        translateComment(feedback.id, feedback.comment!);
+                      }}
+                      disabled={isTranslating}
+                      className="flex items-center gap-1.5 text-base text-muted-foreground hover:text-primary transition-colors disabled:opacity-50"
+                    >
+                      {isTranslating ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>{t('community.translating')}</span>
+                        </>
+                      ) : (
+                        <>
+                          <Globe className="w-4 h-4" />
+                          <span>
+                            {isShowingTranslation 
+                              ? t('community.hideTranslation')
+                              : t('community.seeTranslation')
+                            }
+                          </span>
+                        </>
+                      )}
+                    </button>
+                    
+                    {/* Translated Text */}
+                    {isShowingTranslation && translatedText && (
+                      <div className="mt-2 bg-primary/5 rounded-xl p-3 border-l-4 border-primary/30">
+                        <p className="text-lg text-foreground italic">
+                          "{translatedText}"
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           );
