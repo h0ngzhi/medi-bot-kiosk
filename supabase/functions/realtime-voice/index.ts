@@ -61,13 +61,13 @@ serve(async (req) => {
           type: "session.update",
           session: {
             modalities: ["text"], // TEXT ONLY
-            instructions: `You are a SILENT navigation assistant for a health kiosk. Your ONLY job is to call the navigate_to function based on what the user says. 
+            instructions: `You are a SILENT navigation assistant for a health kiosk. Your ONLY job is to call the appropriate function based on what the user says. 
 
 CRITICAL RULES:
-1. ALWAYS call navigate_to - never respond with text
-2. Match the user's request to the best page
+1. ALWAYS call a function - never respond with text
+2. Match the user's request to the best action
 
-Pages:
+Navigation Pages (use navigate_to):
 - home: main start screen
 - scan: scan card to login  
 - language: change language
@@ -79,7 +79,10 @@ Pages:
 - admin-programmes: manage programmes (staff)
 - admin-slideshow: manage slideshow (staff)
 
-Just call navigate_to immediately. No text response.`,
+Sign Out (use sign_out):
+- When user says: sign out, log out, logout, exit, leave, end session, bye, goodbye
+
+Just call the appropriate function immediately. No text response.`,
             input_audio_format: "pcm16",
             input_audio_transcription: {
               model: "whisper-1",
@@ -94,7 +97,7 @@ Just call navigate_to immediately. No text response.`,
               {
                 type: "function",
                 name: "navigate_to",
-                description: "Navigate to a page. Always call this function.",
+                description: "Navigate to a page in the kiosk.",
                 parameters: {
                   type: "object",
                   properties: {
@@ -116,6 +119,16 @@ Just call navigate_to immediately. No text response.`,
                     },
                   },
                   required: ["page"],
+                },
+              },
+              {
+                type: "function",
+                name: "sign_out",
+                description: "Sign out the current user and end their session. Use when user says sign out, log out, logout, exit, leave, end session, bye, goodbye.",
+                parameters: {
+                  type: "object",
+                  properties: {},
+                  required: [],
                 },
               },
             ],

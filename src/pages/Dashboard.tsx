@@ -4,6 +4,7 @@ import { useApp } from "@/contexts/AppContext";
 import { Button } from "@/components/ui/button";
 import { AccessibilityBar } from "@/components/AccessibilityBar";
 import { useDebouncedSpeak } from "@/hooks/useDebouncedSpeak";
+import { useInactivityTimeout } from "@/hooks/useInactivityTimeout";
 import { Heart, MapPin, Users, User, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -167,10 +168,14 @@ export default function Dashboard() {
   }, []);
 
   const { handleMouseEnter, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
+  
+  // Auto sign-out after 1 minute of inactivity
+  useInactivityTimeout();
 
   const handleLogout = () => {
     setUser(null);
-    navigate("/");
+    localStorage.removeItem('kioskUser');
+    navigate("/scan");
   };
 
   return (
