@@ -56,6 +56,9 @@ import {
   Eye,
   Crown,
   Lock,
+  Upload,
+  FileText,
+  X,
 } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { AttendanceDialog } from "@/components/admin/AttendanceDialog";
@@ -235,6 +238,7 @@ const AdminProgrammes = () => {
   const [activeTab, setActiveTab] = useState<"upcoming" | "completed">("upcoming");
   const [existingSeries, setExistingSeries] = useState<ExistingSeries[]>([]);
   const [reviewCounts, setReviewCounts] = useState<Record<string, number>>({});
+  const [uploadingPdf, setUploadingPdf] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -1165,17 +1169,97 @@ const AdminProgrammes = () => {
                           </Select>
                         </div>
                         <div>
-                          <Label htmlFor="navigation_pdf_url">Navigation Card PDF (Optional)</Label>
-                          <Input
-                            id="navigation_pdf_url"
-                            value={form.navigation_pdf_url}
-                            onChange={(e) =>
-                              setForm({ ...form, navigation_pdf_url: e.target.value })
-                            }
-                            placeholder="https://example.com/navigation-card.pdf"
-                          />
+                          <Label>Navigation Card PDF (Optional)</Label>
+                          {form.navigation_pdf_url ? (
+                            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                              <FileText className="h-5 w-5 text-primary" />
+                              <span className="flex-1 text-sm truncate">
+                                {form.navigation_pdf_url.split('/').pop()}
+                              </span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setForm({ ...form, navigation_pdf_url: '' })}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="relative">
+                              <Input
+                                id="navigation_pdf_upload"
+                                type="file"
+                                accept=".pdf"
+                                disabled={uploadingPdf}
+                                className="cursor-pointer"
+                                onChange={async (e) => {
+                                  const file = e.target.files?.[0];
+                                  if (!file) return;
+                                  
+                                  if (file.type !== 'application/pdf') {
+                                    toast({
+                                      title: "Invalid file type",
+                                      description: "Please upload a PDF file",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    toast({
+                                      title: "File too large",
+                                      description: "PDF must be less than 10MB",
+                                      variant: "destructive",
+                                    });
+                                    return;
+                                  }
+
+                                  setUploadingPdf(true);
+                                  const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                                  
+                                  const { data, error } = await supabase.storage
+                                    .from('navigation-pdfs')
+                                    .upload(fileName, file, {
+                                      cacheControl: '3600',
+                                      upsert: false,
+                                    });
+
+                                  if (error) {
+                                    toast({
+                                      title: "Upload failed",
+                                      description: error.message,
+                                      variant: "destructive",
+                                    });
+                                    setUploadingPdf(false);
+                                    return;
+                                  }
+
+                                  const { data: urlData } = supabase.storage
+                                    .from('navigation-pdfs')
+                                    .getPublicUrl(data.path);
+
+                                  setForm({ ...form, navigation_pdf_url: urlData.publicUrl });
+                                  setUploadingPdf(false);
+                                  toast({
+                                    title: "PDF uploaded",
+                                    description: "Navigation card uploaded successfully",
+                                  });
+                                  
+                                  // Reset input
+                                  e.target.value = '';
+                                }}
+                              />
+                              {uploadingPdf && (
+                                <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded">
+                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                  <span className="ml-2 text-sm">Uploading...</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
                           <p className="text-xs text-muted-foreground mt-1">
-                            URL to PDF with directions/map for venue. Users can view and print this.
+                            Upload a PDF with directions/map for venue. Users can view and print this.
                           </p>
                         </div>
                       </>
