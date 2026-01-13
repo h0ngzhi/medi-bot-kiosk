@@ -367,6 +367,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.loadingNavCard': 'Loading navigation card...',
     'community.navCardHint': 'Print this card to help you find the venue.',
     'community.viewNavigationCard': 'View Navigation Card',
+    'community.pdfCannotDisplay': 'Cannot display PDF in browser',
+    'community.openPdfNewTab': 'Open PDF in New Tab',
     'common.delete': 'Delete',
     // Profile
     'profile.title': 'My Profile',
@@ -773,6 +775,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.loadingNavCard': '正在加载导航卡...',
     'community.navCardHint': '打印此卡以帮助您找到场地。',
     'community.viewNavigationCard': '查看导航卡',
+    'community.pdfCannotDisplay': '无法在浏览器中显示PDF',
+    'community.openPdfNewTab': '在新标签页中打开PDF',
     'common.delete': '删除',
     
     'profile.title': '我的资料',
@@ -1177,6 +1181,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.loadingNavCard': 'Memuatkan kad navigasi...',
     'community.navCardHint': 'Cetak kad ini untuk membantu anda mencari lokasi.',
     'community.viewNavigationCard': 'Lihat Kad Navigasi',
+    'community.pdfCannotDisplay': 'Tidak dapat memaparkan PDF dalam pelayar',
+    'community.openPdfNewTab': 'Buka PDF dalam Tab Baru',
     'common.delete': 'Padam',
     
     'profile.title': 'Profil Saya',
@@ -1581,6 +1587,8 @@ const translations: Record<Language, Record<string, string>> = {
     'community.loadingNavCard': 'வழிசெலுத்தல் அட்டையை ஏற்றுகிறது...',
     'community.navCardHint': 'இந்த அட்டையை அச்சிட்டு இடத்தைக் கண்டறியுங்கள்.',
     'community.viewNavigationCard': 'வழிசெலுத்தல் அட்டையைக் காண்க',
+    'community.pdfCannotDisplay': 'உலாவியில் PDF ஐக் காட்ட இயலவில்லை',
+    'community.openPdfNewTab': 'புதிய தாவலில் PDF ஐ திற',
     'common.delete': 'நீக்கு',
     'profile.title': 'எனது சுயவிவரம்',
     'profile.chas': 'CHAS அட்டை வகை',
