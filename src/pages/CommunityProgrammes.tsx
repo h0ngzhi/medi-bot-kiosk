@@ -8,6 +8,7 @@ import { ProgrammeSignupForm } from '@/components/community/ProgrammeSignupForm'
 import { ProgrammeFeedbackForm } from '@/components/community/ProgrammeFeedbackForm';
 import { ProgrammeFeedbackDisplay } from '@/components/community/ProgrammeFeedbackDisplay';
 import { ProgrammeDetailModal } from '@/components/community/ProgrammeDetailModal';
+import { NavigationPdfModal } from '@/components/community/NavigationPdfModal';
 import { useDebouncedSpeak } from '@/hooks/useDebouncedSpeak';
 import { supabase } from '@/integrations/supabase/client';
 import { isRegistrationOpen, getProgrammeStatus } from '@/utils/programmeUtils';
@@ -28,7 +29,8 @@ import {
   CheckCircle,
   Star,
   ClipboardList,
-  History
+  History,
+  FileText
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -62,6 +64,8 @@ export default function CommunityProgrammes() {
   const [feedbackRefreshKey, setFeedbackRefreshKey] = useState(0);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'completed'>('all');
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [pdfProgramme, setPdfProgramme] = useState<Programme | null>(null);
 
   // Check if current user is admin
   useEffect(() => {
@@ -423,18 +427,36 @@ export default function CommunityProgrammes() {
                             </p>
                           )}
                         </div>
-                        <Button
-                          variant="outline"
-                          size="lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleCancelParticipation(programme);
-                          }}
-                          className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground h-12 px-4"
-                        >
-                          <X className="w-5 h-5 mr-2" />
-                          {t('community.cancel')}
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          {/* View Navigation Card button - only for physical programmes with PDF */}
+                          {!programme.is_online && programme.navigation_pdf_url && (
+                            <Button
+                              variant="outline"
+                              size="lg"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setPdfProgramme(programme);
+                                setShowPdfModal(true);
+                              }}
+                              className="h-12 px-4"
+                            >
+                              <FileText className="w-5 h-5 mr-2" />
+                              {t('community.viewNavigationCard')}
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleCancelParticipation(programme);
+                            }}
+                            className="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground h-12 px-4"
+                          >
+                            <X className="w-5 h-5 mr-2" />
+                            {t('community.cancel')}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -618,6 +640,19 @@ export default function CommunityProgrammes() {
         onFeedback={handleFeedback}
         onEditFeedback={selectedProgramme ? (feedback) => handleEditFeedback(feedback, selectedProgramme) : undefined}
       />
+
+      {/* Navigation PDF modal */}
+      {pdfProgramme && pdfProgramme.navigation_pdf_url && (
+        <NavigationPdfModal
+          isOpen={showPdfModal}
+          onClose={() => {
+            setShowPdfModal(false);
+            setPdfProgramme(null);
+          }}
+          pdfUrl={pdfProgramme.navigation_pdf_url}
+          programmeTitle={pdfProgramme.title}
+        />
+      )}
 
       <AccessibilityBar />
     </div>
