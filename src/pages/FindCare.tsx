@@ -636,18 +636,18 @@ export default function FindCare() {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+      <main className="flex-1 overflow-hidden min-h-0">
         {isLoading ? (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="h-full flex items-center justify-center">
             <div className="text-center">
               <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto mb-4" />
               <p className="text-muted-foreground">{t("findcare.loadingClinics")}</p>
             </div>
           </div>
         ) : viewMode === "map" ? (
-          <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
-            {/* Map container - needs explicit height for Leaflet */}
-            <div className="flex-1 relative" style={{ minHeight: "300px" }}>
+          <div className="h-full grid grid-cols-1 lg:grid-cols-[1fr_320px] xl:grid-cols-[1fr_384px]">
+            {/* Map container */}
+            <div className="relative h-[50vh] lg:h-full">
               <ClinicMap
                 clinics={filteredClinics}
                 userLocation={userLocation}
@@ -663,7 +663,7 @@ export default function FindCare() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="absolute top-2 right-2 lg:top-4 lg:right-4 shadow-lg z-10"
+                  className="absolute top-2 right-2 lg:top-4 lg:right-4 shadow-lg z-[1000]"
                   onClick={requestLocation}
                   disabled={isLocating}
                 >
@@ -676,26 +676,20 @@ export default function FindCare() {
                 </Button>
               )}
               
-              {/* Legend with CCN labels - responsive positioning */}
-              <div className="absolute bottom-2 left-2 lg:bottom-4 lg:left-4 bg-card/95 backdrop-blur-sm p-2 lg:p-4 rounded-xl shadow-lg text-xs lg:text-sm space-y-1 lg:space-y-2 max-w-[180px] lg:max-w-none">
+              {/* Legend with CCN labels */}
+              <div className="absolute bottom-2 left-2 lg:bottom-4 lg:left-4 bg-card/95 backdrop-blur-sm p-2 lg:p-4 rounded-xl shadow-lg text-xs lg:text-sm space-y-1 lg:space-y-2 max-w-[180px] lg:max-w-none z-[1000]">
                 <div className="font-bold text-foreground mb-1 lg:mb-3">{t("findcare.clinicTypes")}</div>
                 <div className="flex items-center gap-2 lg:gap-3">
                   <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: clinicColors.gp }}></div>
-                  <div>
-                    <span className="font-medium">{t("findcare.gpLabel")}</span>
-                  </div>
+                  <span className="font-medium">{t("findcare.gpLabel")}</span>
                 </div>
                 <div className="flex items-center gap-2 lg:gap-3">
                   <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: clinicColors.polyclinic }}></div>
-                  <div>
-                    <span className="font-medium">{t("findcare.polyclinicLabel")}</span>
-                  </div>
+                  <span className="font-medium">{t("findcare.polyclinicLabel")}</span>
                 </div>
                 <div className="flex items-center gap-2 lg:gap-3">
                   <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: clinicColors.hospital }}></div>
-                  <div>
-                    <span className="font-medium">{t("findcare.hospitalLabel")}</span>
-                  </div>
+                  <span className="font-medium">{t("findcare.hospitalLabel")}</span>
                 </div>
                 {userLocation && (
                   <div className="flex items-center gap-2 lg:gap-3 pt-1 lg:pt-2 border-t mt-1 lg:mt-2">
@@ -707,9 +701,9 @@ export default function FindCare() {
               </div>
             </div>
 
-            {/* Side panel - responsive width */}
-            <div className="w-full lg:w-80 xl:w-96 bg-card border-t lg:border-t-0 lg:border-l flex flex-col overflow-hidden max-h-[40vh] lg:max-h-none">
-              <div className="p-3 border-b bg-muted/50">
+            {/* Side panel */}
+            <div className="bg-card border-t lg:border-t-0 lg:border-l flex flex-col overflow-hidden h-[50vh] lg:h-full">
+              <div className="p-3 border-b bg-muted/50 flex-shrink-0">
                 <h2 className="font-semibold text-foreground text-sm lg:text-base">
                   {t("findcare.nearbyClinics")}
                   {distanceFilter && <span className="text-muted-foreground font-normal"> ({t("findcare.within")} {distanceFilter} {t("findcare.km")})</span>}
@@ -728,7 +722,7 @@ export default function FindCare() {
           </div>
         ) : (
           /* List view */
-          <div className="flex-1 overflow-auto p-4">
+          <div className="h-full overflow-auto p-4">
             <div className="max-w-2xl mx-auto">
               <ClinicListPanel
                 clinics={filteredClinics.slice(0, 100)}
