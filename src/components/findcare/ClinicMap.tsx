@@ -361,11 +361,28 @@ export function ClinicMap({
     };
   }, [visibleClinics, onClinicSelect, onShowPhone, onViewHours, t]);
 
+  // Handle map resize when container size changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapRef.current) {
+        mapRef.current.invalidateSize();
+      }
+    });
+    
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    
+    return () => resizeObserver.disconnect();
+  }, []);
+
   return (
     <div 
       ref={containerRef} 
       className="w-full h-full rounded-xl"
-      style={{ minHeight: "400px", zIndex: 0 }}
+      style={{ minHeight: "250px", zIndex: 0 }}
     />
   );
 }

@@ -636,7 +636,7 @@ export default function FindCare() {
       </div>
 
       {/* Main content */}
-      <main className="flex-1 flex overflow-hidden">
+      <main className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
         {isLoading ? (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -645,9 +645,9 @@ export default function FindCare() {
             </div>
           </div>
         ) : viewMode === "map" ? (
-          <div className="flex-1 flex">
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0">
             {/* Map */}
-            <div className="flex-1 relative">
+            <div className="flex-1 relative min-h-[300px] lg:min-h-0">
               <ClinicMap
                 clinics={filteredClinics}
                 userLocation={userLocation}
@@ -663,7 +663,7 @@ export default function FindCare() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="absolute top-4 right-4 shadow-lg z-10"
+                  className="absolute top-2 right-2 lg:top-4 lg:right-4 shadow-lg z-10"
                   onClick={requestLocation}
                   disabled={isLocating}
                 >
@@ -672,45 +672,45 @@ export default function FindCare() {
                   ) : (
                     <Locate className="w-4 h-4" />
                   )}
-                  <span className="ml-2">{t("findcare.recenter")}</span>
+                  <span className="ml-2 hidden sm:inline">{t("findcare.recenter")}</span>
                 </Button>
               )}
               
-              {/* Legend with CCN labels */}
-              <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm p-4 rounded-xl shadow-lg text-sm space-y-2">
-                <div className="font-bold text-foreground mb-3">{t("findcare.clinicTypes")}</div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.gp }}></div>
+              {/* Legend with CCN labels - responsive positioning */}
+              <div className="absolute bottom-2 left-2 lg:bottom-4 lg:left-4 bg-card/95 backdrop-blur-sm p-2 lg:p-4 rounded-xl shadow-lg text-xs lg:text-sm space-y-1 lg:space-y-2 max-w-[180px] lg:max-w-none">
+                <div className="font-bold text-foreground mb-1 lg:mb-3">{t("findcare.clinicTypes")}</div>
+                <div className="flex items-center gap-2 lg:gap-3">
+                  <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: clinicColors.gp }}></div>
                   <div>
                     <span className="font-medium">{t("findcare.gpLabel")}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.polyclinic }}></div>
+                <div className="flex items-center gap-2 lg:gap-3">
+                  <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: clinicColors.polyclinic }}></div>
                   <div>
                     <span className="font-medium">{t("findcare.polyclinicLabel")}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-4 h-4 rounded-full" style={{ backgroundColor: clinicColors.hospital }}></div>
+                <div className="flex items-center gap-2 lg:gap-3">
+                  <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: clinicColors.hospital }}></div>
                   <div>
                     <span className="font-medium">{t("findcare.hospitalLabel")}</span>
                   </div>
                 </div>
                 {userLocation && (
-                  <div className="flex items-center gap-3 pt-2 border-t mt-2">
-                    <div className="w-4 h-4 rounded-full bg-blue-500"></div>
+                  <div className="flex items-center gap-2 lg:gap-3 pt-1 lg:pt-2 border-t mt-1 lg:mt-2">
+                    <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full bg-blue-500 flex-shrink-0"></div>
                     <span className="font-medium">{t("findcare.yourLocation")}</span>
                   </div>
                 )}
-                <p className="text-xs text-muted-foreground pt-2 border-t mt-2">{t("findcare.partOfCommunity")}</p>
+                <p className="text-[10px] lg:text-xs text-muted-foreground pt-1 lg:pt-2 border-t mt-1 lg:mt-2 hidden sm:block">{t("findcare.partOfCommunity")}</p>
               </div>
             </div>
 
-            {/* Side panel */}
-            <div className="w-96 bg-card border-l flex flex-col overflow-hidden">
+            {/* Side panel - responsive width */}
+            <div className="w-full lg:w-80 xl:w-96 bg-card border-t lg:border-t-0 lg:border-l flex flex-col overflow-hidden max-h-[40vh] lg:max-h-none">
               <div className="p-3 border-b bg-muted/50">
-                <h2 className="font-semibold text-foreground">
+                <h2 className="font-semibold text-foreground text-sm lg:text-base">
                   {t("findcare.nearbyClinics")}
                   {distanceFilter && <span className="text-muted-foreground font-normal"> ({t("findcare.within")} {distanceFilter} {t("findcare.km")})</span>}
                 </h2>
