@@ -645,9 +645,9 @@ export default function FindCare() {
             </div>
           </div>
         ) : viewMode === "map" ? (
-          <div className="flex-1 flex flex-col lg:flex-row min-h-0">
-            {/* Map */}
-            <div className="flex-1 relative min-h-[300px] lg:min-h-0">
+          <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
+            {/* Map container - needs explicit height for Leaflet */}
+            <div className="flex-1 relative" style={{ minHeight: "300px" }}>
               <ClinicMap
                 clinics={filteredClinics}
                 userLocation={userLocation}
