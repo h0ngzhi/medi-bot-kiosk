@@ -124,6 +124,9 @@ export type Database = {
           location: string | null
           max_capacity: number | null
           navigation_pdf_url: string | null
+          navigation_pdf_url_ms: string | null
+          navigation_pdf_url_ta: string | null
+          navigation_pdf_url_zh: string | null
           online_link: string | null
           points_reward: number
           recurrence_type: string | null
@@ -161,6 +164,9 @@ export type Database = {
           location?: string | null
           max_capacity?: number | null
           navigation_pdf_url?: string | null
+          navigation_pdf_url_ms?: string | null
+          navigation_pdf_url_ta?: string | null
+          navigation_pdf_url_zh?: string | null
           online_link?: string | null
           points_reward?: number
           recurrence_type?: string | null
@@ -198,6 +204,9 @@ export type Database = {
           location?: string | null
           max_capacity?: number | null
           navigation_pdf_url?: string | null
+          navigation_pdf_url_ms?: string | null
+          navigation_pdf_url_ta?: string | null
+          navigation_pdf_url_zh?: string | null
           online_link?: string | null
           points_reward?: number
           recurrence_type?: string | null

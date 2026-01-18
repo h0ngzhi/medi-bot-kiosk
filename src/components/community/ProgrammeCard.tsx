@@ -60,11 +60,31 @@ export interface Programme {
   // Serial ID and series
   serial_id?: string | null;
   series_id?: string | null;
-  // Navigation PDF for physical events
+  // Navigation PDF for physical events (multilingual)
   navigation_pdf_url?: string | null;
+  navigation_pdf_url_zh?: string | null;
+  navigation_pdf_url_ms?: string | null;
+  navigation_pdf_url_ta?: string | null;
   // Local state
   isSignedUp?: boolean;
   hasSubmittedFeedback?: boolean;
+}
+
+// Helper to get the navigation PDF URL based on user's language
+export function getNavigationPdfUrl(
+  programme: Programme,
+  language: string
+): string | null {
+  switch (language) {
+    case 'zh':
+      return programme.navigation_pdf_url_zh || programme.navigation_pdf_url || null;
+    case 'ms':
+      return programme.navigation_pdf_url_ms || programme.navigation_pdf_url || null;
+    case 'ta':
+      return programme.navigation_pdf_url_ta || programme.navigation_pdf_url || null;
+    default:
+      return programme.navigation_pdf_url || null;
+  }
 }
 
 interface ProgrammeCardProps {
