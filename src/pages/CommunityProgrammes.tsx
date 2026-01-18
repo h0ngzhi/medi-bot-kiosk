@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import { AccessibilityBar } from '@/components/AccessibilityBar';
-import { ProgrammeCard, Programme } from '@/components/community/ProgrammeCard';
+import { ProgrammeCard, Programme, getNavigationPdfUrl } from '@/components/community/ProgrammeCard';
 import { ProgrammeSignupForm } from '@/components/community/ProgrammeSignupForm';
 import { ProgrammeFeedbackForm } from '@/components/community/ProgrammeFeedbackForm';
 import { ProgrammeFeedbackDisplay } from '@/components/community/ProgrammeFeedbackDisplay';
@@ -428,8 +428,8 @@ export default function CommunityProgrammes() {
                           )}
                         </div>
                         <div className="flex flex-col gap-2">
-                          {/* View Navigation Card button - only for physical programmes with PDF */}
-                          {!programme.is_online && programme.navigation_pdf_url && (
+                          {/* View Navigation Card button - only for physical programmes with PDF in user's language */}
+                          {!programme.is_online && getNavigationPdfUrl(programme, language) && (
                             <Button
                               variant="outline"
                               size="lg"
@@ -642,14 +642,14 @@ export default function CommunityProgrammes() {
       />
 
       {/* Navigation PDF modal */}
-      {pdfProgramme && pdfProgramme.navigation_pdf_url && (
+      {pdfProgramme && getNavigationPdfUrl(pdfProgramme, language) && (
         <NavigationPdfModal
           isOpen={showPdfModal}
           onClose={() => {
             setShowPdfModal(false);
             setPdfProgramme(null);
           }}
-          pdfUrl={pdfProgramme.navigation_pdf_url}
+          pdfUrl={getNavigationPdfUrl(pdfProgramme, language)!}
           programmeTitle={pdfProgramme.title}
         />
       )}

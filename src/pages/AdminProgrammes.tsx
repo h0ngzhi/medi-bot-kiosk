@@ -142,6 +142,9 @@ type ProgrammeForm = {
   series_mode: 'new' | 'existing';
   selected_series_id: string;
   navigation_pdf_url: string;
+  navigation_pdf_url_zh: string;
+  navigation_pdf_url_ms: string;
+  navigation_pdf_url_ta: string;
 };
 
 // Helper to convert hours + minutes to duration string for storage
@@ -220,6 +223,9 @@ const emptyForm: ProgrammeForm = {
   series_mode: 'new',
   selected_series_id: "",
   navigation_pdf_url: "",
+  navigation_pdf_url_zh: "",
+  navigation_pdf_url_ms: "",
+  navigation_pdf_url_ta: "",
 };
 
 const AdminProgrammes = () => {
@@ -454,6 +460,9 @@ const AdminProgrammes = () => {
       learning_objectives: form.learning_objectives ? form.learning_objectives.split('\n').map(l => l.trim()).filter(Boolean) : null,
       guest_option: form.guest_option || null,
       navigation_pdf_url: form.is_online ? null : (form.navigation_pdf_url || null),
+      navigation_pdf_url_zh: form.is_online ? null : (form.navigation_pdf_url_zh || null),
+      navigation_pdf_url_ms: form.is_online ? null : (form.navigation_pdf_url_ms || null),
+      navigation_pdf_url_ta: form.is_online ? null : (form.navigation_pdf_url_ta || null),
     };
 
     if (editingId) {
@@ -549,6 +558,9 @@ const AdminProgrammes = () => {
       series_mode: 'new', // When editing, we don't change series
       selected_series_id: programme.series_id || "",
       navigation_pdf_url: (programme as any).navigation_pdf_url || "",
+      navigation_pdf_url_zh: (programme as any).navigation_pdf_url_zh || "",
+      navigation_pdf_url_ms: (programme as any).navigation_pdf_url_ms || "",
+      navigation_pdf_url_ta: (programme as any).navigation_pdf_url_ta || "",
     });
     setDialogOpen(true);
   };
@@ -1176,99 +1188,267 @@ const AdminProgrammes = () => {
                             </SelectContent>
                           </Select>
                         </div>
-                        <div>
-                          <Label>Navigation Card PDF (Optional)</Label>
-                          {form.navigation_pdf_url ? (
-                            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                              <FileText className="h-5 w-5 text-primary" />
-                              <span className="flex-1 text-sm truncate">
-                                {form.navigation_pdf_url.split('/').pop()}
-                              </span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setForm({ ...form, navigation_pdf_url: '' })}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <div className="relative">
-                              <Input
-                                id="navigation_pdf_upload"
-                                type="file"
-                                accept=".pdf"
-                                disabled={uploadingPdf}
-                                className="cursor-pointer"
-                                onChange={async (e) => {
-                                  const file = e.target.files?.[0];
-                                  if (!file) return;
-                                  
-                                  if (file.type !== 'application/pdf') {
-                                    toast({
-                                      title: "Invalid file type",
-                                      description: "Please upload a PDF file",
-                                      variant: "destructive",
-                                    });
-                                    return;
-                                  }
+                        <div className="space-y-3">
+                          <Label>Navigation Card PDFs (Optional - All Languages)</Label>
+                          <p className="text-xs text-muted-foreground">
+                            Upload PDF navigation cards for each language. Users will see the PDF matching their selected language.
+                          </p>
+                          <Tabs defaultValue="en" className="w-full">
+                            <TabsList className="grid w-full grid-cols-4 h-10">
+                              <TabsTrigger value="en" className="text-xs">🇬🇧 EN</TabsTrigger>
+                              <TabsTrigger value="zh" className="text-xs">🇨🇳 中文</TabsTrigger>
+                              <TabsTrigger value="ms" className="text-xs">🇲🇾 MS</TabsTrigger>
+                              <TabsTrigger value="ta" className="text-xs">🇮🇳 TA</TabsTrigger>
+                            </TabsList>
+                            
+                            {/* English PDF */}
+                            <TabsContent value="en" className="mt-3">
+                              {form.navigation_pdf_url ? (
+                                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                                  <FileText className="h-5 w-5 text-primary" />
+                                  <span className="flex-1 text-sm truncate">
+                                    {form.navigation_pdf_url.split('/').pop()}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setForm({ ...form, navigation_pdf_url: '' })}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <Input
+                                    type="file"
+                                    accept=".pdf"
+                                    disabled={uploadingPdf}
+                                    className="cursor-pointer"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      
+                                      if (file.type !== 'application/pdf') {
+                                        toast({ title: "Invalid file type", description: "Please upload a PDF file", variant: "destructive" });
+                                        return;
+                                      }
+                                      if (file.size > 10 * 1024 * 1024) {
+                                        toast({ title: "File too large", description: "PDF must be less than 10MB", variant: "destructive" });
+                                        return;
+                                      }
 
-                                  if (file.size > 10 * 1024 * 1024) {
-                                    toast({
-                                      title: "File too large",
-                                      description: "PDF must be less than 10MB",
-                                      variant: "destructive",
-                                    });
-                                    return;
-                                  }
-
-                                  setUploadingPdf(true);
-                                  const fileName = `${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
-                                  
-                                  const { data, error } = await supabase.storage
-                                    .from('navigation-pdfs')
-                                    .upload(fileName, file, {
-                                      cacheControl: '3600',
-                                      upsert: false,
-                                    });
-
-                                  if (error) {
-                                    toast({
-                                      title: "Upload failed",
-                                      description: error.message,
-                                      variant: "destructive",
-                                    });
-                                    setUploadingPdf(false);
-                                    return;
-                                  }
-
-                                  const { data: urlData } = supabase.storage
-                                    .from('navigation-pdfs')
-                                    .getPublicUrl(data.path);
-
-                                  setForm({ ...form, navigation_pdf_url: urlData.publicUrl });
-                                  setUploadingPdf(false);
-                                  toast({
-                                    title: "PDF uploaded",
-                                    description: "Navigation card uploaded successfully",
-                                  });
-                                  
-                                  // Reset input
-                                  e.target.value = '';
-                                }}
-                              />
-                              {uploadingPdf && (
-                                <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded">
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
-                                  <span className="ml-2 text-sm">Uploading...</span>
+                                      setUploadingPdf(true);
+                                      const fileName = `en-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                                      const { data, error } = await supabase.storage.from('navigation-pdfs').upload(fileName, file, { cacheControl: '3600', upsert: false });
+                                      if (error) {
+                                        toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+                                        setUploadingPdf(false);
+                                        return;
+                                      }
+                                      const { data: urlData } = supabase.storage.from('navigation-pdfs').getPublicUrl(data.path);
+                                      setForm({ ...form, navigation_pdf_url: urlData.publicUrl });
+                                      setUploadingPdf(false);
+                                      toast({ title: "PDF uploaded", description: "English navigation card uploaded" });
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  {uploadingPdf && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded">
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                      <span className="ml-2 text-sm">Uploading...</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
-                            </div>
-                          )}
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Upload a PDF with directions/map for venue. Users can view and print this.
-                          </p>
+                            </TabsContent>
+                            
+                            {/* Chinese PDF */}
+                            <TabsContent value="zh" className="mt-3">
+                              {form.navigation_pdf_url_zh ? (
+                                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                                  <FileText className="h-5 w-5 text-primary" />
+                                  <span className="flex-1 text-sm truncate">
+                                    {form.navigation_pdf_url_zh.split('/').pop()}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setForm({ ...form, navigation_pdf_url_zh: '' })}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <Input
+                                    type="file"
+                                    accept=".pdf"
+                                    disabled={uploadingPdf}
+                                    className="cursor-pointer"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      
+                                      if (file.type !== 'application/pdf') {
+                                        toast({ title: "Invalid file type", description: "Please upload a PDF file", variant: "destructive" });
+                                        return;
+                                      }
+                                      if (file.size > 10 * 1024 * 1024) {
+                                        toast({ title: "File too large", description: "PDF must be less than 10MB", variant: "destructive" });
+                                        return;
+                                      }
+
+                                      setUploadingPdf(true);
+                                      const fileName = `zh-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                                      const { data, error } = await supabase.storage.from('navigation-pdfs').upload(fileName, file, { cacheControl: '3600', upsert: false });
+                                      if (error) {
+                                        toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+                                        setUploadingPdf(false);
+                                        return;
+                                      }
+                                      const { data: urlData } = supabase.storage.from('navigation-pdfs').getPublicUrl(data.path);
+                                      setForm({ ...form, navigation_pdf_url_zh: urlData.publicUrl });
+                                      setUploadingPdf(false);
+                                      toast({ title: "PDF uploaded", description: "Chinese navigation card uploaded" });
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  {uploadingPdf && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded">
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                      <span className="ml-2 text-sm">Uploading...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </TabsContent>
+                            
+                            {/* Malay PDF */}
+                            <TabsContent value="ms" className="mt-3">
+                              {form.navigation_pdf_url_ms ? (
+                                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                                  <FileText className="h-5 w-5 text-primary" />
+                                  <span className="flex-1 text-sm truncate">
+                                    {form.navigation_pdf_url_ms.split('/').pop()}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setForm({ ...form, navigation_pdf_url_ms: '' })}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <Input
+                                    type="file"
+                                    accept=".pdf"
+                                    disabled={uploadingPdf}
+                                    className="cursor-pointer"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      
+                                      if (file.type !== 'application/pdf') {
+                                        toast({ title: "Invalid file type", description: "Please upload a PDF file", variant: "destructive" });
+                                        return;
+                                      }
+                                      if (file.size > 10 * 1024 * 1024) {
+                                        toast({ title: "File too large", description: "PDF must be less than 10MB", variant: "destructive" });
+                                        return;
+                                      }
+
+                                      setUploadingPdf(true);
+                                      const fileName = `ms-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                                      const { data, error } = await supabase.storage.from('navigation-pdfs').upload(fileName, file, { cacheControl: '3600', upsert: false });
+                                      if (error) {
+                                        toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+                                        setUploadingPdf(false);
+                                        return;
+                                      }
+                                      const { data: urlData } = supabase.storage.from('navigation-pdfs').getPublicUrl(data.path);
+                                      setForm({ ...form, navigation_pdf_url_ms: urlData.publicUrl });
+                                      setUploadingPdf(false);
+                                      toast({ title: "PDF uploaded", description: "Malay navigation card uploaded" });
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  {uploadingPdf && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded">
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                      <span className="ml-2 text-sm">Uploading...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </TabsContent>
+                            
+                            {/* Tamil PDF */}
+                            <TabsContent value="ta" className="mt-3">
+                              {form.navigation_pdf_url_ta ? (
+                                <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                                  <FileText className="h-5 w-5 text-primary" />
+                                  <span className="flex-1 text-sm truncate">
+                                    {form.navigation_pdf_url_ta.split('/').pop()}
+                                  </span>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setForm({ ...form, navigation_pdf_url_ta: '' })}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="relative">
+                                  <Input
+                                    type="file"
+                                    accept=".pdf"
+                                    disabled={uploadingPdf}
+                                    className="cursor-pointer"
+                                    onChange={async (e) => {
+                                      const file = e.target.files?.[0];
+                                      if (!file) return;
+                                      
+                                      if (file.type !== 'application/pdf') {
+                                        toast({ title: "Invalid file type", description: "Please upload a PDF file", variant: "destructive" });
+                                        return;
+                                      }
+                                      if (file.size > 10 * 1024 * 1024) {
+                                        toast({ title: "File too large", description: "PDF must be less than 10MB", variant: "destructive" });
+                                        return;
+                                      }
+
+                                      setUploadingPdf(true);
+                                      const fileName = `ta-${Date.now()}-${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                                      const { data, error } = await supabase.storage.from('navigation-pdfs').upload(fileName, file, { cacheControl: '3600', upsert: false });
+                                      if (error) {
+                                        toast({ title: "Upload failed", description: error.message, variant: "destructive" });
+                                        setUploadingPdf(false);
+                                        return;
+                                      }
+                                      const { data: urlData } = supabase.storage.from('navigation-pdfs').getPublicUrl(data.path);
+                                      setForm({ ...form, navigation_pdf_url_ta: urlData.publicUrl });
+                                      setUploadingPdf(false);
+                                      toast({ title: "PDF uploaded", description: "Tamil navigation card uploaded" });
+                                      e.target.value = '';
+                                    }}
+                                  />
+                                  {uploadingPdf && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-background/80 rounded">
+                                      <RefreshCw className="h-4 w-4 animate-spin" />
+                                      <span className="ml-2 text-sm">Uploading...</span>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </TabsContent>
+                          </Tabs>
                         </div>
                       </>
                     )}
