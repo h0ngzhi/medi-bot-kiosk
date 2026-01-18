@@ -17,6 +17,7 @@ import CommunityProgrammes from "./pages/CommunityProgrammes";
 import Profile from "./pages/Profile";
 import ProfileHistory from "./pages/ProfileHistory";
 import NotFound from "./pages/NotFound";
+import Admin from "./pages/Admin";
 import AdminProgrammes from "./pages/AdminProgrammes";
 import AdminProgrammesLogin from "./pages/AdminProgrammesLogin";
 import AdminAccountManagement from "./pages/AdminAccountManagement";
@@ -48,6 +49,7 @@ const App = () => (
                   <Route path="/community" element={<CommunityProgrammes />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/profile/history" element={<ProfileHistory />} />
+                  <Route path="/admin" element={<Admin />} />
                   <Route path="/admin/programmes/login" element={<AdminProgrammesLogin />} />
                   <Route path="/admin/programmes" element={<AdminProgrammes />} />
                   <Route path="/admin/programmes/accounts" element={<AdminAccountManagement />} />

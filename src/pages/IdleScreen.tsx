@@ -166,7 +166,7 @@ export default function IdleScreen() {
       <button
         onClick={(e) => {
           e.stopPropagation();
-          navigate('/admin/slideshow');
+          navigate('/admin');
         }}
         className="absolute bottom-4 right-4 text-xs text-muted-foreground/50 hover:text-muted-foreground transition-colors"
       >
