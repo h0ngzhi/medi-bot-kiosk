@@ -8,6 +8,7 @@ import {
   Phone,
   MapPin,
   Clock,
+  Eye,
 } from "lucide-react";
 import type { MapClinic } from "./ClinicMap";
 
@@ -16,6 +17,7 @@ interface ClinicListPanelProps {
   selectedClinic: MapClinic | null;
   onClinicSelect: (clinic: MapClinic) => void;
   onShowPhone: (phone: string, clinicName: string) => void;
+  onClinicDetailOpen: (clinic: MapClinic) => void;
   t: (key: string) => string;
   handleMouseEnter: (text: string) => void;
   handleMouseLeave: () => void;
@@ -26,6 +28,7 @@ export function ClinicListPanel({
   selectedClinic,
   onClinicSelect,
   onShowPhone,
+  onClinicDetailOpen,
   t,
   handleMouseEnter,
   handleMouseLeave,
@@ -119,22 +122,33 @@ export function ClinicListPanel({
                   )}
                 </div>
 
-                {clinic.phone && (
-                  <div className="mt-3">
+                <div className="mt-3 flex gap-2">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="flex-1 h-10 text-sm font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClinicDetailOpen(clinic);
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-1.5" />
+                    {t("findcare.viewDetails")}
+                  </Button>
+                  {clinic.phone && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full h-8 text-xs"
+                      className="h-10 px-3"
                       onClick={(e) => {
                         e.stopPropagation();
                         onShowPhone(clinic.phone, clinic.name);
                       }}
                     >
-                      <Phone className="w-3 h-3 mr-1" />
-                      {t("findcare.call")}
+                      <Phone className="w-4 h-4" />
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </Card>

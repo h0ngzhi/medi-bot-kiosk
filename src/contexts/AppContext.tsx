@@ -116,6 +116,8 @@ const translations: Record<Language, Record<string, string>> = {
     'findcare.locationTimeout': 'Location request timed out',
     'findcare.locationError': 'Unable to get your location',
     'findcare.loadFailed': 'Failed to load clinic data',
+    'findcare.viewDetails': 'View Details',
+    'findcare.getDirections': 'Get Directions',
     
     // Medications
     'meds.title': 'Your Medications',
@@ -545,6 +547,8 @@ const translations: Record<Language, Record<string, string>> = {
     'findcare.locationTimeout': '位置请求超时',
     'findcare.locationError': '无法获取您的位置',
     'findcare.loadFailed': '加载诊所数据失败',
+    'findcare.viewDetails': '查看详情',
+    'findcare.getDirections': '获取路线',
     
     // Medications
     'meds.title': '您的药物',
@@ -965,6 +969,8 @@ const translations: Record<Language, Record<string, string>> = {
     'findcare.locationTimeout': 'Permintaan lokasi tamat masa',
     'findcare.locationError': 'Tidak dapat mendapatkan lokasi anda',
     'findcare.loadFailed': 'Gagal memuatkan data klinik',
+    'findcare.viewDetails': 'Lihat Butiran',
+    'findcare.getDirections': 'Dapatkan Arah',
     
     // Medications
     'meds.title': 'Ubat Anda',
@@ -1385,6 +1391,8 @@ const translations: Record<Language, Record<string, string>> = {
     'findcare.locationTimeout': 'இட கோரிக்கை நேரம் முடிந்தது',
     'findcare.locationError': 'உங்கள் இருப்பிடத்தைப் பெற இயலவில்லை',
     'findcare.loadFailed': 'கிளினிக் தரவை ஏற்ற முடியவில்லை',
+    'findcare.viewDetails': 'விவரங்களைக் காண்க',
+    'findcare.getDirections': 'வழிகளைப் பெறுக',
     
     // Medications
     'meds.title': 'உங்கள் மருந்துகள்',
