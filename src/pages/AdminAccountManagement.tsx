@@ -125,6 +125,27 @@ const AdminAccountManagement = () => {
     setLoading(false);
   };
 
+  // Audit logging helper
+  const logAuditEvent = async (
+    action: string,
+    targetAccount: { id: string; username: string; display_name: string } | null,
+    details?: Record<string, string | number | boolean>
+  ) => {
+    try {
+      await supabase.from("admin_audit_logs").insert([{
+        action,
+        target_admin_id: targetAccount?.id || null,
+        target_username: targetAccount?.username || null,
+        target_display_name: targetAccount?.display_name || null,
+        performed_by_id: admin?.id || null,
+        performed_by_username: admin?.username || null,
+        details: details ? JSON.parse(JSON.stringify(details)) : null,
+      }]);
+    } catch (err) {
+      console.error("Failed to log audit event:", err);
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -140,7 +161,7 @@ const AdminAccountManagement = () => {
 
     setCreateLoading(true);
 
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("programme_admins")
       .insert([{
         username: createForm.username.toLowerCase().trim(),
@@ -149,7 +170,9 @@ const AdminAccountManagement = () => {
         email: createForm.email.trim() || null,
         role: "editor", // Always create as editor
         created_by: admin?.id || null,
-      }]);
+      }])
+      .select()
+      .single();
 
     setCreateLoading(false);
 
@@ -160,6 +183,18 @@ const AdminAccountManagement = () => {
         toast({ title: "Error", description: "Failed to create account", variant: "destructive" });
       }
       return;
+    }
+
+    // Log audit event
+    if (data) {
+      await logAuditEvent("account_created", {
+        id: data.id,
+        username: data.username,
+        display_name: data.display_name,
+      }, {
+        email: createForm.email.trim() || "none",
+        role: "editor",
+      });
     }
 
     toast({ title: "Account Created!", description: `Editor account for ${createForm.display_name} has been created` });
@@ -190,6 +225,20 @@ const AdminAccountManagement = () => {
       return;
     }
 
+    // Log audit event with changes
+    const changes: Record<string, string> = {};
+    if (editForm.display_name.trim() !== selectedAccount.display_name) {
+      changes.display_name = `${selectedAccount.display_name} → ${editForm.display_name.trim()}`;
+    }
+    if ((editForm.email.trim() || null) !== selectedAccount.email) {
+      changes.email = `${selectedAccount.email || "none"} → ${editForm.email.trim() || "none"}`;
+    }
+    if (editForm.role !== selectedAccount.role) {
+      changes.role = `${selectedAccount.role} → ${editForm.role}`;
+    }
+    
+    await logAuditEvent("account_modified", selectedAccount, changes);
+
     toast({ title: "Success", description: "Account updated" });
     setEditDialogOpen(false);
     setSelectedAccount(null);
@@ -219,6 +268,9 @@ const AdminAccountManagement = () => {
       return;
     }
 
+    // Log audit event
+    await logAuditEvent("password_reset", selectedAccount);
+
     toast({ title: "Success", description: "Password has been reset" });
     setNewPassword("");
     setResetPasswordDialogOpen(false);
@@ -226,15 +278,23 @@ const AdminAccountManagement = () => {
   };
 
   const toggleAccountStatus = async (account: AdminAccount) => {
+    const newStatus = !account.is_active;
+    
     const { error } = await supabase
       .from("programme_admins")
-      .update({ is_active: !account.is_active })
+      .update({ is_active: newStatus })
       .eq("id", account.id);
 
     if (error) {
       toast({ title: "Error", description: "Failed to update account status", variant: "destructive" });
       return;
     }
+
+    // Log audit event
+    await logAuditEvent(
+      newStatus ? "account_reactivated" : "account_deactivated",
+      account
+    );
 
     toast({ 
       title: "Success", 

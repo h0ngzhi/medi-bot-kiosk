@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          performed_by_id: string | null
+          performed_by_username: string | null
+          target_admin_id: string | null
+          target_display_name: string | null
+          target_username: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          performed_by_id?: string | null
+          performed_by_username?: string | null
+          target_admin_id?: string | null
+          target_display_name?: string | null
+          target_username?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          performed_by_id?: string | null
+          performed_by_username?: string | null
+          target_admin_id?: string | null
+          target_display_name?: string | null
+          target_username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_logs_performed_by_id_fkey"
+            columns: ["performed_by_id"]
+            isOneToOne: false
+            referencedRelation: "programme_admins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_logs_target_admin_id_fkey"
+            columns: ["target_admin_id"]
+            isOneToOne: false
+            referencedRelation: "programme_admins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clinic_hours_cache: {
         Row: {
           clinic_id: string
