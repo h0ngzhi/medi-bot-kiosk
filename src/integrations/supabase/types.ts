@@ -545,6 +545,7 @@ export type Database = {
       }
       reward_tier_settings: {
         Row: {
+          color: string | null
           created_at: string
           description: string | null
           events_required: number
@@ -556,6 +557,7 @@ export type Database = {
           title_zh: string | null
         }
         Insert: {
+          color?: string | null
           created_at?: string
           description?: string | null
           events_required: number
@@ -567,6 +569,7 @@ export type Database = {
           title_zh?: string | null
         }
         Update: {
+          color?: string | null
           created_at?: string
           description?: string | null
           events_required?: number
@@ -581,6 +584,7 @@ export type Database = {
       }
       rewards: {
         Row: {
+          badge_color: string | null
           created_at: string
           description: string | null
           description_ms: string | null
@@ -600,6 +604,7 @@ export type Database = {
           title_zh: string | null
         }
         Insert: {
+          badge_color?: string | null
           created_at?: string
           description?: string | null
           description_ms?: string | null
@@ -619,6 +624,7 @@ export type Database = {
           title_zh?: string | null
         }
         Update: {
+          badge_color?: string | null
           created_at?: string
           description?: string | null
           description_ms?: string | null

@@ -46,7 +46,9 @@ import {
   Upload,
   X,
   Image,
+  Palette,
 } from "lucide-react";
+import { ColorPicker } from "@/components/ui/color-picker";
 
 interface Reward {
   id: string;
@@ -65,6 +67,7 @@ interface Reward {
   display_order: number;
   image_url: string | null;
   reward_type: string | null;
+  badge_color: string | null;
   created_at: string;
 }
 
@@ -77,6 +80,7 @@ interface TierSetting {
   title_ta: string | null;
   description: string | null;
   events_required: number;
+  color: string | null;
   created_at: string;
 }
 
@@ -96,6 +100,7 @@ type RewardForm = {
   display_order: number;
   image_url: string;
   reward_type: string;
+  badge_color: string;
 };
 
 type TierForm = {
@@ -106,6 +111,7 @@ type TierForm = {
   title_ta: string;
   description: string;
   events_required: number;
+  color: string;
 };
 
 const emptyRewardForm: RewardForm = {
@@ -124,6 +130,7 @@ const emptyRewardForm: RewardForm = {
   display_order: 0,
   image_url: "",
   reward_type: "voucher",
+  badge_color: "#f59e0b",
 };
 
 const emptyTierForm: TierForm = {
@@ -134,6 +141,7 @@ const emptyTierForm: TierForm = {
   title_ta: "",
   description: "",
   events_required: 30,
+  color: "#f59e0b",
 };
 
 const AdminRewards = () => {
@@ -284,6 +292,7 @@ const AdminRewards = () => {
       display_order: rewardForm.display_order,
       image_url: rewardForm.image_url || null,
       reward_type: rewardForm.reward_type,
+      badge_color: rewardForm.badge_color || null,
     };
 
     if (editingRewardId) {
@@ -341,6 +350,7 @@ const AdminRewards = () => {
       display_order: reward.display_order,
       image_url: reward.image_url || "",
       reward_type: reward.reward_type || "voucher",
+      badge_color: reward.badge_color || "#f59e0b",
     });
     setRewardDialogOpen(true);
   };
@@ -381,6 +391,7 @@ const AdminRewards = () => {
       title_ta: tierForm.title_ta || null,
       description: tierForm.description || null,
       events_required: tierForm.events_required,
+      color: tierForm.color || null,
     };
 
     if (editingTierId) {
@@ -432,6 +443,7 @@ const AdminRewards = () => {
       title_ta: tier.title_ta || "",
       description: tier.description || "",
       events_required: tier.events_required,
+      color: tier.color || "#f59e0b",
     });
     setTierDialogOpen(true);
   };
@@ -770,6 +782,15 @@ const AdminRewards = () => {
                       )}
                     </div>
 
+                    {/* Badge Color for Medals */}
+                    {rewardForm.reward_type === 'medal' && (
+                      <ColorPicker
+                        label="Badge Role Color (shown in comments)"
+                        value={rewardForm.badge_color}
+                        onChange={(color) => setRewardForm({ ...rewardForm, badge_color: color })}
+                      />
+                    )}
+
                     <div className="flex items-center gap-2">
                       <Switch
                         checked={rewardForm.is_active}
@@ -1010,6 +1031,13 @@ const AdminRewards = () => {
                       />
                     </div>
 
+                    {/* Tier Trophy Color */}
+                    <ColorPicker
+                      label="Trophy Color"
+                      value={tierForm.color}
+                      onChange={(color) => setTierForm({ ...tierForm, color })}
+                    />
+
                     <div className="flex justify-end gap-2 pt-4">
                       <Button
                         type="button"
@@ -1045,14 +1073,8 @@ const AdminRewards = () => {
                       <div className="flex items-start justify-between">
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Trophy
-                            className={`h-5 w-5 ${
-                              tier.tier === 1 ? "text-amber-500" : 
-                              tier.tier === 2 ? "text-slate-400" : 
-                              tier.tier === 3 ? "text-yellow-400" : 
-                              tier.tier === 4 ? "text-cyan-400" :
-                              tier.tier === 5 ? "text-emerald-500" :
-                              "text-purple-500"
-                            }`}
+                            className="h-5 w-5"
+                            style={{ color: tier.color || "#f59e0b" }}
                           />
                           Tier {tier.tier}
                         </CardTitle>
