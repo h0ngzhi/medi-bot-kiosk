@@ -30,6 +30,7 @@ interface UserProfileInfo {
   events_attended: number;
   medal_title: string | null;
   medal_image_url: string | null;
+  badge_color: string | null;
 }
 
 interface ProgrammeFeedbackDisplayProps {
@@ -137,21 +138,21 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
         const usersWithMedals = usersData.filter(u => u.equipped_medal_id);
         const medalIds = usersWithMedals.map(u => u.equipped_medal_id).filter((id): id is string => id !== null);
 
-        let medalsData: Record<string, { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null; image_url: string | null }> = {};
+        let medalsData: Record<string, { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null; image_url: string | null; badge_color: string | null }> = {};
         
         if (medalIds.length > 0) {
           const { data: redemptionsData } = await supabase
             .from('user_reward_redemptions')
             .select(`
               id,
-              rewards (title, title_zh, title_ms, title_ta, image_url)
+              rewards (title, title_zh, title_ms, title_ta, image_url, badge_color)
             `)
             .in('id', medalIds);
 
           if (redemptionsData) {
             redemptionsData.forEach(r => {
               if (r.rewards) {
-                medalsData[r.id] = r.rewards as unknown as { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null; image_url: string | null };
+                medalsData[r.id] = r.rewards as unknown as { title: string; title_zh?: string | null; title_ms?: string | null; title_ta?: string | null; image_url: string | null; badge_color: string | null };
               }
             });
           }
@@ -164,7 +165,8 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
             name: userData.name,
             events_attended: userData.events_attended || 0,
             medal_title: medal ? getLocalizedTitle(medal) : null,
-            medal_image_url: medal?.image_url || null
+            medal_image_url: medal?.image_url || null,
+            badge_color: medal?.badge_color || null,
           };
         });
         
@@ -273,7 +275,13 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
                 {/* Medal/Avatar */}
                 <div className="flex-shrink-0">
                   {profile?.medal_image_url ? (
-                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 border-2 border-amber-300 flex items-center justify-center shadow-md">
+                    <div 
+                      className="w-14 h-14 rounded-xl border-2 flex items-center justify-center shadow-md"
+                      style={{ 
+                        backgroundColor: profile.badge_color ? `${profile.badge_color}20` : '#fef3c720',
+                        borderColor: profile.badge_color || '#fcd34d',
+                      }}
+                    >
                       <img 
                         src={profile.medal_image_url} 
                         alt={profile.medal_title || 'Medal'}
@@ -303,8 +311,14 @@ export function ProgrammeFeedbackDisplay({ programmeId, seriesId, onEditFeedback
                   {/* Medal Title - Prominent Display */}
                   {profile?.medal_title && (
                     <div className="flex items-center gap-1.5 mt-1">
-                      <Trophy className="w-4 h-4 text-amber-500" />
-                      <span className="text-base font-semibold text-amber-600">
+                      <Trophy 
+                        className="w-4 h-4" 
+                        style={{ color: profile.badge_color || '#f59e0b' }}
+                      />
+                      <span 
+                        className="text-base font-semibold"
+                        style={{ color: profile.badge_color || '#d97706' }}
+                      >
                         {profile.medal_title}
                       </span>
                     </div>
