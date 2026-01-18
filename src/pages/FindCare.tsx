@@ -676,7 +676,7 @@ export default function FindCare() {
                 <Button
                   variant="secondary"
                   size="sm"
-                  className="absolute top-2 right-2 lg:top-4 lg:right-4 shadow-lg z-[1000]"
+                  className="absolute top-2 right-2 lg:top-4 lg:right-4 shadow-lg z-10"
                   onClick={requestLocation}
                   disabled={isLocating}
                 >
@@ -690,7 +690,7 @@ export default function FindCare() {
               )}
               
               {/* Legend with CCN labels */}
-              <div className="absolute bottom-2 left-2 lg:bottom-4 lg:left-4 bg-card/95 backdrop-blur-sm p-2 lg:p-4 rounded-xl shadow-lg text-xs lg:text-sm space-y-1 lg:space-y-2 max-w-[180px] lg:max-w-none z-[1000]">
+              <div className="absolute bottom-2 left-2 lg:bottom-4 lg:left-4 bg-card/95 backdrop-blur-sm p-2 lg:p-4 rounded-xl shadow-lg text-xs lg:text-sm space-y-1 lg:space-y-2 max-w-[180px] lg:max-w-none z-10">
                 <div className="font-bold text-foreground mb-1 lg:mb-3">{t("findcare.clinicTypes")}</div>
                 <div className="flex items-center gap-2 lg:gap-3">
                   <div className="w-3 h-3 lg:w-4 lg:h-4 rounded-full flex-shrink-0" style={{ backgroundColor: clinicColors.gp }}></div>
