@@ -20,6 +20,7 @@ import NotFound from "./pages/NotFound";
 import AdminProgrammes from "./pages/AdminProgrammes";
 import AdminProgrammesLogin from "./pages/AdminProgrammesLogin";
 import AdminAccountManagement from "./pages/AdminAccountManagement";
+import AdminAuditLogs from "./pages/AdminAuditLogs";
 import AdminSlideshow from "./pages/AdminSlideshow";
 import AdminRewards from "./pages/AdminRewards";
 import { HealthChatBot } from "@/components/HealthChatBot";
@@ -50,6 +51,7 @@ const App = () => (
                   <Route path="/admin/programmes/login" element={<AdminProgrammesLogin />} />
                   <Route path="/admin/programmes" element={<AdminProgrammes />} />
                   <Route path="/admin/programmes/accounts" element={<AdminAccountManagement />} />
+                  <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
                   <Route path="/admin/slideshow" element={<AdminSlideshow />} />
                   <Route path="/admin/rewards" element={<AdminRewards />} />
                   <Route path="*" element={<NotFound />} />
