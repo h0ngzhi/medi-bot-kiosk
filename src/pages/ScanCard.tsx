@@ -668,6 +668,13 @@ export default function ScanCard() {
             <DialogDescription className="text-base">
               Select an existing user or enter new credentials
             </DialogDescription>
+            <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
+              <p className="font-medium text-foreground mb-1">QR Code Format:</p>
+              <code className="text-primary font-mono">NRIC:NAME:CHAS_TYPE</code>
+              <p className="text-muted-foreground mt-1 text-xs">
+                Example: S1234567A:Tan Ah Kow:Blue
+              </p>
+            </div>
           </DialogHeader>
           
           <div className="space-y-4 mt-4">
