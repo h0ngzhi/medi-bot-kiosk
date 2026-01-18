@@ -14,6 +14,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
@@ -26,6 +33,7 @@ import {
   UserCheck,
   FileText,
   RefreshCw,
+  Plus,
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -53,6 +61,16 @@ const AdminAuditLogs = () => {
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Create account state
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    username: "",
+    password: "",
+    display_name: "",
+    email: "",
+  });
+  const [createLoading, setCreateLoading] = useState(false);
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,6 +110,84 @@ const AdminAuditLogs = () => {
       setLogs(data as AuditLog[]);
     }
     setLoading(false);
+  };
+
+  // Audit logging helper
+  const logAuditEvent = async (
+    action: string,
+    targetAccount: { id: string; username: string; display_name: string },
+    details?: Record<string, string | number | boolean>
+  ) => {
+    try {
+      await supabase.from("admin_audit_logs").insert([{
+        action,
+        target_admin_id: targetAccount.id,
+        target_username: targetAccount.username,
+        target_display_name: targetAccount.display_name,
+        performed_by_id: null, // System/owner action
+        performed_by_username: "owner",
+        details: details ? JSON.parse(JSON.stringify(details)) : null,
+      }]);
+    } catch (err) {
+      console.error("Failed to log audit event:", err);
+    }
+  };
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!createForm.username.trim() || !createForm.password.trim() || !createForm.display_name.trim()) {
+      toast({ title: "Error", description: "Please fill in all required fields", variant: "destructive" });
+      return;
+    }
+
+    if (createForm.password.length < 6) {
+      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
+      return;
+    }
+
+    setCreateLoading(true);
+
+    const { data, error } = await supabase
+      .from("programme_admins")
+      .insert([{
+        username: createForm.username.toLowerCase().trim(),
+        password_hash: createForm.password, // Simple for demo - use bcrypt in production
+        display_name: createForm.display_name.trim(),
+        email: createForm.email.trim() || null,
+        role: "editor", // Always create as editor
+        created_by: null, // Owner creation
+      }])
+      .select()
+      .single();
+
+    setCreateLoading(false);
+
+    if (error) {
+      if (error.code === "23505") {
+        toast({ title: "Error", description: "Username already exists", variant: "destructive" });
+      } else {
+        toast({ title: "Error", description: "Failed to create account", variant: "destructive" });
+      }
+      return;
+    }
+
+    // Log audit event
+    if (data) {
+      await logAuditEvent("account_created", {
+        id: data.id,
+        username: data.username,
+        display_name: data.display_name,
+      }, {
+        email: createForm.email.trim() || "none",
+        role: "editor",
+      });
+    }
+
+    toast({ title: "Account Created!", description: `Editor account for ${createForm.display_name} has been created` });
+    setCreateForm({ username: "", password: "", display_name: "", email: "" });
+    setCreateDialogOpen(false);
+    fetchLogs(); // Refresh logs to show the new entry
   };
 
   const getActionIcon = (action: string) => {
@@ -154,9 +250,9 @@ const AdminAuditLogs = () => {
             <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
               <Lock className="h-6 w-6 text-primary" />
             </div>
-            <CardTitle>Audit Logs Access</CardTitle>
+            <CardTitle>Owner Access</CardTitle>
             <CardDescription>
-              Enter the password to view admin audit logs
+              Enter the password to manage accounts and view audit logs
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -180,7 +276,7 @@ const AdminAuditLogs = () => {
               </div>
               <Button type="submit" className="w-full">
                 <Shield className="h-4 w-4 mr-2" />
-                Access Logs
+                Access Dashboard
               </Button>
             </form>
             <div className="mt-4 text-center">
@@ -207,17 +303,81 @@ const AdminAuditLogs = () => {
             <div>
               <h1 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Audit Logs
+                Owner Dashboard
               </h1>
               <p className="text-sm text-muted-foreground">
-                Track all admin account changes
+                Create accounts and track all changes
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchLogs} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </Button>
+          <div className="flex items-center gap-2">
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Account
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Vendor Account</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleCreate} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="display-name">Display Name *</Label>
+                    <Input
+                      id="display-name"
+                      placeholder="Vendor name"
+                      value={createForm.display_name}
+                      onChange={(e) => setCreateForm({ ...createForm, display_name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username *</Label>
+                    <Input
+                      id="username"
+                      placeholder="Login username"
+                      value={createForm.username}
+                      onChange={(e) => setCreateForm({ ...createForm, username: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="create-password">Password *</Label>
+                    <Input
+                      id="create-password"
+                      type="password"
+                      placeholder="Min 6 characters"
+                      value={createForm.password}
+                      onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email (optional)</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="Contact email"
+                      value={createForm.email}
+                      onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      New accounts are created with <strong>Editor</strong> role by default. 
+                      Editors can only manage programmes they create.
+                    </p>
+                  </div>
+                  <Button type="submit" className="w-full" disabled={createLoading}>
+                    {createLoading ? "Creating..." : "Create Account"}
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Button variant="outline" size="sm" onClick={fetchLogs} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -225,16 +385,16 @@ const AdminAuditLogs = () => {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Card>
           <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
+            <CardTitle>Audit Logs</CardTitle>
             <CardDescription>
-              Showing the last {logs.length} audit log entries
+              Showing the last {logs.length} account activity entries
             </CardDescription>
           </CardHeader>
           <CardContent>
             {loading ? (
               <p className="text-center py-8 text-muted-foreground">Loading logs...</p>
             ) : logs.length === 0 ? (
-              <p className="text-center py-8 text-muted-foreground">No audit logs found</p>
+              <p className="text-center py-8 text-muted-foreground">No audit logs found. Create an account to see activity here.</p>
             ) : (
               <Table>
                 <TableHeader>
