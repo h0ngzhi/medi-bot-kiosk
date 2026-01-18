@@ -35,6 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { ClinicMap, clinicColors, type MapClinic } from "@/components/findcare/ClinicMap";
 import { ClinicListPanel } from "@/components/findcare/ClinicListPanel";
+import { ClinicDetailModal } from "@/components/findcare/ClinicDetailModal";
 import { allGovernmentFacilities } from "@/data/governmentHealthFacilities";
 
 interface GeoJSONFeature {
@@ -409,9 +410,21 @@ export default function FindCare() {
 
   // Phone popup state
   const [phonePopup, setPhonePopup] = useState<{ phone: string; name: string } | null>(null);
+  
+  // Clinic detail modal state
+  const [detailClinic, setDetailClinic] = useState<MapClinic | null>(null);
 
   const handleShowPhone = (phone: string, clinicName: string) => {
     setPhonePopup({ phone, name: clinicName });
+  };
+  
+  const handleOpenClinicDetail = (clinic: MapClinic) => {
+    setDetailClinic(clinic);
+  };
+  
+  const handleOpenMapsFromModal = (address: string) => {
+    const query = encodeURIComponent(`${address}, Singapore`);
+    window.open(`https://maps.google.com/?q=${query}`, "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -714,6 +727,7 @@ export default function FindCare() {
                 selectedClinic={selectedClinic}
                 onClinicSelect={setSelectedClinic}
                 onShowPhone={handleShowPhone}
+                onClinicDetailOpen={handleOpenClinicDetail}
                 t={t}
                 handleMouseEnter={handleMouseEnter}
                 handleMouseLeave={handleMouseLeave}
@@ -729,6 +743,7 @@ export default function FindCare() {
                 selectedClinic={selectedClinic}
                 onClinicSelect={setSelectedClinic}
                 onShowPhone={handleShowPhone}
+                onClinicDetailOpen={handleOpenClinicDetail}
                 t={t}
                 handleMouseEnter={handleMouseEnter}
                 handleMouseLeave={handleMouseLeave}
@@ -815,6 +830,16 @@ export default function FindCare() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Clinic Detail Modal */}
+      <ClinicDetailModal
+        clinic={detailClinic}
+        open={!!detailClinic}
+        onOpenChange={(open) => !open && setDetailClinic(null)}
+        onShowPhone={handleShowPhone}
+        onOpenMaps={handleOpenMapsFromModal}
+        t={t}
+      />
     </div>
   );
 }
