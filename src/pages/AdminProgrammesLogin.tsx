@@ -5,8 +5,7 @@ import { useProgrammeAdmin } from "@/contexts/ProgrammeAdminContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -15,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { LogIn, UserPlus, Users, Shield, Eye, Pencil, Crown } from "lucide-react";
+import { LogIn, Users, Shield, Eye, Pencil, Crown, Info } from "lucide-react";
 
 interface AdminAccount {
   id: string;
@@ -40,13 +39,6 @@ const AdminProgrammesLogin = () => {
   // Quick select
   const [selectedAccountId, setSelectedAccountId] = useState("");
   const [quickPassword, setQuickPassword] = useState("");
-  
-  // Signup form
-  const [signupUsername, setSignupUsername] = useState("");
-  const [signupPassword, setSignupPassword] = useState("");
-  const [signupDisplayName, setSignupDisplayName] = useState("");
-  const [signupRole, setSignupRole] = useState<string>("editor");
-  const [signupLoading, setSignupLoading] = useState(false);
 
   // Redirect if already logged in
   useEffect(() => {
@@ -113,48 +105,6 @@ const AdminProgrammesLogin = () => {
     }
   };
 
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!signupUsername.trim() || !signupPassword.trim() || !signupDisplayName.trim()) {
-      toast({ title: "Error", description: "Please fill in all fields", variant: "destructive" });
-      return;
-    }
-
-    if (signupPassword.length < 6) {
-      toast({ title: "Error", description: "Password must be at least 6 characters", variant: "destructive" });
-      return;
-    }
-
-    setSignupLoading(true);
-
-    const { error } = await supabase
-      .from("programme_admins")
-      .insert([{
-        username: signupUsername.toLowerCase().trim(),
-        password_hash: signupPassword, // Simple for demo - use bcrypt in production
-        display_name: signupDisplayName.trim(),
-        role: signupRole as "viewer" | "editor" | "super_admin",
-      }]);
-
-    setSignupLoading(false);
-
-    if (error) {
-      if (error.code === "23505") {
-        toast({ title: "Error", description: "Username already exists", variant: "destructive" });
-      } else {
-        toast({ title: "Error", description: "Failed to create account", variant: "destructive" });
-      }
-      return;
-    }
-
-    toast({ title: "Account Created!", description: "You can now log in" });
-    setSignupUsername("");
-    setSignupPassword("");
-    setSignupDisplayName("");
-    setSignupRole("editor");
-    fetchAccounts();
-  };
-
   const getRoleIcon = (role: string) => {
     switch (role) {
       case "super_admin": return <Crown className="h-4 w-4 text-amber-500" />;
@@ -193,162 +143,87 @@ const AdminProgrammesLogin = () => {
             Sign in to manage community programmes
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="login" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login" className="flex items-center gap-2">
-                <LogIn className="h-4 w-4" />
-                Login
-              </TabsTrigger>
-              <TabsTrigger value="signup" className="flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                Sign Up
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="login" className="space-y-6">
-              {/* Quick Select for Testing */}
-              {accounts.length > 0 && (
-                <div className="space-y-4 pb-6 border-b">
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <Users className="h-4 w-4" />
-                    Quick Select (Testing)
-                  </div>
-                  <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose an account..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((account) => (
-                        <SelectItem key={account.id} value={account.id}>
-                          <div className="flex items-center gap-2">
-                            {getRoleIcon(account.role)}
-                            <span>{account.display_name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              ({getRoleBadge(account.role)})
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedAccountId && (
-                    <div className="flex gap-2">
-                      <Input
-                        type="password"
-                        placeholder="Enter password"
-                        value={quickPassword}
-                        onChange={(e) => setQuickPassword(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleQuickLogin()}
-                      />
-                      <Button onClick={handleQuickLogin} disabled={loginLoading}>
-                        {loginLoading ? "..." : "Login"}
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Manual Login */}
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div className="text-sm font-medium text-muted-foreground">
-                  Or login manually
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+        <CardContent className="space-y-6">
+          {/* Quick Select for Testing */}
+          {accounts.length > 0 && (
+            <div className="space-y-4 pb-6 border-b">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Users className="h-4 w-4" />
+                Quick Select (Testing)
+              </div>
+              <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose an account..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((account) => (
+                    <SelectItem key={account.id} value={account.id}>
+                      <div className="flex items-center gap-2">
+                        {getRoleIcon(account.role)}
+                        <span>{account.display_name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          ({getRoleBadge(account.role)})
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedAccountId && (
+                <div className="flex gap-2">
                   <Input
-                    id="username"
-                    placeholder="Enter username"
-                    value={loginUsername}
-                    onChange={(e) => setLoginUsername(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <Input
-                    id="password"
                     type="password"
                     placeholder="Enter password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
+                    value={quickPassword}
+                    onChange={(e) => setQuickPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleQuickLogin()}
                   />
+                  <Button onClick={handleQuickLogin} disabled={loginLoading}>
+                    {loginLoading ? "..." : "Login"}
+                  </Button>
                 </div>
-                <Button type="submit" className="w-full" disabled={loginLoading}>
-                  <LogIn className="h-4 w-4 mr-2" />
-                  {loginLoading ? "Logging in..." : "Login"}
-                </Button>
-              </form>
-            </TabsContent>
+              )}
+            </div>
+          )}
 
-            <TabsContent value="signup">
-              <form onSubmit={handleSignup} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-display-name">Display Name</Label>
-                  <Input
-                    id="signup-display-name"
-                    placeholder="Your name"
-                    value={signupDisplayName}
-                    onChange={(e) => setSignupDisplayName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-username">Username</Label>
-                  <Input
-                    id="signup-username"
-                    placeholder="Choose a username"
-                    value={signupUsername}
-                    onChange={(e) => setSignupUsername(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Min 6 characters"
-                    value={signupPassword}
-                    onChange={(e) => setSignupPassword(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Role</Label>
-                  <Select value={signupRole} onValueChange={setSignupRole}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="viewer">
-                        <div className="flex items-center gap-2">
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                          <span>Viewer</span>
-                          <span className="text-xs text-muted-foreground">- View only</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="editor">
-                        <div className="flex items-center gap-2">
-                          <Pencil className="h-4 w-4 text-primary" />
-                          <span>Editor</span>
-                          <span className="text-xs text-muted-foreground">- Manage own programmes</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="super_admin">
-                        <div className="flex items-center gap-2">
-                          <Crown className="h-4 w-4 text-amber-500" />
-                          <span>Super Admin</span>
-                          <span className="text-xs text-muted-foreground">- Full access</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button type="submit" className="w-full" disabled={signupLoading}>
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  {signupLoading ? "Creating..." : "Create Account"}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
+          {/* Manual Login */}
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="text-sm font-medium text-muted-foreground">
+              {accounts.length > 0 ? "Or login manually" : "Login"}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="username">Username</Label>
+              <Input
+                id="username"
+                placeholder="Enter username"
+                value={loginUsername}
+                onChange={(e) => setLoginUsername(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter password"
+                value={loginPassword}
+                onChange={(e) => setLoginPassword(e.target.value)}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={loginLoading}>
+              <LogIn className="h-4 w-4 mr-2" />
+              {loginLoading ? "Logging in..." : "Login"}
+            </Button>
+          </form>
         </CardContent>
+        <CardFooter>
+          <div className="w-full p-3 bg-muted/50 rounded-lg flex items-start gap-3">
+            <Info className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+            <p className="text-sm text-muted-foreground">
+              Need an account? Contact your system administrator to request access.
+            </p>
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );

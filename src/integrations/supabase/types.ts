@@ -403,7 +403,9 @@ export type Database = {
       programme_admins: {
         Row: {
           created_at: string
+          created_by: string | null
           display_name: string
+          email: string | null
           id: string
           is_active: boolean
           password_hash: string
@@ -413,7 +415,9 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           display_name: string
+          email?: string | null
           id?: string
           is_active?: boolean
           password_hash: string
@@ -423,7 +427,9 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           display_name?: string
+          email?: string | null
           id?: string
           is_active?: boolean
           password_hash?: string
@@ -431,7 +437,15 @@ export type Database = {
           updated_at?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "programme_admins_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "programme_admins"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       programme_feedback: {
         Row: {

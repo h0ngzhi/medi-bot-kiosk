@@ -675,6 +675,14 @@ const AdminProgrammes = () => {
               </Badge>
             </div>
             
+            {/* Manage Accounts - Super Admin Only */}
+            {isSuperAdmin() && (
+              <Button variant="outline" size="sm" onClick={() => navigate("/admin/programmes/accounts")}>
+                <Users className="h-4 w-4 mr-2" />
+                Manage Accounts
+              </Button>
+            )}
+            
             <Button variant="outline" size="sm" onClick={fetchProgrammes}>
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh
