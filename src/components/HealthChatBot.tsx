@@ -84,8 +84,11 @@ export function HealthChatBot() {
   const location = useLocation();
   const t = translations[language];
   
-  // Hide on admin pages
+  // Only show on authenticated user pages (after language selection)
+  // Hide on: admin pages, idle screen, language selection, scan page
   const isAdminPage = location.pathname.startsWith('/admin');
+  const isPreAuthPage = ['/', '/language', '/scan'].includes(location.pathname);
+  const shouldHide = isAdminPage || isPreAuthPage;
   
   const [isMinimized, setIsMinimized] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
@@ -322,8 +325,8 @@ export function HealthChatBot() {
     }
   };
 
-  // Don't render on admin pages
-  if (isAdminPage) {
+  // Don't render on admin pages or pre-auth pages
+  if (shouldHide) {
     return null;
   }
 
