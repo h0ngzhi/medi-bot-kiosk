@@ -100,7 +100,6 @@ const categoryStyles: Record<string, { bg: string; text: string }> = {
   'Active Ageing': { bg: 'bg-success/10', text: 'text-success' },
   'Health Education': { bg: 'bg-primary/10', text: 'text-primary' },
   'Social': { bg: 'bg-warning/10', text: 'text-warning' },
-  'Caregiver': { bg: 'bg-info/10', text: 'text-info' },
   'Digital Literacy': { bg: 'bg-secondary/10', text: 'text-secondary' },
 };
 
@@ -109,7 +108,6 @@ const categoryTranslationKeys: Record<string, string> = {
   'Active Ageing': 'community.categoryActiveAgeing',
   'Health Education': 'community.categoryHealthEducation',
   'Social': 'community.categorySocial',
-  'Caregiver': 'community.categoryCaregiver',
   'Digital Literacy': 'community.categoryDigitalLiteracy',
 };
 

@@ -185,7 +185,6 @@ const CATEGORIES = [
   "Active Ageing",
   "Social",
   "Health Education",
-  "Caregiver",
   "Digital Literacy",
 ];
 
@@ -620,8 +619,6 @@ const AdminProgrammes = () => {
       case "health education":
       case "health":
         return "bg-success/10 text-success";
-      case "caregiver":
-        return "bg-warning/10 text-warning";
       case "digital literacy":
         return "bg-info/10 text-info";
       default:
