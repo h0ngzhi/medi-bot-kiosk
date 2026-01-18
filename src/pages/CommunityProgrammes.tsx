@@ -36,6 +36,15 @@ import { toast } from 'sonner';
 
 type Category = 'all' | 'active_ageing' | 'health' | 'social' | 'digital';
 
+// Map filter IDs to database category values (Title Case)
+const categoryDbMap: Record<Category, string | null> = {
+  'all': null,
+  'active_ageing': 'Active Ageing',
+  'health': 'Health Education',
+  'social': 'Social',
+  'digital': 'Digital Literacy',
+};
+
 const categories: { id: Category; icon: React.ElementType; labelKey: string }[] = [
   { id: 'all', icon: Filter, labelKey: 'community.filterAll' },
   { id: 'active_ageing', icon: Heart, labelKey: 'community.filterActive' },
@@ -268,7 +277,7 @@ export default function CommunityProgrammes() {
 
   const filteredUpcomingProgrammes = activeCategory === 'all'
     ? upcomingProgrammes
-    : upcomingProgrammes.filter(p => p.category === activeCategory);
+    : upcomingProgrammes.filter(p => p.category === categoryDbMap[activeCategory]);
 
   // Sort completed programmes: reviewable ones first (signed up but no feedback yet)
   const sortedCompletedProgrammes = [...completedProgrammes].sort((a, b) => {
@@ -281,7 +290,7 @@ export default function CommunityProgrammes() {
 
   const filteredCompletedProgrammes = activeCategory === 'all'
     ? sortedCompletedProgrammes
-    : sortedCompletedProgrammes.filter(p => p.category === activeCategory);
+    : sortedCompletedProgrammes.filter(p => p.category === categoryDbMap[activeCategory]);
 
   // Get user's signed up programmes (only upcoming ones where registration is still open)
   const myProgrammes = upcomingProgrammes.filter(p => 
