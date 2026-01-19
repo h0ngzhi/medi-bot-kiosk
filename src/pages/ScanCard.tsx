@@ -34,6 +34,7 @@ interface ExistingUser {
   user_id: string;
   chas_card_type: string | null;
   date_of_birth: string | null;
+  gender: string | null;
   events_attended: number;
   points: number;
   is_admin?: boolean;
@@ -47,6 +48,7 @@ export default function ScanCard() {
   const [manualName, setManualName] = useState('');
   const [manualChasType, setManualChasType] = useState('Blue');
   const [manualDob, setManualDob] = useState('');
+  const [manualGender, setManualGender] = useState<'male' | 'female'>('male');
   const [manualPoints, setManualPoints] = useState('0');
   const [manualEventsAttended, setManualEventsAttended] = useState('0');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -64,7 +66,7 @@ export default function ScanCard() {
   const fetchExistingUsers = async () => {
     const { data: users } = await supabase
       .from('kiosk_users')
-      .select('id, name, user_id, chas_card_type, date_of_birth, events_attended, points')
+      .select('id, name, user_id, chas_card_type, date_of_birth, gender, events_attended, points')
       .order('updated_at', { ascending: false })
       .limit(5);
     
@@ -269,6 +271,7 @@ export default function ScanCard() {
             name: name,
             chas_card_type: chasType.toLowerCase(),
             date_of_birth: dateOfBirth,
+            gender: manualGender,
             points: startingPoints,
             events_attended: startingEvents,
           })
@@ -730,6 +733,7 @@ export default function ScanCard() {
                             <p className="text-sm text-muted-foreground">{user.user_id}</p>
                             <p className="text-xs text-muted-foreground">
                               {user.points} pts • {user.events_attended} events
+                              {user.gender && ` • ${user.gender.charAt(0).toUpperCase() + user.gender.slice(1)}`}
                               {user.date_of_birth && ` • Born ${user.date_of_birth}`}
                             </p>
                           </div>
@@ -817,6 +821,21 @@ export default function ScanCard() {
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Required for age-adjusted health thresholds (e.g., 65+ seniors)
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Gender</label>
+              <select
+                value={manualGender}
+                onChange={(e) => setManualGender(e.target.value as 'male' | 'female')}
+                className="w-full h-12 text-lg px-3 rounded-md border border-input bg-background"
+              >
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                Required for gender-adjusted BMI and BP thresholds
               </p>
             </div>
 

@@ -548,12 +548,14 @@ export default function HealthScreenings() {
                       diastolic: result.values.diastolic as number,
                       pulse: result.values.pulse as number,
                       age: userAge,
+                      gender: userGender,
                     }
                   : {
                       height: result.values.height as number,
                       weight: result.values.weight as number,
                       bmi: result.values.bmi as number,
                       age: userAge,
+                      gender: userGender,
                     }
               }
             />

@@ -14,6 +14,7 @@ interface HealthData {
   weight?: number;
   bmi?: number;
   age?: number; // Age in years for age-adjusted thresholds
+  gender?: 'male' | 'female'; // Gender for gender-adjusted thresholds
 }
 
 interface Programme {
@@ -64,19 +65,24 @@ serve(async (req) => {
       );
     }
 
-    // Build health context with age-adjusted thresholds
+    // Build health context with age and gender-adjusted thresholds
     const healthContext = buildHealthContext(healthData);
     
-    // Build prompt for AI with age-adjusted guidelines
+    // Build prompt for AI with age and gender-adjusted guidelines
     const ageContext = healthData.age 
       ? `The user is ${healthData.age} years old.${healthData.age >= 65 ? " As a senior (65+), slightly elevated blood pressure may be acceptable." : ""}`
       : "User age is unknown, use standard adult thresholds.";
+    
+    const genderContext = healthData.gender
+      ? `The user is ${healthData.gender}.`
+      : "User gender is unknown.";
 
     const systemPrompt = `You are a health programme recommendation assistant for a Singapore community health kiosk serving elderly users.
 
 Based on the user's health screening results, recommend the most relevant community programmes from the available list.
 
 ${ageContext}
+${genderContext}
 
 Guidelines:
 - Prioritize programmes that address the user's specific health concerns
@@ -86,8 +92,14 @@ Guidelines:
   * For seniors 65+: High if systolic >= 150 or diastolic >= 90 (slightly relaxed threshold)
   * For all ages: Elevated if systolic 120-139 or diastolic 80-89
 - If blood pressure is high, recommend hypertension/heart health programmes
+- For BMI classification (Asian WHO standards, gender-considered):
+  * For males: Normal 18.5-22.9, At Risk 23-24.9, Overweight 25-29.9, Obese >= 30
+  * For females: Normal 18.5-22.9, At Risk 23-24.9 (women may have slightly lower healthy range)
+  * For elderly 65+: Slightly higher BMI (23-27) may be protective
+  * Underweight < 18.5 for all
 - If BMI is high (>= 25 for Asians), recommend exercise, nutrition, or weight management programmes
 - If BMI is low (< 18.5), recommend nutrition programmes
+- Consider gender-appropriate activities when recommending programmes
 - Always include at least 1-2 general wellness programmes for variety
 - Maximum 3 recommendations
 - Be encouraging and positive in your reasoning
@@ -284,6 +296,11 @@ function buildHealthContext(data: HealthData): string {
     parts.push(`Age: ${data.age} years${data.age >= 65 ? " (Senior)" : ""}`);
   }
   
+  // Add gender if available
+  if (data.gender) {
+    parts.push(`Gender: ${data.gender.charAt(0).toUpperCase() + data.gender.slice(1)}`);
+  }
+  
   if (data.systolic !== undefined && data.diastolic !== undefined) {
     const bpStatus = getBpStatus(data.systolic, data.diastolic, data.age);
     const thresholdNote = data.age !== undefined && data.age >= 65 
@@ -305,12 +322,13 @@ function buildHealthContext(data: HealthData): string {
   }
   
   if (data.bmi !== undefined) {
-    // Use Asian BMI thresholds (WHO Asia-Pacific)
+    // Use Asian BMI thresholds (WHO Asia-Pacific) with gender consideration
     const bmiStatus = data.bmi >= 30 ? "Obese" :
                       data.bmi >= 25 ? "Overweight" :
                       data.bmi >= 23 ? "At Risk" :
                       data.bmi < 18.5 ? "Underweight" : "Normal";
-    parts.push(`BMI: ${data.bmi} (${bmiStatus}) [Asian thresholds]`);
+    const genderNote = data.gender ? ` [${data.gender === 'female' ? 'Female' : 'Male'} Asian thresholds]` : " [Asian thresholds]";
+    parts.push(`BMI: ${data.bmi} (${bmiStatus})${genderNote}`);
   }
   
   return parts.join("\n");
