@@ -1230,8 +1230,8 @@ const AdminProgrammes = () => {
                                         toast({ title: "Invalid file type", description: "Please upload a PDF file", variant: "destructive" });
                                         return;
                                       }
-                                      if (file.size > 10 * 1024 * 1024) {
-                                        toast({ title: "File too large", description: "PDF must be less than 10MB", variant: "destructive" });
+                                      if (file.size > 30 * 1024 * 1024) {
+                                        toast({ title: "File too large", description: "PDF must be less than 30MB", variant: "destructive" });
                                         return;
                                       }
 
@@ -1292,8 +1292,8 @@ const AdminProgrammes = () => {
                                         toast({ title: "Invalid file type", description: "Please upload a PDF file", variant: "destructive" });
                                         return;
                                       }
-                                      if (file.size > 10 * 1024 * 1024) {
-                                        toast({ title: "File too large", description: "PDF must be less than 10MB", variant: "destructive" });
+                                      if (file.size > 30 * 1024 * 1024) {
+                                        toast({ title: "File too large", description: "PDF must be less than 30MB", variant: "destructive" });
                                         return;
                                       }
 
@@ -1354,8 +1354,8 @@ const AdminProgrammes = () => {
                                         toast({ title: "Invalid file type", description: "Please upload a PDF file", variant: "destructive" });
                                         return;
                                       }
-                                      if (file.size > 10 * 1024 * 1024) {
-                                        toast({ title: "File too large", description: "PDF must be less than 10MB", variant: "destructive" });
+                                      if (file.size > 30 * 1024 * 1024) {
+                                        toast({ title: "File too large", description: "PDF must be less than 30MB", variant: "destructive" });
                                         return;
                                       }
 
@@ -1416,8 +1416,8 @@ const AdminProgrammes = () => {
                                         toast({ title: "Invalid file type", description: "Please upload a PDF file", variant: "destructive" });
                                         return;
                                       }
-                                      if (file.size > 10 * 1024 * 1024) {
-                                        toast({ title: "File too large", description: "PDF must be less than 10MB", variant: "destructive" });
+                                      if (file.size > 30 * 1024 * 1024) {
+                                        toast({ title: "File too large", description: "PDF must be less than 30MB", variant: "destructive" });
                                         return;
                                       }
 
