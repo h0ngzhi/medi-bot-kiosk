@@ -366,6 +366,7 @@ export type Database = {
           date_of_birth: string | null
           equipped_medal_id: string | null
           events_attended: number
+          gender: string | null
           id: string
           last_login_bonus_at: string | null
           name: string
@@ -381,6 +382,7 @@ export type Database = {
           date_of_birth?: string | null
           equipped_medal_id?: string | null
           events_attended?: number
+          gender?: string | null
           id?: string
           last_login_bonus_at?: string | null
           name: string
@@ -396,6 +398,7 @@ export type Database = {
           date_of_birth?: string | null
           equipped_medal_id?: string | null
           events_attended?: number
+          gender?: string | null
           id?: string
           last_login_bonus_at?: string | null
           name?: string
