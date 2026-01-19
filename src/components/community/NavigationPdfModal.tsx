@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { X, Printer, Loader2, FileText, ExternalLink } from 'lucide-react';
+import { X, Printer, Loader2, FileText, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 
@@ -15,6 +15,7 @@ interface NavigationPdfModalProps {
 export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: NavigationPdfModalProps) {
   const { t } = useApp();
   const [isPrinting, setIsPrinting] = useState(false);
+  const [hasPrinted, setHasPrinted] = useState(false);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [pdfError, setPdfError] = useState(false);
 
@@ -23,14 +24,16 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
     if (isOpen) {
       setPdfLoaded(false);
       setPdfError(false);
+      setHasPrinted(false);
     }
   }, [isOpen, pdfUrl]);
 
+  // Simulated print - just shows loading then success (no redirect)
   const handlePrint = () => {
     setIsPrinting(true);
-    window.open(pdfUrl, '_blank');
     setTimeout(() => {
       setIsPrinting(false);
+      setHasPrinted(true);
       toast.success(t('community.printSuccess'));
     }, 2000);
   };
@@ -65,25 +68,32 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
 
         {/* Controls */}
         <div className="flex items-center justify-end px-6 py-3 border-b bg-background">
-          <Button
-            variant="default"
-            size="lg"
-            onClick={handlePrint}
-            disabled={isPrinting}
-            className="h-12 px-6 text-lg"
-          >
-            {isPrinting ? (
-              <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                {t('community.printing')}
-              </>
-            ) : (
-              <>
-                <Printer className="w-5 h-5 mr-2" />
-                {t('community.printNavigationCard')}
-              </>
-            )}
-          </Button>
+          {hasPrinted ? (
+            <div className="flex items-center gap-2 text-success h-12 px-6">
+              <CheckCircle2 className="w-5 h-5" />
+              <span className="text-lg font-medium">{t('community.printed')}</span>
+            </div>
+          ) : (
+            <Button
+              variant="default"
+              size="lg"
+              onClick={handlePrint}
+              disabled={isPrinting}
+              className="h-12 px-6 text-lg"
+            >
+              {isPrinting ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  {t('community.printing')}
+                </>
+              ) : (
+                <>
+                  <Printer className="w-5 h-5 mr-2" />
+                  {t('community.printNavigationCard')}
+                </>
+              )}
+            </Button>
+          )}
         </div>
 
         {/* PDF Viewer - Direct embed, no Google Docs */}
