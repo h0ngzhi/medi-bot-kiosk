@@ -14,6 +14,7 @@ interface HealthData {
   height?: number;
   weight?: number;
   bmi?: number;
+  age?: number; // Age in years for age-adjusted thresholds
 }
 
 interface RecommendedProgramme {
