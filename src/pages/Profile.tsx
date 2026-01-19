@@ -121,13 +121,19 @@ export default function Profile() {
           setEventsAttended(userData.events_attended || 0);
           setEquippedMedalId(userData.equipped_medal_id || null);
           
+          // Always sync the fetched points to context first
+          const fetchedPoints = userData.points || 0;
+          if (user.points !== fetchedPoints) {
+            setUser({ ...user, points: fetchedPoints });
+          }
+          
           // Check and grant daily login bonus
           const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
           const lastBonusDate = userData.last_login_bonus_at;
           
           if (lastBonusDate !== today) {
-            // Grant daily login bonus
-            const newPoints = (userData.points || 0) + 5;
+            // Grant daily login bonus (add 5 to the fetched points)
+            const newPoints = fetchedPoints + 5;
             const { error } = await supabase
               .from('kiosk_users')
               .update({ 
