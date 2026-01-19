@@ -13,6 +13,7 @@ interface HealthData {
   height?: number;
   weight?: number;
   bmi?: number;
+  age?: number; // Age in years for age-adjusted thresholds
 }
 
 interface Programme {
@@ -63,19 +64,29 @@ serve(async (req) => {
       );
     }
 
-    // Build health context
+    // Build health context with age-adjusted thresholds
     const healthContext = buildHealthContext(healthData);
     
-    // Build prompt for AI
+    // Build prompt for AI with age-adjusted guidelines
+    const ageContext = healthData.age 
+      ? `The user is ${healthData.age} years old.${healthData.age >= 65 ? " As a senior (65+), slightly elevated blood pressure may be acceptable." : ""}`
+      : "User age is unknown, use standard adult thresholds.";
+
     const systemPrompt = `You are a health programme recommendation assistant for a Singapore community health kiosk serving elderly users.
 
 Based on the user's health screening results, recommend the most relevant community programmes from the available list.
 
+${ageContext}
+
 Guidelines:
 - Prioritize programmes that address the user's specific health concerns
 - Consider programmes for active ageing, chronic disease management, and mental wellness
-- If blood pressure is high (systolic >= 140 or diastolic >= 90), recommend hypertension/heart health programmes
-- If BMI is high (>= 25), recommend exercise, nutrition, or weight management programmes
+- For blood pressure classification (age-adjusted):
+  * For adults under 65: High if systolic >= 140 or diastolic >= 90
+  * For seniors 65+: High if systolic >= 150 or diastolic >= 90 (slightly relaxed threshold)
+  * For all ages: Elevated if systolic 120-139 or diastolic 80-89
+- If blood pressure is high, recommend hypertension/heart health programmes
+- If BMI is high (>= 25 for Asians), recommend exercise, nutrition, or weight management programmes
 - If BMI is low (< 18.5), recommend nutrition programmes
 - Always include at least 1-2 general wellness programmes for variety
 - Maximum 3 recommendations
@@ -237,13 +248,48 @@ Please recommend the most suitable programmes and explain why each is beneficial
   }
 });
 
+// Calculate age from date of birth
+function calculateAge(dob: string): number {
+  const birthDate = new Date(dob);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const monthDiff = today.getMonth() - birthDate.getMonth();
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--;
+  }
+  return age;
+}
+
+// Get age-adjusted BP status
+function getBpStatus(systolic: number, diastolic: number, age?: number): string {
+  const isSenior = age !== undefined && age >= 65;
+  
+  // Age-adjusted thresholds for seniors 65+
+  const highSystolic = isSenior ? 150 : 140;
+  const highDiastolic = 90; // Same for all ages
+  
+  if (systolic >= highSystolic || diastolic >= highDiastolic) {
+    return "High";
+  } else if (systolic >= 120 || diastolic >= 80) {
+    return "Elevated";
+  }
+  return "Normal";
+}
+
 function buildHealthContext(data: HealthData): string {
   const parts: string[] = [];
   
+  // Add age if available
+  if (data.age !== undefined) {
+    parts.push(`Age: ${data.age} years${data.age >= 65 ? " (Senior)" : ""}`);
+  }
+  
   if (data.systolic !== undefined && data.diastolic !== undefined) {
-    const bpStatus = data.systolic >= 140 || data.diastolic >= 90 ? "High" : 
-                     data.systolic >= 120 || data.diastolic >= 80 ? "Elevated" : "Normal";
-    parts.push(`Blood Pressure: ${data.systolic}/${data.diastolic} mmHg (${bpStatus})`);
+    const bpStatus = getBpStatus(data.systolic, data.diastolic, data.age);
+    const thresholdNote = data.age !== undefined && data.age >= 65 
+      ? " [Age-adjusted: 150/90 threshold for seniors]" 
+      : "";
+    parts.push(`Blood Pressure: ${data.systolic}/${data.diastolic} mmHg (${bpStatus})${thresholdNote}`);
   }
   
   if (data.pulse !== undefined) {
@@ -259,10 +305,12 @@ function buildHealthContext(data: HealthData): string {
   }
   
   if (data.bmi !== undefined) {
+    // Use Asian BMI thresholds (WHO Asia-Pacific)
     const bmiStatus = data.bmi >= 30 ? "Obese" :
                       data.bmi >= 25 ? "Overweight" :
+                      data.bmi >= 23 ? "At Risk" :
                       data.bmi < 18.5 ? "Underweight" : "Normal";
-    parts.push(`BMI: ${data.bmi} (${bmiStatus})`);
+    parts.push(`BMI: ${data.bmi} (${bmiStatus}) [Asian thresholds]`);
   }
   
   return parts.join("\n");

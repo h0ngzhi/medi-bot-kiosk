@@ -66,18 +66,43 @@ export default function HealthScreenings() {
   const [result, setResult] = useState<ScreeningResult | null>(null);
   const [pastResults, setPastResults] = useState<PastResult[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userAge, setUserAge] = useState<number | undefined>(undefined);
 
   const { handleMouseEnter, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
 
-  // Fetch past results on mount
+  // Calculate age from date of birth
+  const calculateAge = (dob: string): number => {
+    const birthDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  // Fetch past results and user DOB on mount
   useEffect(() => {
-    const fetchPastResults = async () => {
+    const fetchData = async () => {
       if (!user?.id) {
         setLoading(false);
         return;
       }
 
       try {
+        // Fetch user's date_of_birth
+        const { data: userData } = await supabase
+          .from('kiosk_users')
+          .select('date_of_birth')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData?.date_of_birth) {
+          setUserAge(calculateAge(userData.date_of_birth));
+        }
+
+        // Fetch past screening results
         const { data, error } = await supabase
           .from('screening_results')
           .select('*')
@@ -87,13 +112,13 @@ export default function HealthScreenings() {
         if (error) throw error;
         setPastResults(data || []);
       } catch (error) {
-        console.error('Error fetching past results:', error);
+        console.error('Error fetching data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPastResults();
+    fetchData();
   }, [user?.id]);
 
   const saveResult = async (mockResult: ScreeningResult) => {
@@ -410,11 +435,13 @@ export default function HealthScreenings() {
                       systolic: result.values.systolic as number,
                       diastolic: result.values.diastolic as number,
                       pulse: result.values.pulse as number,
+                      age: userAge,
                     }
                   : {
                       height: result.values.height as number,
                       weight: result.values.weight as number,
                       bmi: result.values.bmi as number,
+                      age: userAge,
                     }
               }
             />

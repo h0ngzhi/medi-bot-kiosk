@@ -33,6 +33,7 @@ interface ExistingUser {
   name: string;
   user_id: string;
   chas_card_type: string | null;
+  date_of_birth: string | null;
   events_attended: number;
   points: number;
   is_admin?: boolean;
@@ -45,6 +46,7 @@ export default function ScanCard() {
   const [manualNric, setManualNric] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualChasType, setManualChasType] = useState('Blue');
+  const [manualDob, setManualDob] = useState('');
   const [manualPoints, setManualPoints] = useState('0');
   const [manualEventsAttended, setManualEventsAttended] = useState('0');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -62,7 +64,7 @@ export default function ScanCard() {
   const fetchExistingUsers = async () => {
     const { data: users } = await supabase
       .from('kiosk_users')
-      .select('id, name, user_id, chas_card_type, events_attended, points')
+      .select('id, name, user_id, chas_card_type, date_of_birth, events_attended, points')
       .order('updated_at', { ascending: false })
       .limit(5);
     
@@ -159,10 +161,19 @@ export default function ScanCard() {
     return sanitized;
   };
 
+  // Validate date format (YYYY-MM-DD)
+  const validateDob = (dob: string): boolean => {
+    if (!dob) return true; // Optional field
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(dob)) return false;
+    const date = new Date(dob);
+    return !isNaN(date.getTime()) && date < new Date();
+  };
+
   // Parse and validate QR code data
-  // Expected format: NRIC:NAME:CHAS_TYPE
-  // Example: S1234567A:Tan Ah Kow:Blue
-  const parseQRCode = (qrData: string): { nric: string; name: string; chasType: string } | null => {
+  // Expected format: NRIC:NAME:CHAS_TYPE or NRIC:NAME:CHAS_TYPE:DOB
+  // Example: S1234567A:Tan Ah Kow:Blue or S1234567A:Tan Ah Kow:Blue:1955-03-15
+  const parseQRCode = (qrData: string): { nric: string; name: string; chasType: string; dob?: string } | null => {
     // Length check - reject extremely long inputs
     if (!qrData || qrData.length === 0 || qrData.length > 300) {
       return null;
@@ -179,6 +190,7 @@ export default function ScanCard() {
     const nric = parts[0].trim().toUpperCase();
     const name = parts[1].trim();
     const chasType = parts[2].trim();
+    const dob = parts[3]?.trim() || undefined;
 
     // Validate NRIC format
     if (!validateNRIC(nric)) {
@@ -198,10 +210,15 @@ export default function ScanCard() {
       return null;
     }
 
+    // Validate DOB if provided
+    if (dob && !validateDob(dob)) {
+      return null;
+    }
+
     // Capitalize CHAS type properly
     const formattedChasType = chasType.charAt(0).toUpperCase() + chasType.slice(1).toLowerCase();
 
-    return { nric, name: sanitizedName, chasType: formattedChasType };
+    return { nric, name: sanitizedName, chasType: formattedChasType, dob };
   };
 
   const handleQRCodeScanned = async (qrData: string) => {
@@ -217,12 +234,12 @@ export default function ScanCard() {
     const parsed = parseQRCode(qrData);
     
     if (!parsed) {
-      setErrorMessage('Invalid card format. Expected format: NRIC:Name:CHAS Type (e.g., S1234567A:Tan Ah Kow:Blue)');
+      setErrorMessage('Invalid card format. Expected format: NRIC:Name:CHAS Type:DOB (e.g., S1234567A:Tan Ah Kow:Blue:1955-03-15)');
       setScanState('error');
       return;
     }
 
-    const { nric, name, chasType } = parsed;
+    const { nric, name, chasType, dob } = parsed;
 
     try {
       // Check if user already exists in database
@@ -243,12 +260,15 @@ export default function ScanCard() {
         // Use custom points and events if set via manual entry
         const startingPoints = parseInt(manualPoints) || 0;
         const startingEvents = parseInt(manualEventsAttended) || 0;
+        // Use DOB from QR code or manual entry
+        const dateOfBirth = dob || manualDob || null;
         const { data: newUser, error: insertError } = await supabase
           .from('kiosk_users')
           .insert({
             user_id: nric,
             name: name,
             chas_card_type: chasType.toLowerCase(),
+            date_of_birth: dateOfBirth,
             points: startingPoints,
             events_attended: startingEvents,
           })
@@ -268,18 +288,24 @@ export default function ScanCard() {
         // Auto-populate sample data for new users
         await populateNewUserData(kioskUser.id);
       } else {
-        // Update existing user's name and CHAS type if different
+        // Update existing user's name, CHAS type, and DOB if different
+        const newDob = dob || manualDob || null;
         const needsUpdate = 
           kioskUser.chas_card_type?.toLowerCase() !== chasType.toLowerCase() ||
-          kioskUser.name !== name;
+          kioskUser.name !== name ||
+          (newDob && kioskUser.date_of_birth !== newDob);
         
         if (needsUpdate) {
+          const updateData: Record<string, string> = { 
+            chas_card_type: chasType.toLowerCase(),
+            name: name 
+          };
+          if (newDob) {
+            updateData.date_of_birth = newDob;
+          }
           const { data: updatedUser, error: updateError } = await supabase
             .from('kiosk_users')
-            .update({ 
-              chas_card_type: chasType.toLowerCase(),
-              name: name 
-            })
+            .update(updateData)
             .eq('id', kioskUser.id)
             .select()
             .single();
@@ -567,7 +593,11 @@ export default function ScanCard() {
     if (!manualNric.trim() || !manualName.trim()) {
       return;
     }
-    const qrData = `${manualNric.trim()}:${manualName.trim()}:${manualChasType}`;
+    // Include DOB in QR data if provided
+    let qrData = `${manualNric.trim()}:${manualName.trim()}:${manualChasType}`;
+    if (manualDob) {
+      qrData += `:${manualDob}`;
+    }
     setShowManualEntry(false);
     handleQRCodeScanned(qrData);
   };
@@ -670,9 +700,9 @@ export default function ScanCard() {
             </DialogDescription>
             <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
               <p className="font-medium text-foreground mb-1">QR Code Format:</p>
-              <code className="text-primary font-mono">NRIC:NAME:CHAS_TYPE</code>
+              <code className="text-primary font-mono">NRIC:NAME:CHAS_TYPE:DOB</code>
               <p className="text-muted-foreground mt-1 text-xs">
-                Example: S1234567A:Tan Ah Kow:Blue
+                Example: S1234567A:Tan Ah Kow:Blue:1955-03-15
               </p>
             </div>
           </DialogHeader>
@@ -700,6 +730,7 @@ export default function ScanCard() {
                             <p className="text-sm text-muted-foreground">{user.user_id}</p>
                             <p className="text-xs text-muted-foreground">
                               {user.points} pts • {user.events_attended} events
+                              {user.date_of_birth && ` • Born ${user.date_of_birth}`}
                             </p>
                           </div>
                           <span className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-full">
@@ -773,6 +804,20 @@ export default function ScanCard() {
                 <option value="Merdeka generation">Merdeka Generation</option>
                 <option value="Pioneer generation">Pioneer Generation</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">Date of Birth</label>
+              <Input
+                type="date"
+                value={manualDob}
+                onChange={(e) => setManualDob(e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="h-12 text-lg"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Required for age-adjusted health thresholds (e.g., 65+ seniors)
+              </p>
             </div>
 
             <div>
