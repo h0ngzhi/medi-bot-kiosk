@@ -513,13 +513,18 @@ export default function ScanCard() {
 
   const handleDeleteUser = async (user: ExistingUser) => {
     try {
-      // Delete user roles first (cascade should handle this, but be explicit)
-      await supabase
-        .from('user_roles')
-        .delete()
-        .eq('user_id', user.id);
+      // Delete all related records first (no CASCADE, so manual cleanup)
+      await Promise.all([
+        supabase.from('user_roles').delete().eq('user_id', user.id),
+        supabase.from('screening_results').delete().eq('kiosk_user_id', user.id),
+        supabase.from('medications').delete().eq('kiosk_user_id', user.id),
+        supabase.from('health_screenings').delete().eq('kiosk_user_id', user.id),
+        supabase.from('user_programme_signups').delete().eq('kiosk_user_id', user.id),
+        supabase.from('programme_feedback').delete().eq('kiosk_user_id', user.id),
+        supabase.from('user_reward_redemptions').delete().eq('kiosk_user_id', user.id),
+      ]);
       
-      // Delete the user (cascades to all related tables)
+      // Now delete the user
       const { error } = await supabase
         .from('kiosk_users')
         .delete()
