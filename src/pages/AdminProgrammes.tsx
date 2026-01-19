@@ -137,6 +137,9 @@ type ProgrammeForm = {
   group_size: string;
   languages: string;
   learning_objectives: string;
+  learning_objectives_zh: string;
+  learning_objectives_ms: string;
+  learning_objectives_ta: string;
   guest_option: string;
   recurrence_type: string;
   series_mode: 'new' | 'existing';
@@ -217,6 +220,9 @@ const emptyForm: ProgrammeForm = {
   group_size: "",
   languages: "",
   learning_objectives: "",
+  learning_objectives_zh: "",
+  learning_objectives_ms: "",
+  learning_objectives_ta: "",
   guest_option: "",
   recurrence_type: "one_time",
   series_mode: 'new',
@@ -457,7 +463,9 @@ const AdminProgrammes = () => {
       group_size: form.group_size || null,
       languages: form.languages ? form.languages.split(',').map(l => l.trim()).filter(Boolean) : null,
       learning_objectives: form.learning_objectives ? form.learning_objectives.split('\n').map(l => l.trim()).filter(Boolean) : null,
-      guest_option: form.guest_option || null,
+      learning_objectives_zh: form.learning_objectives_zh ? form.learning_objectives_zh.split('\n').map(l => l.trim()).filter(Boolean) : null,
+      learning_objectives_ms: form.learning_objectives_ms ? form.learning_objectives_ms.split('\n').map(l => l.trim()).filter(Boolean) : null,
+      learning_objectives_ta: form.learning_objectives_ta ? form.learning_objectives_ta.split('\n').map(l => l.trim()).filter(Boolean) : null,
       navigation_pdf_url: form.is_online ? null : (form.navigation_pdf_url || null),
       navigation_pdf_url_zh: form.is_online ? null : (form.navigation_pdf_url_zh || null),
       navigation_pdf_url_ms: form.is_online ? null : (form.navigation_pdf_url_ms || null),
@@ -552,6 +560,9 @@ const AdminProgrammes = () => {
       group_size: programme.group_size || "",
       languages: programme.languages?.join(', ') || "",
       learning_objectives: programme.learning_objectives?.join('\n') || "",
+      learning_objectives_zh: (programme as any).learning_objectives_zh?.join('\n') || "",
+      learning_objectives_ms: (programme as any).learning_objectives_ms?.join('\n') || "",
+      learning_objectives_ta: (programme as any).learning_objectives_ta?.join('\n') || "",
       guest_option: programme.guest_option || "",
       recurrence_type: programme.recurrence_type || "one_time",
       series_mode: 'new', // When editing, we don't change series
@@ -877,6 +888,21 @@ const AdminProgrammes = () => {
                               rows={2}
                             />
                           </div>
+                          <div>
+                            <Label htmlFor="learning_objectives_en">Learning Objectives (English)</Label>
+                            <Textarea
+                              id="learning_objectives_en"
+                              value={form.learning_objectives}
+                              onChange={(e) =>
+                                setForm({ ...form, learning_objectives: e.target.value })
+                              }
+                              placeholder="Learn basic techniques&#10;Improve balance and coordination&#10;Build strength"
+                              rows={3}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              One objective per line
+                            </p>
+                          </div>
                         </TabsContent>
                         
                         <TabsContent value="zh" className="space-y-4 mt-4">
@@ -902,6 +928,21 @@ const AdminProgrammes = () => {
                               placeholder="简单语言，1-2句话"
                               rows={2}
                             />
+                          </div>
+                          <div>
+                            <Label htmlFor="learning_objectives_zh">Learning Objectives (中文)</Label>
+                            <Textarea
+                              id="learning_objectives_zh"
+                              value={form.learning_objectives_zh}
+                              onChange={(e) =>
+                                setForm({ ...form, learning_objectives_zh: e.target.value })
+                              }
+                              placeholder="学习基本技巧&#10;改善平衡和协调&#10;增强体力"
+                              rows={3}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              每行一个目标
+                            </p>
                           </div>
                         </TabsContent>
                         
@@ -929,6 +970,21 @@ const AdminProgrammes = () => {
                               rows={2}
                             />
                           </div>
+                          <div>
+                            <Label htmlFor="learning_objectives_ms">Learning Objectives (Melayu)</Label>
+                            <Textarea
+                              id="learning_objectives_ms"
+                              value={form.learning_objectives_ms}
+                              onChange={(e) =>
+                                setForm({ ...form, learning_objectives_ms: e.target.value })
+                              }
+                              placeholder="Belajar teknik asas&#10;Meningkatkan keseimbangan&#10;Membina kekuatan"
+                              rows={3}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Satu objektif setiap baris
+                            </p>
+                          </div>
                         </TabsContent>
                         
                         <TabsContent value="ta" className="space-y-4 mt-4">
@@ -954,6 +1010,21 @@ const AdminProgrammes = () => {
                               placeholder="எளிய மொழியில், 1-2 வாக்கியங்கள்"
                               rows={2}
                             />
+                          </div>
+                          <div>
+                            <Label htmlFor="learning_objectives_ta">Learning Objectives (தமிழ்)</Label>
+                            <Textarea
+                              id="learning_objectives_ta"
+                              value={form.learning_objectives_ta}
+                              onChange={(e) =>
+                                setForm({ ...form, learning_objectives_ta: e.target.value })
+                              }
+                              placeholder="அடிப்படை நுட்பங்களைக் கற்றுக்கொள்ளுங்கள்&#10;சமநிலையை மேம்படுத்துங்கள்&#10;வலிமையை உருவாக்குங்கள்"
+                              rows={3}
+                            />
+                            <p className="text-xs text-muted-foreground mt-1">
+                              ஒரு வரிக்கு ஒரு குறிக்கோள்
+                            </p>
                           </div>
                         </TabsContent>
                       </Tabs>
@@ -989,43 +1060,26 @@ const AdminProgrammes = () => {
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="learning_objectives">Learning Objectives (one per line)</Label>
-                        <Textarea
-                          id="learning_objectives"
-                          value={form.learning_objectives}
-                          onChange={(e) =>
-                            setForm({ ...form, learning_objectives: e.target.value })
-                          }
-                          placeholder="Learn basic techniques&#10;Improve balance and coordination&#10;Build strength"
-                          rows={3}
-                        />
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Enter each objective on a new line.
-                        </p>
-                      </div>
-                      <div>
-                        <Label htmlFor="guest_option">Guest Tag (Optional)</Label>
-                        <Select
-                          value={form.guest_option || "none"}
-                          onValueChange={(v) =>
-                            setForm({ ...form, guest_option: v === "none" ? "" : v })
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="No tag" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">No tag</SelectItem>
-                            <SelectItem value="caregiver_welcome">👥 Caregiver Welcome</SelectItem>
-                            <SelectItem value="bring_friend">👥 Bring a Friend</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Shows a small tag on the programme card.
-                        </p>
-                      </div>
+                    <div>
+                      <Label htmlFor="guest_option">Guest Tag (Optional)</Label>
+                      <Select
+                        value={form.guest_option || "none"}
+                        onValueChange={(v) =>
+                          setForm({ ...form, guest_option: v === "none" ? "" : v })
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="No tag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="none">No tag</SelectItem>
+                          <SelectItem value="caregiver_welcome">👥 Caregiver Welcome</SelectItem>
+                          <SelectItem value="bring_friend">👥 Bring a Friend</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Shows a small tag on the programme card.
+                      </p>
                     </div>
                   </div>
 

@@ -26,7 +26,7 @@ import { useApp } from '@/contexts/AppContext';
 import { speakText } from '@/utils/speechUtils';
 import { getProgrammeStatus, isRegistrationOpen } from '@/utils/programmeUtils';
 import { ProgrammeFeedbackDisplay } from './ProgrammeFeedbackDisplay';
-import { Programme } from './ProgrammeCard';
+import { Programme, getLocalizedLearningObjectives } from './ProgrammeCard';
 import { supabase } from '@/integrations/supabase/client';
 
 interface ProgrammeDetailModalProps {
@@ -262,25 +262,28 @@ export function ProgrammeDetailModal({
           </div>
 
           {/* Learning Objectives */}
-          {programme.learning_objectives && programme.learning_objectives.length > 0 && (
-            <div className="bg-muted/50 rounded-2xl p-5">
-              <p className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
-                <Target className="w-6 h-6 text-primary" />
-                {t('community.learningObjectives')}
-              </p>
-              <ul className="space-y-2 ml-8">
-                {programme.learning_objectives.map((objective, idx) => (
-                  <li 
-                    key={idx} 
-                    className="text-lg text-muted-foreground list-disc cursor-default"
-                    onMouseEnter={() => handleSpeak(objective)}
-                  >
-                    {objective}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {(() => {
+            const localizedObjectives = getLocalizedLearningObjectives(programme, language);
+            return localizedObjectives && localizedObjectives.length > 0 && (
+              <div className="bg-muted/50 rounded-2xl p-5">
+                <p className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                  <Target className="w-6 h-6 text-primary" />
+                  {t('community.learningObjectives')}
+                </p>
+                <ul className="space-y-2 ml-8">
+                  {localizedObjectives.map((objective, idx) => (
+                    <li 
+                      key={idx} 
+                      className="text-lg text-muted-foreground list-disc cursor-default"
+                      onMouseEnter={() => handleSpeak(objective)}
+                    >
+                      {objective}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
 
           {/* Admin contact info */}
           {(programme.contact_number || programme.admin_email) && (

@@ -121,6 +121,9 @@ export type Database = {
           is_online: boolean | null
           languages: string[] | null
           learning_objectives: string[] | null
+          learning_objectives_ms: string[] | null
+          learning_objectives_ta: string[] | null
+          learning_objectives_zh: string[] | null
           location: string | null
           max_capacity: number | null
           navigation_pdf_url: string | null
@@ -161,6 +164,9 @@ export type Database = {
           is_online?: boolean | null
           languages?: string[] | null
           learning_objectives?: string[] | null
+          learning_objectives_ms?: string[] | null
+          learning_objectives_ta?: string[] | null
+          learning_objectives_zh?: string[] | null
           location?: string | null
           max_capacity?: number | null
           navigation_pdf_url?: string | null
@@ -201,6 +207,9 @@ export type Database = {
           is_online?: boolean | null
           languages?: string[] | null
           learning_objectives?: string[] | null
+          learning_objectives_ms?: string[] | null
+          learning_objectives_ta?: string[] | null
+          learning_objectives_zh?: string[] | null
           location?: string | null
           max_capacity?: number | null
           navigation_pdf_url?: string | null
