@@ -117,15 +117,12 @@ export default function Profile() {
           .eq('id', user.id)
           .single();
         
-        if (userData) {
+        if (userData && user) {
           setEventsAttended(userData.events_attended || 0);
           setEquippedMedalId(userData.equipped_medal_id || null);
           
           // Always sync the fetched points to context first
           const fetchedPoints = userData.points || 0;
-          if (user.points !== fetchedPoints) {
-            setUser({ ...user, points: fetchedPoints });
-          }
           
           // Check and grant daily login bonus
           const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
@@ -149,6 +146,11 @@ export default function Profile() {
                 title: t('profile.dailyBonusClaimed'),
                 description: t('profile.dailyBonusDesc'),
               });
+            }
+          } else {
+            // No bonus today, just sync the fetched points from database
+            if (user.points !== fetchedPoints) {
+              setUser({ ...user, points: fetchedPoints });
             }
           }
         }
