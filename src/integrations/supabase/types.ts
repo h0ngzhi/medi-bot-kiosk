@@ -352,6 +352,8 @@ export type Database = {
         Row: {
           chas_card_type: string | null
           created_at: string
+          daily_event_points_date: string | null
+          daily_event_points_earned: number
           equipped_medal_id: string | null
           events_attended: number
           id: string
@@ -364,6 +366,8 @@ export type Database = {
         Insert: {
           chas_card_type?: string | null
           created_at?: string
+          daily_event_points_date?: string | null
+          daily_event_points_earned?: number
           equipped_medal_id?: string | null
           events_attended?: number
           id?: string
@@ -376,6 +380,8 @@ export type Database = {
         Update: {
           chas_card_type?: string | null
           created_at?: string
+          daily_event_points_date?: string | null
+          daily_event_points_earned?: number
           equipped_medal_id?: string | null
           events_attended?: number
           id?: string
