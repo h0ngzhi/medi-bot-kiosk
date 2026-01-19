@@ -1,5 +1,6 @@
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Stethoscope,
   Building2,
@@ -10,9 +11,7 @@ import {
   Eye,
 } from "lucide-react";
 import type { MapClinic } from "./ClinicMap";
-import { List } from "react-window";
-import type { RowComponentProps } from "react-window";
-import { useRef, useEffect, useState, useCallback, memo, CSSProperties, ReactNode, ReactElement } from "react";
+import { useState, useCallback, memo } from "react";
 
 interface ClinicListPanelProps {
   clinics: MapClinic[];
@@ -25,10 +24,10 @@ interface ClinicListPanelProps {
   handleMouseLeave: () => void;
 }
 
-const ITEM_HEIGHT = 200; // Approximate height of each clinic card
+const ITEMS_PER_PAGE = 50;
 
-// Memoized clinic card component for better performance
-const ClinicCard = memo(function ClinicCard({
+// Memoized clinic card for better performance
+const ClinicCardItem = memo(function ClinicCardItem({
   clinic,
   isSelected,
   onClinicSelect,
@@ -48,7 +47,7 @@ const ClinicCard = memo(function ClinicCard({
   t: (key: string) => string;
   handleMouseEnter: (text: string) => void;
   handleMouseLeave: () => void;
-  getClinicIcon: (type: MapClinic["type"]) => ReactNode;
+  getClinicIcon: (type: MapClinic["type"]) => React.ReactNode;
   getTypeLabel: (type: MapClinic["type"]) => string;
 }) {
   return (
@@ -80,20 +79,20 @@ const ClinicCard = memo(function ClinicCard({
           <p className="text-xs text-muted-foreground mt-0.5">
             {getTypeLabel(clinic.type)} • {clinic.region}
           </p>
-
+          
           <div className="mt-2 space-y-1">
             <div className="flex items-start gap-1.5 text-muted-foreground">
               <MapPin className="w-3 h-3 mt-0.5 flex-shrink-0" />
               <span className="text-xs line-clamp-1">{clinic.address}</span>
             </div>
-
+            
             {clinic.hours && (
               <div className="flex items-start gap-1.5 text-muted-foreground">
                 <Clock className="w-3 h-3 mt-0.5 flex-shrink-0" />
                 <span className="text-xs line-clamp-2">{clinic.hours}</span>
               </div>
             )}
-
+            
             {clinic.phone && (
               <div className="flex items-start gap-1.5 text-muted-foreground">
                 <Phone className="w-3 h-3 mt-0.5 flex-shrink-0" />
@@ -135,62 +134,6 @@ const ClinicCard = memo(function ClinicCard({
   );
 });
 
-interface RowProps {
-  clinics: MapClinic[];
-  selectedClinicId: string | undefined;
-  onClinicSelect: (clinic: MapClinic) => void;
-  onShowPhone: (phone: string, clinicName: string) => void;
-  onClinicDetailOpen: (clinic: MapClinic) => void;
-  t: (key: string) => string;
-  handleMouseEnter: (text: string) => void;
-  handleMouseLeave: () => void;
-  getClinicIcon: (type: MapClinic["type"]) => ReactNode;
-  getTypeLabel: (type: MapClinic["type"]) => string;
-}
-
-function RowComponent({ 
-  index, 
-  style, 
-  clinics,
-  selectedClinicId,
-  onClinicSelect,
-  onShowPhone,
-  onClinicDetailOpen,
-  t,
-  handleMouseEnter,
-  handleMouseLeave,
-  getClinicIcon,
-  getTypeLabel,
-}: {
-  ariaAttributes: {
-    "aria-posinset": number;
-    "aria-setsize": number;
-    role: "listitem";
-  };
-  index: number;
-  style: CSSProperties;
-} & RowProps): ReactElement | null {
-  const clinic = clinics[index];
-  if (!clinic) return null;
-  
-  return (
-    <div style={style} className="px-3 py-1.5">
-      <ClinicCard
-        clinic={clinic}
-        isSelected={selectedClinicId === clinic.id}
-        onClinicSelect={onClinicSelect}
-        onShowPhone={onShowPhone}
-        onClinicDetailOpen={onClinicDetailOpen}
-        t={t}
-        handleMouseEnter={handleMouseEnter}
-        handleMouseLeave={handleMouseLeave}
-        getClinicIcon={getClinicIcon}
-        getTypeLabel={getTypeLabel}
-      />
-    </div>
-  );
-}
-
 export function ClinicListPanel({
   clinics,
   selectedClinic,
@@ -201,31 +144,9 @@ export function ClinicListPanel({
   handleMouseEnter,
   handleMouseLeave,
 }: ClinicListPanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState(400);
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const updateHeight = () => {
-      if (containerRef.current) {
-        setContainerHeight(containerRef.current.clientHeight);
-      }
-    };
-
-    updateHeight();
-
-    const resizeObserver = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setContainerHeight(entry.contentRect.height);
-      }
-    });
-
-    resizeObserver.observe(containerRef.current);
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  const getClinicIcon = useCallback((type: MapClinic["type"]): ReactNode => {
+  const getClinicIcon = useCallback((type: MapClinic["type"]) => {
     switch (type) {
       case "gp":
         return <Stethoscope className="w-5 h-5 text-primary" />;
@@ -238,57 +159,63 @@ export function ClinicListPanel({
     }
   }, []);
 
-  const getTypeLabel = useCallback(
-    (type: MapClinic["type"]) => {
-      switch (type) {
-        case "gp":
-          return t("findcare.gpClinic");
-        case "polyclinic":
-          return t("findcare.polyclinic");
-        case "hospital":
-          return t("findcare.hospital");
-        default:
-          return t("findcare.gpClinic");
-      }
-    },
-    [t]
-  );
+  const getTypeLabel = useCallback((type: MapClinic["type"]) => {
+    switch (type) {
+      case "gp": return t("findcare.gpClinic");
+      case "polyclinic": return t("findcare.polyclinic");
+      case "hospital": return t("findcare.hospital");
+      default: return t("findcare.gpClinic");
+    }
+  }, [t]);
+
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + ITEMS_PER_PAGE, clinics.length));
+  }, [clinics.length]);
 
   if (clinics.length === 0) {
     return (
       <div className="p-6 text-center text-muted-foreground">
         <MapPin className="w-12 h-12 mx-auto mb-3 opacity-50" />
         <p className="text-lg font-medium">No clinics found</p>
-        <p className="text-sm mt-1">
-          Try expanding your search radius or changing filters
-        </p>
+        <p className="text-sm mt-1">Try expanding your search radius or changing filters</p>
       </div>
     );
   }
 
-  const rowProps: RowProps = {
-    clinics,
-    selectedClinicId: selectedClinic?.id,
-    onClinicSelect,
-    onShowPhone,
-    onClinicDetailOpen,
-    t,
-    handleMouseEnter,
-    handleMouseLeave,
-    getClinicIcon,
-    getTypeLabel,
-  };
+  const visibleClinics = clinics.slice(0, visibleCount);
+  const hasMore = visibleCount < clinics.length;
 
   return (
-    <div ref={containerRef} className="h-full w-full">
-      <List<RowProps>
-        rowCount={clinics.length}
-        rowHeight={ITEM_HEIGHT}
-        rowComponent={RowComponent}
-        rowProps={rowProps}
-        overscanCount={3}
-        style={{ height: containerHeight }}
-      />
-    </div>
+    <ScrollArea className="h-full">
+      <div className="p-3 space-y-3">
+        {visibleClinics.map((clinic) => (
+          <ClinicCardItem
+            key={clinic.id}
+            clinic={clinic}
+            isSelected={selectedClinic?.id === clinic.id}
+            onClinicSelect={onClinicSelect}
+            onShowPhone={onShowPhone}
+            onClinicDetailOpen={onClinicDetailOpen}
+            t={t}
+            handleMouseEnter={handleMouseEnter}
+            handleMouseLeave={handleMouseLeave}
+            getClinicIcon={getClinicIcon}
+            getTypeLabel={getTypeLabel}
+          />
+        ))}
+        
+        {hasMore && (
+          <div className="pt-2 pb-4">
+            <Button
+              variant="outline"
+              className="w-full h-12 text-base"
+              onClick={handleLoadMore}
+            >
+              Load More ({clinics.length - visibleCount} remaining)
+            </Button>
+          </div>
+        )}
+      </div>
+    </ScrollArea>
   );
 }
