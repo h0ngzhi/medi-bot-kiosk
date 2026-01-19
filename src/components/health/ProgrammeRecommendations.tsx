@@ -15,6 +15,7 @@ interface HealthData {
   weight?: number;
   bmi?: number;
   age?: number; // Age in years for age-adjusted thresholds
+  gender?: 'male' | 'female'; // Gender for gender-adjusted thresholds
 }
 
 interface RecommendedProgramme {
