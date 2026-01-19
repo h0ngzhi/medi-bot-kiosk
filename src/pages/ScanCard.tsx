@@ -45,7 +45,7 @@ export default function ScanCard() {
   const [manualNric, setManualNric] = useState('');
   const [manualName, setManualName] = useState('');
   const [manualChasType, setManualChasType] = useState('Blue');
-  const [manualPoints, setManualPoints] = useState('50');
+  const [manualPoints, setManualPoints] = useState('0');
   const [manualEventsAttended, setManualEventsAttended] = useState('0');
   const [isAdmin, setIsAdmin] = useState(false);
   const [existingUsers, setExistingUsers] = useState<ExistingUser[]>([]);
@@ -241,7 +241,7 @@ export default function ScanCard() {
       if (!kioskUser) {
         isNewUser = true;
         // Use custom points and events if set via manual entry
-        const startingPoints = parseInt(manualPoints) || 50;
+        const startingPoints = parseInt(manualPoints) || 0;
         const startingEvents = parseInt(manualEventsAttended) || 0;
         const { data: newUser, error: insertError } = await supabase
           .from('kiosk_users')

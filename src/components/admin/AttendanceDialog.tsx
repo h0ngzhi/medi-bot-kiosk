@@ -142,31 +142,60 @@ export const AttendanceDialog = ({
 
       if (updateError) throw updateError;
 
-      // Add points to each user
+      // Add points to each user (with daily cap of 10 event points)
+      const today = new Date().toISOString().split('T')[0];
+      const maxDailyEventPoints = 10;
+      let totalPointsAwarded = 0;
+      let cappedUsers = 0;
+
       for (const kioskUserId of kioskUserIds) {
-        // Get current points
+        // Get current points and daily tracking
         const { data: userData, error: fetchError } = await supabase
           .from("kiosk_users")
-          .select("points")
+          .select("points, daily_event_points_earned, daily_event_points_date")
           .eq("id", kioskUserId)
           .maybeSingle();
 
         if (fetchError) throw fetchError;
 
         if (userData) {
-          const newPoints = (userData.points || 0) + pointsReward;
+          // Reset daily counter if it's a new day
+          let dailyEarned = userData.daily_event_points_earned || 0;
+          if (userData.daily_event_points_date !== today) {
+            dailyEarned = 0;
+          }
+
+          // Calculate how many points can be awarded (capped at remaining daily limit)
+          const remainingCapacity = maxDailyEventPoints - dailyEarned;
+          const actualPointsAwarded = Math.min(pointsReward, remainingCapacity);
+
+          if (actualPointsAwarded < pointsReward) {
+            cappedUsers++;
+          }
+
+          const newPoints = (userData.points || 0) + actualPointsAwarded;
+          const newDailyEarned = dailyEarned + actualPointsAwarded;
+
           const { error: pointsError } = await supabase
             .from("kiosk_users")
-            .update({ points: newPoints })
+            .update({ 
+              points: newPoints,
+              daily_event_points_earned: newDailyEarned,
+              daily_event_points_date: today
+            })
             .eq("id", kioskUserId);
 
           if (pointsError) throw pointsError;
+          totalPointsAwarded += actualPointsAwarded;
         }
       }
 
+      const cappedMsg = cappedUsers > 0 
+        ? ` (${cappedUsers} hit daily cap)` 
+        : '';
       toast({
         title: "Success",
-        description: `Marked ${selectedIds.size} participant(s) as attended. ${pointsReward} points awarded to each.`,
+        description: `Marked ${selectedIds.size} participant(s) as attended. Points awarded: ${totalPointsAwarded} total${cappedMsg}.`,
       });
 
       setSelectedIds(new Set());
