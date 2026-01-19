@@ -15,19 +15,16 @@ interface NavigationPdfModalProps {
 export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: NavigationPdfModalProps) {
   const { t } = useApp();
   const [isPrinting, setIsPrinting] = useState(false);
-  const [showFallback, setShowFallback] = useState(false);
+  const [pdfLoaded, setPdfLoaded] = useState(false);
+  const [pdfError, setPdfError] = useState(false);
 
   // Reset state when modal opens
   useEffect(() => {
     if (isOpen) {
-      setShowFallback(false);
-      // Show fallback after 3 seconds if PDF doesn't load
-      const timer = setTimeout(() => {
-        setShowFallback(true);
-      }, 3000);
-      return () => clearTimeout(timer);
+      setPdfLoaded(false);
+      setPdfError(false);
     }
-  }, [isOpen]);
+  }, [isOpen, pdfUrl]);
 
   const handlePrint = () => {
     setIsPrinting(true);
@@ -41,9 +38,6 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
   const handleOpenInNewTab = () => {
     window.open(pdfUrl, '_blank');
   };
-
-  // Use Google Docs viewer as a fallback for cross-origin PDFs
-  const googleDocsViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfUrl)}&embedded=true`;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -92,20 +86,40 @@ export function NavigationPdfModal({ isOpen, onClose, pdfUrl, programmeTitle }: 
           </Button>
         </div>
 
-        {/* PDF Viewer */}
-        <div className="flex-1 overflow-hidden bg-muted/30">
-          {!showFallback ? (
-            <div className="w-full h-full flex items-center justify-center">
+        {/* PDF Viewer - Direct embed, no Google Docs */}
+        <div className="flex-1 overflow-hidden bg-muted/30 relative">
+          {!pdfLoaded && !pdfError && (
+            <div className="absolute inset-0 flex items-center justify-center">
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-10 h-10 animate-spin text-primary" />
                 <p className="text-muted-foreground">{t('community.loadingNavCard')}</p>
               </div>
             </div>
+          )}
+          
+          {pdfError ? (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+              <FileText className="w-16 h-16 text-muted-foreground" />
+              <p className="text-lg text-muted-foreground text-center px-4">
+                {t('community.pdfLoadError') || 'Unable to display PDF in browser'}
+              </p>
+              <Button
+                variant="default"
+                size="lg"
+                onClick={handleOpenInNewTab}
+                className="h-12 px-6"
+              >
+                <ExternalLink className="w-5 h-5 mr-2" />
+                {t('community.openInNewTab') || 'Open PDF in New Tab'}
+              </Button>
+            </div>
           ) : (
             <iframe
-              src={googleDocsViewerUrl}
-              className="w-full h-full border-0"
+              src={pdfUrl}
+              className={`w-full h-full border-0 ${pdfLoaded ? 'opacity-100' : 'opacity-0'}`}
               title="Navigation PDF"
+              onLoad={() => setPdfLoaded(true)}
+              onError={() => setPdfError(true)}
             />
           )}
         </div>
