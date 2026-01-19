@@ -127,19 +127,9 @@ export function ClinicDetailModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col gap-3 mt-6">
-          <Button
-            size="lg"
-            className="w-full h-14 text-lg font-semibold"
-            onClick={() => onOpenMaps(clinic.address)}
-          >
-            <Navigation className="w-5 h-5 mr-2" />
-            {t("findcare.getDirections")}
-          </Button>
-          
-          {clinic.phone && (
+        {clinic.phone && (
+          <div className="mt-6">
             <Button
-              variant="outline"
               size="lg"
               className="w-full h-14 text-lg font-semibold"
               onClick={() => {
@@ -150,8 +140,8 @@ export function ClinicDetailModal({
               <Phone className="w-5 h-5 mr-2" />
               {t("findcare.call")}
             </Button>
-          )}
-        </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
