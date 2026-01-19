@@ -24,7 +24,7 @@ interface ProgrammeSignupFormProps {
   onSuccess: () => void;
 }
 
-export function ProgrammeSignupForm({ isOpen, onClose, programme }: ProgrammeSignupFormProps) {
+export function ProgrammeSignupForm({ isOpen, onClose, programme, onSuccess }: ProgrammeSignupFormProps) {
   const { user, t, language, isTtsEnabled } = useApp();
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState('');
@@ -120,6 +120,7 @@ export function ProgrammeSignupForm({ isOpen, onClose, programme }: ProgrammeSig
       }
 
       setSubmitted(true);
+      onSuccess();
       toast.success(t('community.signupSuccess'));
     } catch (error) {
       console.error('Signup error:', error);
