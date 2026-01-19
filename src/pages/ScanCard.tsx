@@ -504,29 +504,8 @@ export default function ScanCard() {
       ? user.chas_card_type.charAt(0).toUpperCase() + user.chas_card_type.slice(1)
       : 'Blue';
     
-    // Only update points/events if user explicitly changed from defaults
-    const customPoints = parseInt(manualPoints);
-    const customEvents = parseInt(manualEventsAttended);
-    const updates: Record<string, number> = {};
-    
-    // Only apply custom values if they differ from defaults (50 points, 0 events)
-    const isCustomPoints = !isNaN(customPoints) && customPoints !== 50;
-    const isCustomEvents = !isNaN(customEvents) && customEvents !== 0;
-    
-    if (isCustomPoints) {
-      updates.points = customPoints;
-    }
-    if (isCustomEvents) {
-      updates.events_attended = customEvents;
-    }
-    
-    if (Object.keys(updates).length > 0) {
-      await supabase
-        .from('kiosk_users')
-        .update(updates)
-        .eq('id', user.id);
-    }
-    
+    // Quick Select should NOT modify points/events - just log in with existing data
+    // Points/events editing is done via the Edit dialog (pencil icon)
     const qrData = `${user.user_id}:${user.name}:${chasType}`;
     setShowManualEntry(false);
     handleQRCodeScanned(qrData);
