@@ -50,6 +50,9 @@ export interface Programme {
   languages: string[] | null;
   conducted_by: string | null;
   learning_objectives: string[] | null;
+  learning_objectives_zh?: string[] | null;
+  learning_objectives_ms?: string[] | null;
+  learning_objectives_ta?: string[] | null;
   // Admin contact info
   contact_number?: string | null;
   admin_email?: string | null;
@@ -84,6 +87,23 @@ export function getNavigationPdfUrl(
       return programme.navigation_pdf_url_ta || programme.navigation_pdf_url || null;
     default:
       return programme.navigation_pdf_url || null;
+  }
+}
+
+// Helper to get localized learning objectives based on user's language
+export function getLocalizedLearningObjectives(
+  programme: Programme,
+  language: string
+): string[] | null {
+  switch (language) {
+    case 'zh':
+      return programme.learning_objectives_zh?.length ? programme.learning_objectives_zh : programme.learning_objectives;
+    case 'ms':
+      return programme.learning_objectives_ms?.length ? programme.learning_objectives_ms : programme.learning_objectives;
+    case 'ta':
+      return programme.learning_objectives_ta?.length ? programme.learning_objectives_ta : programme.learning_objectives;
+    default:
+      return programme.learning_objectives;
   }
 }
 
@@ -339,45 +359,48 @@ export function ProgrammeCard({ programme, onSignUp, onCancel, onFeedback, onExp
         </div>
 
         {/* Expandable details */}
-        {programme.learning_objectives && programme.learning_objectives.length > 0 && (
-          <>
-            <Button
-              variant="ghost"
-              size="default"
-              onClick={() => setExpanded(!expanded)}
-              className="w-full justify-between mb-4 text-muted-foreground hover:text-foreground text-base"
-            >
-              <span className="flex items-center gap-2">
-                <Info className="w-5 h-5" />
-                {t('community.moreDetails')}
-              </span>
-              {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </Button>
+        {(() => {
+          const localizedObjectives = getLocalizedLearningObjectives(programme, language);
+          return localizedObjectives && localizedObjectives.length > 0 && (
+            <>
+              <Button
+                variant="ghost"
+                size="default"
+                onClick={() => setExpanded(!expanded)}
+                className="w-full justify-between mb-4 text-muted-foreground hover:text-foreground text-base"
+              >
+                <span className="flex items-center gap-2">
+                  <Info className="w-5 h-5" />
+                  {t('community.moreDetails')}
+                </span>
+                {expanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+              </Button>
 
-            {expanded && (
-              <div className="bg-muted rounded-2xl p-4 mb-4 space-y-4 animate-fade-in">
-                {/* Learning Objectives */}
-                <div>
-                  <p className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
-                    <Target className="w-5 h-5 text-primary" />
-                    {t('community.learningObjectives')}
-                  </p>
-                  <ul className="space-y-2 ml-6">
-                    {programme.learning_objectives.map((objective, idx) => (
-                      <li 
-                        key={idx} 
-                        className="text-base text-muted-foreground list-disc cursor-default"
-                        onMouseEnter={() => handleSpeak(objective)}
-                      >
-                        {objective}
-                      </li>
-                    ))}
-                  </ul>
+              {expanded && (
+                <div className="bg-muted rounded-2xl p-4 mb-4 space-y-4 animate-fade-in">
+                  {/* Learning Objectives */}
+                  <div>
+                    <p className="text-base font-semibold text-foreground mb-2 flex items-center gap-2">
+                      <Target className="w-5 h-5 text-primary" />
+                      {t('community.learningObjectives')}
+                    </p>
+                    <ul className="space-y-2 ml-6">
+                      {localizedObjectives.map((objective, idx) => (
+                        <li 
+                          key={idx} 
+                          className="text-base text-muted-foreground list-disc cursor-default"
+                          onMouseEnter={() => handleSpeak(objective)}
+                        >
+                          {objective}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          );
+        })()}
 
         {/* Public feedback display for completed programmes */}
         {isCompleted && (
