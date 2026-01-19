@@ -173,9 +173,9 @@ export default function ScanCard() {
   };
 
   // Parse and validate QR code data
-  // Expected format: NRIC:NAME:CHAS_TYPE or NRIC:NAME:CHAS_TYPE:DOB
-  // Example: S1234567A:Tan Ah Kow:Blue or S1234567A:Tan Ah Kow:Blue:1955-03-15
-  const parseQRCode = (qrData: string): { nric: string; name: string; chasType: string; dob?: string } | null => {
+  // Expected format: NRIC:NAME:CHAS_TYPE:DOB:GENDER
+  // Example: S1234567A:Tan Ah Kow:Blue:1955-03-15:male
+  const parseQRCode = (qrData: string): { nric: string; name: string; chasType: string; dob?: string; gender?: 'male' | 'female' } | null => {
     // Length check - reject extremely long inputs
     if (!qrData || qrData.length === 0 || qrData.length > 300) {
       return null;
@@ -193,6 +193,7 @@ export default function ScanCard() {
     const name = parts[1].trim();
     const chasType = parts[2].trim();
     const dob = parts[3]?.trim() || undefined;
+    const genderRaw = parts[4]?.trim().toLowerCase() || undefined;
 
     // Validate NRIC format
     if (!validateNRIC(nric)) {
@@ -217,10 +218,16 @@ export default function ScanCard() {
       return null;
     }
 
+    // Validate and parse gender
+    let gender: 'male' | 'female' | undefined = undefined;
+    if (genderRaw === 'male' || genderRaw === 'female') {
+      gender = genderRaw;
+    }
+
     // Capitalize CHAS type properly
     const formattedChasType = chasType.charAt(0).toUpperCase() + chasType.slice(1).toLowerCase();
 
-    return { nric, name: sanitizedName, chasType: formattedChasType, dob };
+    return { nric, name: sanitizedName, chasType: formattedChasType, dob, gender };
   };
 
   const handleQRCodeScanned = async (qrData: string) => {
@@ -236,12 +243,12 @@ export default function ScanCard() {
     const parsed = parseQRCode(qrData);
     
     if (!parsed) {
-      setErrorMessage('Invalid card format. Expected format: NRIC:Name:CHAS Type:DOB (e.g., S1234567A:Tan Ah Kow:Blue:1955-03-15)');
+      setErrorMessage('Invalid card format. Expected format: NRIC:Name:CHAS Type:DOB:Gender (e.g., S1234567A:Tan Ah Kow:Blue:1955-03-15:male)');
       setScanState('error');
       return;
     }
 
-    const { nric, name, chasType, dob } = parsed;
+    const { nric, name, chasType, dob, gender: qrGender } = parsed;
 
     try {
       // Check if user already exists in database
@@ -264,6 +271,8 @@ export default function ScanCard() {
         const startingEvents = parseInt(manualEventsAttended) || 0;
         // Use DOB from QR code or manual entry
         const dateOfBirth = dob || manualDob || null;
+        // Use gender from QR code or manual entry
+        const userGender = qrGender || manualGender;
         const { data: newUser, error: insertError } = await supabase
           .from('kiosk_users')
           .insert({
@@ -271,7 +280,7 @@ export default function ScanCard() {
             name: name,
             chas_card_type: chasType.toLowerCase(),
             date_of_birth: dateOfBirth,
-            gender: manualGender,
+            gender: userGender,
             points: startingPoints,
             events_attended: startingEvents,
           })
@@ -596,11 +605,14 @@ export default function ScanCard() {
     if (!manualNric.trim() || !manualName.trim()) {
       return;
     }
-    // Include DOB in QR data if provided
+    // Include DOB and gender in QR data
     let qrData = `${manualNric.trim()}:${manualName.trim()}:${manualChasType}`;
     if (manualDob) {
       qrData += `:${manualDob}`;
+    } else {
+      qrData += `:`;  // Empty DOB placeholder
     }
+    qrData += `:${manualGender}`;
     setShowManualEntry(false);
     handleQRCodeScanned(qrData);
   };
@@ -703,9 +715,9 @@ export default function ScanCard() {
             </DialogDescription>
             <div className="mt-2 p-3 bg-muted rounded-lg text-sm">
               <p className="font-medium text-foreground mb-1">QR Code Format:</p>
-              <code className="text-primary font-mono">NRIC:NAME:CHAS_TYPE:DOB</code>
+              <code className="text-primary font-mono">NRIC:NAME:CHAS_TYPE:DOB:GENDER</code>
               <p className="text-muted-foreground mt-1 text-xs">
-                Example: S1234567A:Tan Ah Kow:Blue:1955-03-15
+                Example: S1234567A:Tan Ah Kow:Blue:1955-03-15:male
               </p>
             </div>
           </DialogHeader>
