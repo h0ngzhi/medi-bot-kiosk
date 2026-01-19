@@ -13,7 +13,9 @@ import {
   Ruler,
   CheckCircle2,
   Activity,
-  History
+  History,
+  AlertTriangle,
+  AlertCircle
 } from 'lucide-react';
 
 type ScreeningType = 'bp' | 'weight' | null;
@@ -67,6 +69,9 @@ export default function HealthScreenings() {
   const [pastResults, setPastResults] = useState<PastResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [userAge, setUserAge] = useState<number | undefined>(undefined);
+  const [userGender, setUserGender] = useState<'male' | 'female' | undefined>(undefined);
+  const [aiReason, setAiReason] = useState<string>('');
+  const [aiRecommendations, setAiRecommendations] = useState<string[]>([]);
 
   const { handleMouseEnter, handleMouseLeave } = useDebouncedSpeak(isTtsEnabled, language);
 
@@ -82,7 +87,7 @@ export default function HealthScreenings() {
     return age;
   };
 
-  // Fetch past results and user DOB on mount
+  // Fetch past results and user DOB/gender on mount
   useEffect(() => {
     const fetchData = async () => {
       if (!user?.id) {
@@ -91,15 +96,18 @@ export default function HealthScreenings() {
       }
 
       try {
-        // Fetch user's date_of_birth
+        // Fetch user's date_of_birth and gender
         const { data: userData } = await supabase
           .from('kiosk_users')
-          .select('date_of_birth')
+          .select('date_of_birth, gender')
           .eq('id', user.id)
           .single();
         
         if (userData?.date_of_birth) {
           setUserAge(calculateAge(userData.date_of_birth));
+        }
+        if (userData?.gender) {
+          setUserGender(userData.gender as 'male' | 'female');
         }
 
         // Fetch past screening results
@@ -165,30 +173,101 @@ export default function HealthScreenings() {
   const handleSelectScreening = (type: ScreeningType) => {
     setSelectedType(type);
     setState('measuring');
+    setAiReason('');
+    setAiRecommendations([]);
 
-    // Simulate measurement with random realistic values
+    // Simulate measurement with varied realistic values (including some elevated/high)
     setTimeout(async () => {
-      const mockResult: ScreeningResult = type === 'bp' 
-        ? {
-            type: 'bp',
-            values: { 
-              systolic: Math.floor(Math.random() * (140 - 100) + 100),
-              diastolic: Math.floor(Math.random() * (90 - 60) + 60),
-              pulse: Math.floor(Math.random() * (90 - 60) + 60),
-            },
-            status: 'normal',
-            date: new Date().toLocaleDateString(),
-          }
-        : {
-            type: 'weight',
-            values: { 
-              height: Math.floor(Math.random() * (180 - 150) + 150),
-              weight: Math.floor(Math.random() * (80 - 50) + 50),
-              bmi: parseFloat((Math.random() * (28 - 18) + 18).toFixed(1)),
-            },
-            status: 'normal',
-            date: new Date().toLocaleDateString(),
-          };
+      // Generate values with realistic variation including some concerning readings
+      const randomChance = Math.random();
+      
+      let mockResult: ScreeningResult;
+      
+      if (type === 'bp') {
+        // 30% chance of elevated, 20% chance of high BP for more realistic testing
+        let systolic: number, diastolic: number, pulse: number;
+        
+        if (randomChance < 0.5) {
+          // Normal range
+          systolic = Math.floor(Math.random() * (119 - 100) + 100);
+          diastolic = Math.floor(Math.random() * (79 - 60) + 60);
+        } else if (randomChance < 0.8) {
+          // Elevated/Warning range
+          systolic = Math.floor(Math.random() * (139 - 120) + 120);
+          diastolic = Math.floor(Math.random() * (89 - 75) + 75);
+        } else {
+          // High range
+          systolic = Math.floor(Math.random() * (170 - 140) + 140);
+          diastolic = Math.floor(Math.random() * (100 - 90) + 90);
+        }
+        
+        pulse = Math.floor(Math.random() * (100 - 55) + 55);
+        
+        mockResult = {
+          type: 'bp',
+          values: { systolic, diastolic, pulse },
+          status: 'normal', // Will be updated by AI
+          date: new Date().toLocaleDateString(),
+        };
+      } else {
+        // Weight/BMI - 30% chance of at-risk, 20% chance of obese for testing
+        const height = Math.floor(Math.random() * (180 - 150) + 150);
+        let weight: number;
+        
+        if (randomChance < 0.5) {
+          // Normal BMI range (18.5-22.9 for Asians)
+          const targetBmi = Math.random() * (22.9 - 18.5) + 18.5;
+          weight = Math.round(targetBmi * Math.pow(height / 100, 2));
+        } else if (randomChance < 0.8) {
+          // At-risk/Overweight BMI (23-27)
+          const targetBmi = Math.random() * (27 - 23) + 23;
+          weight = Math.round(targetBmi * Math.pow(height / 100, 2));
+        } else {
+          // Obese BMI (28+)
+          const targetBmi = Math.random() * (35 - 28) + 28;
+          weight = Math.round(targetBmi * Math.pow(height / 100, 2));
+        }
+        
+        const bmi = parseFloat((weight / Math.pow(height / 100, 2)).toFixed(1));
+        
+        mockResult = {
+          type: 'weight',
+          values: { height, weight, bmi },
+          status: 'normal', // Will be updated by AI
+          date: new Date().toLocaleDateString(),
+        };
+      }
+
+      // Call AI to assess severity based on age and gender
+      try {
+        const healthData = {
+          type: mockResult.type,
+          ...(mockResult.type === 'bp' ? {
+            systolic: mockResult.values.systolic as number,
+            diastolic: mockResult.values.diastolic as number,
+            pulse: mockResult.values.pulse as number,
+          } : {
+            height: mockResult.values.height as number,
+            weight: mockResult.values.weight as number,
+            bmi: mockResult.values.bmi as number,
+          }),
+          age: userAge,
+          gender: userGender,
+        };
+
+        const { data: assessmentData, error: assessmentError } = await supabase.functions.invoke(
+          'assess-health-severity',
+          { body: { healthData } }
+        );
+
+        if (!assessmentError && assessmentData) {
+          mockResult.status = assessmentData.status || 'normal';
+          setAiReason(assessmentData.reason || '');
+          setAiRecommendations(assessmentData.recommendations || []);
+        }
+      } catch (error) {
+        console.error('Error getting AI assessment:', error);
+      }
       
       setResult(mockResult);
       setState('result');
@@ -375,12 +454,27 @@ export default function HealthScreenings() {
           <div className="animate-fade-in space-y-6">
             <div className="bg-card rounded-3xl shadow-medium p-8">
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 rounded-full bg-success/20 flex items-center justify-center">
-                  <CheckCircle2 className="w-10 h-10 text-success" />
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                  result.status === 'normal' ? 'bg-success/20' : 
+                  result.status === 'warning' ? 'bg-warning/20' : 'bg-destructive/20'
+                }`}>
+                  {result.status === 'normal' ? (
+                    <CheckCircle2 className="w-10 h-10 text-success" />
+                  ) : result.status === 'warning' ? (
+                    <AlertTriangle className="w-10 h-10 text-warning" />
+                  ) : (
+                    <AlertCircle className="w-10 h-10 text-destructive" />
+                  )}
                 </div>
-                <div onMouseEnter={() => handleMouseEnter(`${t('health.result')}: ${t('health.normal')}`)} onMouseLeave={handleMouseLeave}>
+                <div onMouseEnter={() => handleMouseEnter(`${t('health.result')}: ${t(`health.${result.status}`)}`)} onMouseLeave={handleMouseLeave}>
                   <p className="text-lg text-muted-foreground cursor-default">{t('health.result')}</p>
-                  <p className="text-2xl font-bold text-success cursor-default">{t('health.normal')}</p>
+                  <p className={`text-2xl font-bold cursor-default ${
+                    result.status === 'normal' ? 'text-success' : 
+                    result.status === 'warning' ? 'text-warning' : 'text-destructive'
+                  }`}>
+                    {result.status === 'normal' ? t('health.normal') : 
+                     result.status === 'warning' ? t('health.warning') : t('health.high')}
+                  </p>
                 </div>
               </div>
 
@@ -419,6 +513,24 @@ export default function HealthScreenings() {
                     <p className="text-3xl font-bold text-foreground">{result.values.bmi}</p>
                     <p className="text-sm text-muted-foreground">kg/m²</p>
                   </div>
+                </div>
+              )}
+
+              {/* AI Assessment Reason */}
+              {aiReason && (
+                <div className="mt-6 p-4 bg-muted rounded-2xl">
+                  <p className="text-base text-foreground font-medium mb-2">{t('health.assessment')}</p>
+                  <p className="text-base text-muted-foreground">{aiReason}</p>
+                  {aiRecommendations.length > 0 && (
+                    <div className="mt-3">
+                      <p className="text-sm font-medium text-foreground mb-1">{t('health.recommendations')}</p>
+                      <ul className="list-disc list-inside text-sm text-muted-foreground">
+                        {aiRecommendations.map((rec, idx) => (
+                          <li key={idx}>{rec}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
 
