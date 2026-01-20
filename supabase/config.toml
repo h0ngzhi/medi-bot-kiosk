@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.verify-voice-guide-access]
 verify_jwt = false
+
+[functions.verify-owner-dashboard-access]
+verify_jwt = false

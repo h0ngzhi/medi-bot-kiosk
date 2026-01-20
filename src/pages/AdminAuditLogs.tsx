@@ -34,10 +34,27 @@ import {
   FileText,
   RefreshCw,
   Plus,
+  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 
-const ACCESS_PASSWORD = "catinthebin123";
+const OWNER_DASHBOARD_TOKEN_KEY = 'ownerDashboardToken';
+
+// Validate token format and expiration (24 hours)
+function isValidToken(token: string | null): boolean {
+  if (!token) return false;
+  try {
+    const decoded = atob(token);
+    const parts = decoded.split(':');
+    if (parts[0] !== 'owner_dashboard' || parts.length < 2) return false;
+    const timestamp = parseInt(parts[1], 10);
+    const now = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    return now - timestamp < twentyFourHours;
+  } catch {
+    return false;
+  }
+}
 
 interface AuditLog {
   id: string;
@@ -58,6 +75,7 @@ const AdminAuditLogs = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
@@ -72,21 +90,51 @@ const AdminAuditLogs = () => {
   });
   const [createLoading, setCreateLoading] = useState(false);
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === ACCESS_PASSWORD) {
-      setIsAuthenticated(true);
-      setPasswordError("");
-      sessionStorage.setItem("audit_logs_auth", "true");
-    } else {
-      setPasswordError("Invalid password");
+    
+    if (!password.trim()) {
+      setPasswordError("Please enter a password");
+      return;
+    }
+
+    setIsVerifying(true);
+    setPasswordError("");
+
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-owner-dashboard-access', {
+        body: { password }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.success && data.token) {
+        sessionStorage.setItem(OWNER_DASHBOARD_TOKEN_KEY, data.token);
+        sessionStorage.setItem("audit_logs_auth", "true");
+        setIsAuthenticated(true);
+        setPassword("");
+        setPasswordError("");
+      } else {
+        setPasswordError(data.error || "Incorrect password");
+      }
+    } catch (error: any) {
+      console.error('Password verification error:', error);
+      setPasswordError(error?.message || "Failed to verify password. Please try again.");
+    } finally {
+      setIsVerifying(false);
     }
   };
 
   useEffect(() => {
-    const savedAuth = sessionStorage.getItem("audit_logs_auth");
-    if (savedAuth === "true") {
+    const token = sessionStorage.getItem(OWNER_DASHBOARD_TOKEN_KEY);
+    if (isValidToken(token)) {
       setIsAuthenticated(true);
+    } else {
+      // Clear invalid token
+      sessionStorage.removeItem(OWNER_DASHBOARD_TOKEN_KEY);
+      sessionStorage.removeItem("audit_logs_auth");
     }
   }, []);
 
@@ -269,14 +317,24 @@ const AdminAuditLogs = () => {
                     setPasswordError("");
                   }}
                   autoFocus
+                  disabled={isVerifying}
                 />
                 {passwordError && (
                   <p className="text-sm text-destructive">{passwordError}</p>
                 )}
               </div>
-              <Button type="submit" className="w-full">
-                <Shield className="h-4 w-4 mr-2" />
-                Access Dashboard
+              <Button type="submit" className="w-full" disabled={isVerifying}>
+                {isVerifying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <Shield className="h-4 w-4 mr-2" />
+                    Access Dashboard
+                  </>
+                )}
               </Button>
             </form>
             <div className="mt-4 text-center">
