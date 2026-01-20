@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.translate-text]
 verify_jwt = false
+
+[functions.verify-voice-guide-access]
+verify_jwt = false
