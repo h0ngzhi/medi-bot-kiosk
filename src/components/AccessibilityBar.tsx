@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Globe, Mic, Volume2, VolumeX, Lock } from 'lucide-react';
+import { Globe, Mic, Volume2, VolumeX, Lock, Loader2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -14,9 +14,26 @@ import {
 } from '@/components/ui/dialog';
 import VoiceNavigator from './VoiceNavigator';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-const VOICE_GUIDE_PASSWORD = 'catinthebin123';
 const VOICE_GUIDE_AUTH_KEY = 'voiceGuideAuthenticated';
+const VOICE_GUIDE_TOKEN_KEY = 'voiceGuideToken';
+
+// Validate token format and expiration (24 hours)
+function isValidToken(token: string | null): boolean {
+  if (!token) return false;
+  try {
+    const decoded = atob(token);
+    const parts = decoded.split(':');
+    if (parts[0] !== 'voice_guide' || parts.length < 2) return false;
+    const timestamp = parseInt(parts[1], 10);
+    const now = Date.now();
+    const twentyFourHours = 24 * 60 * 60 * 1000;
+    return now - timestamp < twentyFourHours;
+  } catch {
+    return false;
+  }
+}
 
 export function AccessibilityBar() {
   const { t, language, isTtsEnabled, setIsTtsEnabled } = useApp();
@@ -25,7 +42,8 @@ export function AccessibilityBar() {
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState('');
-  const [passwordError, setPasswordError] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -46,25 +64,55 @@ export function AccessibilityBar() {
   };
 
   const handleVoiceGuideClick = () => {
-    if (sessionStorage.getItem(VOICE_GUIDE_AUTH_KEY) === 'true') {
+    const token = sessionStorage.getItem(VOICE_GUIDE_TOKEN_KEY);
+    if (isValidToken(token)) {
       setIsVoiceOpen(true);
     } else {
+      // Clear invalid token
+      sessionStorage.removeItem(VOICE_GUIDE_TOKEN_KEY);
+      sessionStorage.removeItem(VOICE_GUIDE_AUTH_KEY);
       setShowPasswordDialog(true);
       setPassword('');
-      setPasswordError(false);
+      setPasswordError('');
     }
   };
 
-  const handlePasswordSubmit = () => {
-    if (password === VOICE_GUIDE_PASSWORD) {
-      sessionStorage.setItem(VOICE_GUIDE_AUTH_KEY, 'true');
-      setShowPasswordDialog(false);
-      setIsVoiceOpen(true);
-      setPassword('');
-      setPasswordError(false);
-    } else {
-      setPasswordError(true);
-      toast.error('Incorrect password');
+  const handlePasswordSubmit = async () => {
+    if (!password.trim()) {
+      setPasswordError('Please enter a password');
+      return;
+    }
+
+    setIsVerifying(true);
+    setPasswordError('');
+
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-voice-guide-access', {
+        body: { password }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.success && data.token) {
+        sessionStorage.setItem(VOICE_GUIDE_TOKEN_KEY, data.token);
+        sessionStorage.setItem(VOICE_GUIDE_AUTH_KEY, 'true');
+        setShowPasswordDialog(false);
+        setIsVoiceOpen(true);
+        setPassword('');
+        setPasswordError('');
+      } else {
+        setPasswordError(data.error || 'Incorrect password');
+        toast.error(data.error || 'Incorrect password');
+      }
+    } catch (error: any) {
+      console.error('Password verification error:', error);
+      const errorMessage = error?.message || 'Failed to verify password. Please try again.';
+      setPasswordError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -131,25 +179,34 @@ export function AccessibilityBar() {
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
-                setPasswordError(false);
+                setPasswordError('');
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === 'Enter' && !isVerifying) {
                   handlePasswordSubmit();
                 }
               }}
               className={`text-lg h-14 ${passwordError ? 'border-destructive' : ''}`}
               autoFocus
+              disabled={isVerifying}
             />
             {passwordError && (
-              <p className="text-destructive text-sm">Incorrect password. Please try again.</p>
+              <p className="text-destructive text-sm">{passwordError}</p>
             )}
             <Button 
               onClick={handlePasswordSubmit} 
               className="w-full h-14 text-lg"
               variant="warm"
+              disabled={isVerifying}
             >
-              Unlock Voice Guide
+              {isVerifying ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                'Unlock Voice Guide'
+              )}
             </Button>
           </div>
         </DialogContent>
