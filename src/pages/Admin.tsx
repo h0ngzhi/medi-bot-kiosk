@@ -8,7 +8,8 @@ import {
   Image, 
   Trophy, 
   LogIn,
-  ArrowLeft
+  ArrowLeft,
+  BarChart3
 } from "lucide-react";
 
 const adminLinks = [
@@ -27,25 +28,32 @@ const adminLinks = [
     color: "text-success",
   },
   {
+    title: "Impact Analytics",
+    description: "View registration, attendance and engagement metrics",
+    icon: BarChart3,
+    path: "/admin/analytics",
+    color: "text-info",
+  },
+  {
     title: "Account Management",
     description: "Manage vendor and editor accounts",
     icon: Users,
     path: "/admin/programmes/accounts",
-    color: "text-info",
+    color: "text-warning",
   },
   {
     title: "Rewards Management",
     description: "Manage badges, vouchers and tier settings",
     icon: Trophy,
     path: "/admin/rewards",
-    color: "text-warning",
+    color: "text-secondary",
   },
   {
     title: "Slideshow Management",
     description: "Control idle screen and dashboard media",
     icon: Image,
     path: "/admin/slideshow",
-    color: "text-secondary",
+    color: "text-muted-foreground",
   },
   {
     title: "Owner Dashboard",

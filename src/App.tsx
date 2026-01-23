@@ -24,7 +24,7 @@ import AdminAccountManagement from "./pages/AdminAccountManagement";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import AdminSlideshow from "./pages/AdminSlideshow";
 import AdminRewards from "./pages/AdminRewards";
-import StaffTrainingGuide from "./pages/StaffTrainingGuide";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import { HealthChatBot } from "@/components/HealthChatBot";
 
 
@@ -57,7 +57,7 @@ const App = () => (
                   <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
                   <Route path="/admin/slideshow" element={<AdminSlideshow />} />
                   <Route path="/admin/rewards" element={<AdminRewards />} />
-                  <Route path="/staff-training" element={<StaffTrainingGuide />} />
+                  <Route path="/admin/analytics" element={<AdminAnalytics />} />
                   <Route path="*" element={<NotFound />} />
                 </Routes>
                 <HealthChatBot />
