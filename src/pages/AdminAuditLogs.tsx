@@ -25,7 +25,6 @@ import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft,
   Shield,
-  Lock,
   UserPlus,
   Pencil,
   Key,
@@ -34,27 +33,9 @@ import {
   FileText,
   RefreshCw,
   Plus,
-  Loader2,
 } from "lucide-react";
 import { format } from "date-fns";
 
-const OWNER_DASHBOARD_TOKEN_KEY = 'ownerDashboardToken';
-
-// Validate token format and expiration (24 hours)
-function isValidToken(token: string | null): boolean {
-  if (!token) return false;
-  try {
-    const decoded = atob(token);
-    const parts = decoded.split(':');
-    if (parts[0] !== 'owner_dashboard' || parts.length < 2) return false;
-    const timestamp = parseInt(parts[1], 10);
-    const now = Date.now();
-    const twentyFourHours = 24 * 60 * 60 * 1000;
-    return now - timestamp < twentyFourHours;
-  } catch {
-    return false;
-  }
-}
 
 interface AuditLog {
   id: string;
@@ -72,11 +53,6 @@ const AdminAuditLogs = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [password, setPassword] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [isVerifying, setIsVerifying] = useState(false);
-
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -90,59 +66,9 @@ const AdminAuditLogs = () => {
   });
   const [createLoading, setCreateLoading] = useState(false);
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!password.trim()) {
-      setPasswordError("Please enter a password");
-      return;
-    }
-
-    setIsVerifying(true);
-    setPasswordError("");
-
-    try {
-      const { data, error } = await supabase.functions.invoke('verify-owner-dashboard-access', {
-        body: { password }
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data.success && data.token) {
-        sessionStorage.setItem(OWNER_DASHBOARD_TOKEN_KEY, data.token);
-        sessionStorage.setItem("audit_logs_auth", "true");
-        setIsAuthenticated(true);
-        setPassword("");
-        setPasswordError("");
-      } else {
-        setPasswordError(data.error || "Incorrect password");
-      }
-    } catch (error: any) {
-      console.error('Password verification error:', error);
-      setPasswordError(error?.message || "Failed to verify password. Please try again.");
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
   useEffect(() => {
-    const token = sessionStorage.getItem(OWNER_DASHBOARD_TOKEN_KEY);
-    if (isValidToken(token)) {
-      setIsAuthenticated(true);
-    } else {
-      // Clear invalid token
-      sessionStorage.removeItem(OWNER_DASHBOARD_TOKEN_KEY);
-      sessionStorage.removeItem("audit_logs_auth");
-    }
+    fetchLogs();
   }, []);
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchLogs();
-    }
-  }, [isAuthenticated]);
 
   const fetchLogs = async () => {
     setLoading(true);
@@ -290,64 +216,6 @@ const AdminAuditLogs = () => {
     );
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4 w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-              <Lock className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle>Owner Access</CardTitle>
-            <CardDescription>
-              Enter the password to manage accounts and view audit logs
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter access password"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setPasswordError("");
-                  }}
-                  autoFocus
-                  disabled={isVerifying}
-                />
-                {passwordError && (
-                  <p className="text-sm text-destructive">{passwordError}</p>
-                )}
-              </div>
-              <Button type="submit" className="w-full" disabled={isVerifying}>
-                {isVerifying ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Verifying...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="h-4 w-4 mr-2" />
-                    Access Dashboard
-                  </>
-                )}
-              </Button>
-            </form>
-            <div className="mt-4 text-center">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/admin/programmes")}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Admin
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background">
