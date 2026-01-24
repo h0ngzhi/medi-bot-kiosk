@@ -64,17 +64,7 @@ export function AccessibilityBar() {
   };
 
   const handleVoiceGuideClick = () => {
-    const token = sessionStorage.getItem(VOICE_GUIDE_TOKEN_KEY);
-    if (isValidToken(token)) {
-      setIsVoiceOpen(true);
-    } else {
-      // Clear invalid token
-      sessionStorage.removeItem(VOICE_GUIDE_TOKEN_KEY);
-      sessionStorage.removeItem(VOICE_GUIDE_AUTH_KEY);
-      setShowPasswordDialog(true);
-      setPassword('');
-      setPasswordError('');
-    }
+    setIsVoiceOpen(true);
   };
 
   const handlePasswordSubmit = async () => {
