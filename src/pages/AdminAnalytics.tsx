@@ -9,9 +9,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   ChartContainer, 
   ChartTooltip, 
-  ChartTooltipContent 
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent
 } from "@/components/ui/chart";
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from "recharts";
 
 interface AnalyticsData {
   totalRegistrations: number;
@@ -275,6 +277,7 @@ const AdminAnalytics = () => {
                       <XAxis type="number" />
                       <YAxis type="category" dataKey="region" width={80} />
                       <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
                       <Bar dataKey="registrations" fill="hsl(var(--primary))" radius={4} />
                       <Bar dataKey="attendances" fill="hsl(var(--success))" radius={4} />
                     </BarChart>
@@ -299,6 +302,7 @@ const AdminAnalytics = () => {
                       <XAxis dataKey="category" />
                       <YAxis />
                       <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
                       <Bar dataKey="registrations" fill="hsl(var(--primary))" radius={4} />
                       <Bar dataKey="attendances" fill="hsl(var(--success))" radius={4} />
                     </BarChart>
@@ -323,6 +327,7 @@ const AdminAnalytics = () => {
                       <XAxis dataKey="month" />
                       <YAxis />
                       <ChartTooltip content={<ChartTooltipContent />} />
+                      <ChartLegend content={<ChartLegendContent />} />
                       <Line 
                         type="monotone" 
                         dataKey="registrations" 
