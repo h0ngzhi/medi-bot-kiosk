@@ -42,6 +42,7 @@ export function ProgrammeRecommendations({ healthData }: ProgrammeRecommendation
   const [summary, setSummary] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const handleSpeak = (text: string) => {
     if (isTtsEnabled) {
@@ -68,6 +69,7 @@ export function ProgrammeRecommendations({ healthData }: ProgrammeRecommendation
 
       setRecommendations(data.recommendations || []);
       setSummary(data.summary || '');
+      setHasFetched(true);
     } catch (err) {
       console.error('Error fetching recommendations:', err);
       setError(err instanceof Error ? err.message : 'Failed to get recommendations');
@@ -76,11 +78,15 @@ export function ProgrammeRecommendations({ healthData }: ProgrammeRecommendation
     }
   };
 
+  // Stringify healthData to prevent re-fetching on object reference changes
+  const healthDataKey = JSON.stringify(healthData);
+
   useEffect(() => {
-    if (healthData && Object.keys(healthData).length > 0) {
+    // Only fetch once per unique healthData + language combination
+    if (healthData && Object.keys(healthData).length > 0 && !hasFetched) {
       fetchRecommendations();
     }
-  }, [healthData, language]);
+  }, [healthDataKey, language, hasFetched]);
 
   const formatEventDate = (dateStr: string) => {
     try {
