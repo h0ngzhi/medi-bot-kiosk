@@ -26,9 +26,9 @@ serve(async (req) => {
   try {
     const { healthData } = await req.json() as { healthData: HealthData };
 
-    const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-    if (!GEMINI_API_KEY) {
-      throw new Error('GEMINI_API_KEY is not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY is not configured');
     }
 
     // Build context based on screening type
@@ -107,34 +107,61 @@ Return a JSON object with:
 Be realistic - consider body composition differences between genders and age groups.`;
     }
 
-    // Call Gemini API
+    // Call Lovable AI Gateway
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 500,
-            responseMimeType: "application/json"
-          }
+          model: 'google/gemini-2.5-flash',
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.3,
+          max_tokens: 500,
+          response_format: { type: 'json_object' }
         })
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.error('Lovable AI Gateway error:', response.status, errorText);
+      
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({
+            status: 'normal',
+            reason: 'Service is busy. Please try again in a moment.',
+            recommendations: ['Please wait a moment and try again.']
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+      
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({
+            status: 'normal',
+            reason: 'AI service temporarily unavailable.',
+            recommendations: ['Please consult a healthcare professional for accurate assessment.']
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+      
+      throw new Error(`Lovable AI Gateway error: ${response.status}`);
     }
 
     const data = await response.json();
-    const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    const textContent = data.choices?.[0]?.message?.content;
 
     if (!textContent) {
-      throw new Error('No response from Gemini');
+      throw new Error('No response from Lovable AI');
     }
 
     // Parse the JSON response
@@ -147,7 +174,7 @@ Be realistic - consider body composition differences between genders and age gro
       if (jsonMatch) {
         assessment = JSON.parse(jsonMatch[0]);
       } else {
-        throw new Error('Could not parse Gemini response');
+        throw new Error('Could not parse AI response');
       }
     }
 

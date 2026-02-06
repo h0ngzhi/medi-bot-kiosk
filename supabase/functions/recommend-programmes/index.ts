@@ -134,39 +134,37 @@ ${JSON.stringify(programmes.map(p => ({
 
 Please recommend the most suitable programmes and explain why each is beneficial for this user.`;
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      throw new Error("GEMINI_API_KEY is not configured");
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log("Calling Gemini API...");
+    console.log("Calling Lovable AI Gateway...");
 
     const aiResponse = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      "https://ai.gateway.lovable.dev/v1/chat/completions",
       {
         method: "POST",
         headers: {
+          "Authorization": `Bearer ${LOVABLE_API_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                { text: systemPrompt + "\n\n" + userPrompt }
-              ]
-            }
+          model: "google/gemini-2.5-flash",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
           ],
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          }
+          temperature: 0.7,
+          max_tokens: 1024,
+          response_format: { type: "json_object" }
         }),
       }
     );
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
-      console.error("Gemini API error:", aiResponse.status, errorText);
+      console.error("Lovable AI Gateway error:", aiResponse.status, errorText);
       
       if (aiResponse.status === 429) {
         return new Response(
@@ -174,17 +172,25 @@ Please recommend the most suitable programmes and explain why each is beneficial
           { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      throw new Error(`Gemini API error: ${aiResponse.status}`);
+      
+      if (aiResponse.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI service temporarily unavailable. Please try again later." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      throw new Error(`Lovable AI Gateway error: ${aiResponse.status}`);
     }
 
     const aiResult = await aiResponse.json();
-    console.log("Gemini response received");
+    console.log("Lovable AI Gateway response received");
 
-    // Extract the text content from Gemini response
-    const responseText = aiResult.candidates?.[0]?.content?.parts?.[0]?.text;
+    // Extract the text content from response
+    const responseText = aiResult.choices?.[0]?.message?.content;
     
     if (!responseText) {
-      throw new Error("No response from Gemini");
+      throw new Error("No response from Lovable AI");
     }
 
     // Parse the JSON from the response (might be wrapped in markdown code blocks)
