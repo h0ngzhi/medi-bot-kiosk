@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Hand } from 'lucide-react';
+import { Hand, Volume2, VolumeX } from 'lucide-react';
 import idleBackground from '@/assets/idle-background.png';
 
 interface SlideItem {
@@ -16,7 +16,38 @@ export default function IdleScreen() {
   const [slides, setSlides] = useState<SlideItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const navigate = useNavigate();
+
+  // Background music
+  useEffect(() => {
+    const audio = new Audio('/assets/audio/idle-chill-music.mp3');
+    audio.loop = true;
+    audio.volume = 0.3;
+    audioRef.current = audio;
+
+    const playAudio = () => {
+      audio.play().catch(() => {
+        // Autoplay blocked; will play on first user interaction
+        const handleInteraction = () => {
+          audio.play().catch(() => {});
+          document.removeEventListener('click', handleInteraction);
+          document.removeEventListener('touchstart', handleInteraction);
+        };
+        document.addEventListener('click', handleInteraction);
+        document.addEventListener('touchstart', handleInteraction);
+      });
+    };
+
+    playAudio();
+
+    return () => {
+      audio.pause();
+      audio.src = '';
+      audioRef.current = null;
+    };
+  }, []);
 
   // Fetch active slides from database
   useEffect(() => {
@@ -71,8 +102,20 @@ export default function IdleScreen() {
 
   // Handle tap to start
   const handleTapToStart = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = '';
+    }
     navigate('/scan');
   }, [navigate]);
+
+  const toggleMute = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (audioRef.current) {
+      audioRef.current.muted = !audioRef.current.muted;
+      setIsMuted(!isMuted);
+    }
+  }, [isMuted]);
 
   const currentSlide = slides[currentIndex];
 
@@ -161,6 +204,15 @@ export default function IdleScreen() {
           </p>
         </div>
       </div>
+
+      {/* Mute/Unmute button */}
+      <button
+        onClick={toggleMute}
+        className="absolute bottom-4 left-4 w-12 h-12 rounded-full bg-white/80 flex items-center justify-center shadow-md hover:bg-white transition-colors"
+        aria-label={isMuted ? 'Unmute music' : 'Mute music'}
+      >
+        {isMuted ? <VolumeX className="w-6 h-6 text-muted-foreground" /> : <Volume2 className="w-6 h-6 text-primary" />}
+      </button>
 
       {/* Admin link (small, bottom-right) */}
       <button
