@@ -135,6 +135,11 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Nunito', system-ui, sans-serif;
+    background-image: url('/assets/idle-background.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
   }
 }
 
